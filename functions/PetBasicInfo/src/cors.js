@@ -1,6 +1,25 @@
+/**
+ * @fileoverview CORS handling for the PetBasicInfo Lambda.
+ * Reads allowed origins from the ALLOWED_ORIGINS environment variable and
+ * returns appropriate CORS headers based on the incoming request origin.
+ */
+
+/**
+ * Allowed origins parsed once at module load from the ALLOWED_ORIGINS env var.
+ * @type {string[]}
+ */
 const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [];
 console.log("ALLOWED ORIGINS: ", allowedOrigins);
 
+/**
+ * Builds CORS response headers for the given Lambda event.
+ * Compares the incoming `Origin` header against the allowed origins list
+ * (case-insensitive) and returns the matching CORS headers, or an empty
+ * object when the origin is not allowed.
+ *
+ * @param {import("aws-lambda").APIGatewayProxyEvent | Record<string, any>} event The Lambda event containing request headers.
+ * @returns {Record<string, string>} CORS headers to merge into the Lambda response, or an empty object when the origin is not permitted.
+ */
 function corsHeaders(event) {
   const origin = event.headers?.origin || event.headers?.Origin;
   console.log("RECEIVED ORIGIN: ", origin);
@@ -37,6 +56,14 @@ function corsHeaders(event) {
   return {};
 }
 
+/**
+ * Handles CORS preflight (OPTIONS) requests.
+ * Returns a 204 response with CORS headers when the origin is allowed,
+ * or a 403 response when the origin is not permitted.
+ *
+ * @param {import("aws-lambda").APIGatewayProxyEvent | Record<string, any>} event The Lambda event to inspect.
+ * @returns {{statusCode: number, headers: Record<string, string>, body: string} | undefined} A complete Lambda response for OPTIONS requests, or `undefined` when the request is not an OPTIONS preflight.
+ */
 function handleOptions(event) {
   if (event.httpMethod === 'OPTIONS') {
     console.log("OPTIONS request received");
