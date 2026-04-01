@@ -1,16 +1,14 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const UserSchema = require("./models/User.js");
-const NgoUserAccessSchema = require("./models/NgoUserAccess.js");
-const NGOSchema = require("./models/NGO.js");
-const NGOCounterSchema = require("./models/NgoCounters.js");
-const RefreshTokenSchema = require("./models/RefreshToken.js");
-const fs = require("fs");
-const path = require("path");
-const { hashToken, generateRefreshToken } = require("./utils.js");
-const { corsHeaders, handleOptions } = require('./cors');
-
+const { connectToMongoDB, getReadConnection } = require("./src/config/db.js");
+const { hashToken, generateRefreshToken, issueAccessToken } = require("./src/utils/token.js");
+const { isValidEmail, isValidPhoneNumber, isValidDateFormat, isValidImageUrl } = require("./src/utils/validators.js");
+const { loadTranslations, getTranslation } = require("./src/helpers/i18n.js");
+const { createErrorResponse } = require("./src/helpers/response.js");
+const { checkDuplicates } = require("./src/helpers/duplicateCheck.js");
+const { flattenToDot, pickAllowed, hasKeys } = require("./src/helpers/objectUtils.js");
+const { corsHeaders, handleOptions } = require('./src/cors.js');
 
 const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
 const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
@@ -18,190 +16,6 @@ const twilioVerifyServiceSid = process.env.TWILIO_VERIFY_SERVICE_SID;
 const client = twilioAccountSid && twilioAuthToken
   ? require("twilio")(twilioAccountSid, twilioAuthToken)
   : null;
-
-// MongoDB connection (cached to optimize Lambda cold starts)
-let conn = null;
-
-const connectToMongoDB = async () => {
-  if (conn == null) {
-    conn = await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000,
-    });
-    console.log("MongoDB primary connected to database: petpetclub");
-    // Register schemas
-    mongoose.model("User", UserSchema, "users");
-    mongoose.model("NgoUserAccess", NgoUserAccessSchema, "ngo_user_access");
-    mongoose.model("NGO", NGOSchema, "ngos");
-    mongoose.model("RefreshToken", RefreshTokenSchema, "refresh_tokens");
-    mongoose.model("NgoCounters", NGOCounterSchema, "ngo_counters");
-  }
-  return conn;
-};
-
-/**
- * Get the MongoDB connection for reads
- */
-const getReadConnection = async () => {
-  return await connectToMongoDB();
-};
-
-// Load translations from JSON files
-const loadTranslations = (lang = "en") => {
-  const supportedLangs = ["en", "zh"];
-  const fallbackLang = "en";
-
-  const filePath = path.join(
-    __dirname,
-    "locales",
-    `${supportedLangs.includes(lang) ? lang : fallbackLang}.json`
-  );
-  const content = fs.readFileSync(filePath, "utf8");
-  return JSON.parse(content);
-};
-
-// Get translation for a given key
-const getTranslation = (translations, key) => {
-  return (
-    key.split(".").reduce((obj, part) => {
-      return obj && obj[part] !== undefined ? obj[part] : null;
-    }, translations) || key
-  );
-};
-
-// Validation helper functions
-const isValidEmail = (email) => {
-  if (!email || typeof email !== 'string') return false;
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email.trim());
-};
-
-const isValidPhoneNumber = (phoneNumber) => {
-  if (!phoneNumber || typeof phoneNumber !== 'string') return false;
-  // Basic validation: should start with + and contain only digits and spaces/hyphens
-  const phoneRegex = /^\+[1-9]\d{1,14}$/;
-  return phoneRegex.test(phoneNumber.trim());
-};
-
-const isValidDateFormat = (dateString) => {
-  if (!dateString || typeof dateString !== 'string') return false;
-  const date = new Date(dateString);
-  return date instanceof Date && !isNaN(date.getTime());
-};
-
-function flattenToDot(obj, prefix = "", out = {}) {
-  if (!obj || typeof obj !== "object") return out;
-
-  for (const [k, v] of Object.entries(obj)) {
-    if (v === undefined) continue; // only skip undefined
-
-    const path = prefix ? `${prefix}.${k}` : k;
-
-    if (
-      v &&
-      typeof v === "object" &&
-      !Array.isArray(v) &&
-      !(v instanceof Date)
-    ) {
-      flattenToDot(v, path, out);
-    } else {
-      out[path] = v; // keep "", 0, false, null
-    }
-  }
-  return out;
-}
-
-function pickAllowed(dotMap, allowedPaths) {
-  const out = {};
-  for (const [path, value] of Object.entries(dotMap)) {
-    if (allowedPaths.has(path)) out[path] = value;
-  }
-  return out;
-}
-
-function hasKeys(obj) {
-  return obj && typeof obj === "object" && Object.keys(obj).length > 0;
-}
-
-const isValidImageUrl = (url) => {
-  if (!url || typeof url !== 'string') return false;
-  try {
-    const urlObj = new URL(url);
-    return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
-  } catch {
-    return false;
-  }
-};
-
-// Helper function to create error response
-const createErrorResponse = (statusCode, error, translations, event) => {
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-    ...corsHeaders(event)
-  };
-  
-  const errorMessage = translations ? getTranslation(translations, error) : error;
-  
-  return {
-    statusCode,
-    headers: defaultHeaders,
-    body: JSON.stringify({
-      success: false,
-      error: errorMessage,
-    })
-  };
-};
-
-async function checkDuplicates(models, fields, excludeIds = {}) {
-  const checks = fields.map(async (f) => {
-    const Model = models[f.model];
-    if (!Model) throw new Error(`checkDuplicates: unknown model '${f.model}'`);
-
-    const skipIfEmpty = f.skipIfEmpty !== false; // default true
-    const v = f.value;
-
-    if (
-      skipIfEmpty &&
-      (v === undefined || v === null || (typeof v === "string" && v.trim() === ""))
-    ) {
-      return null; // no check
-    }
-
-    // Exclude IDs for update scenarios
-    const ex = excludeIds[f.model];
-    const excludeClause =
-      ex == null
-        ? {}
-        : Array.isArray(ex)
-          ? { _id: { $nin: ex } }
-          : { _id: { $ne: ex } };
-
-    const filter = {
-      [f.path]: v,
-      ...excludeClause,
-    };
-
-    let query = Model.findOne(filter).select({ _id: 1 }).lean();
-
-    if (f.collation) query = query.collation(f.collation);
-
-    const doc = await query;
-
-    if (!doc) return null;
-
-    return {
-      model: f.model,
-      path: f.path,
-      label: f.label || `${f.model}.${f.path}`,
-      value: v,
-      conflictId: String(doc._id),
-    };
-  });
-
-  const results = await Promise.all(checks);
-  const duplicates = results.filter(Boolean);
-
-  return duplicates.length ? { ok: false, duplicates } : { ok: true };
-}
 
 exports.handler = async (event, context) => {
   // Set callbackWaitsForEmptyEventLoop to false to reuse MongoDB connection
