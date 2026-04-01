@@ -21,6 +21,9 @@ let conn = null;
  * @returns {Promise<typeof mongoose>} The cached Mongoose connection instance.
  */
 const connectToMongoDB = async () => {
+  if (!process.env.MONGODB_URI) {
+    throw new Error("MONGODB_URI environment variable is required");
+  }
   if (conn == null) {
     conn = await mongoose.connect(process.env.MONGODB_URI, {
       serverSelectionTimeoutMS: 5000,

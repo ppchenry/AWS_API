@@ -9,6 +9,7 @@ const { createErrorResponse } = require("./src/helpers/response.js");
 const { checkDuplicates } = require("./src/helpers/duplicateCheck.js");
 const { flattenToDot, pickAllowed, hasKeys } = require("./src/helpers/objectUtils.js");
 const { corsHeaders, handleOptions } = require('./src/cors.js');
+const { router } = require("./src/router.js");
 
 const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
 const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
@@ -48,6 +49,9 @@ exports.handler = async (event, context) => {
           event
         );
     }
+    
+
+    return await router(event, context);
     
     const isPhoneRegister = event.resource?.includes("/register-by-phoneNumber") || event.path?.includes("/register-by-phoneNumber");
     const isEmailRegister = event.resource?.includes("/register-by-email") || event.path?.includes("/register-by-email");
@@ -196,7 +200,7 @@ exports.handler = async (event, context) => {
 
       await newUser.save();
 
-      let token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: "15m" });
+      let token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
       const newRefreshToken = generateRefreshToken();
       const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
@@ -384,7 +388,7 @@ exports.handler = async (event, context) => {
           userRole: newUser.role,
         },
         process.env.JWT_SECRET,
-        { expiresIn: "15m" }
+        { expiresIn: "1h" }
       );
 
 
@@ -543,7 +547,7 @@ exports.handler = async (event, context) => {
           userRole: newUser.role,
         },
         process.env.JWT_SECRET,
-        { expiresIn: "15m" }
+        { expiresIn: "1h" }
       );
 
 
@@ -991,7 +995,7 @@ exports.handler = async (event, context) => {
     }
     else if (isEmailLogin) {
       // Use read connection for user lookup
-      const UserRead = readConn.model("User");
+                     const UserRead = readConn.model("User");
       const NgoUserAccessRead = readConn.model("NgoUserAccess");
       const NGORead = readConn.model("NGO");
 
@@ -1054,7 +1058,7 @@ exports.handler = async (event, context) => {
             "Access-Control-Allow-Origin": "*",
           },
         };
-      }
+      }               
 
       // Check if account is deleted
       if (user.deleted === true) {
@@ -1145,7 +1149,7 @@ exports.handler = async (event, context) => {
             ngoName: ngo.name,
           },
           process.env.JWT_SECRET,
-          { expiresIn: "15m" }
+          { expiresIn: "1h" }
         );
 
         const newRefreshToken = generateRefreshToken();
@@ -1193,7 +1197,7 @@ exports.handler = async (event, context) => {
           userRole: user.role,
         },
         process.env.JWT_SECRET,
-        { expiresIn: "15m" }
+        { expiresIn: "1h" }
       );
 
 
@@ -1555,7 +1559,7 @@ exports.handler = async (event, context) => {
                 userRole: user.role,
               },
               process.env.JWT_SECRET,
-              { expiresIn: "15m" }
+              { expiresIn: "1h" }
             );
 
             const newRefreshToken = generateRefreshToken();

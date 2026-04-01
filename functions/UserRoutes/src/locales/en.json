@@ -9,8 +9,9 @@
       "generateSMSSuccess": "Verification code has been sent through sms",
       "invalidPhoneAccount": "There is an account connected to the phone number or email.",
       "missingParams": "Phone parameter is missing.",
-      "notSamePassword": "Password and confirm password are not the same",
-      "invalidPhoneFormat": "Invalid phone number format"
+        "notSamePassword": "Password and confirm password are not the same",
+        "invalidPhoneFormat": "Invalid phone number format",
+        "failed": "Verification failed"
     },
     "registration": {
       "successful": "Account has been successfully registered."
@@ -69,7 +70,10 @@
       "invalidPhoneFormat": "Invalid phone number format",
       "invalidDateFormat": "Invalid date format",
       "invalidDELETE": "Invalid or missing user ID",
-      "userNotFound": "User not found"
+      "userNotFound": "User not found",
+      "routeNotFound": "No handler for this path",
+      "methodNotAllowed": "Method not allowed for this path",
+      "internalError": "Something went wrong. Please try again later."
     },
     "deleteAccount": {
       "paramsMissing": "There are missing parameters",

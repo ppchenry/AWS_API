@@ -2,6 +2,8 @@
  * @fileoverview Stateless validation helpers shared across Lambda routes.
  */
 
+const mongoose = require("mongoose");
+
 /**
  * Validates an email address using a basic format check.
  *
@@ -54,9 +56,26 @@ const isValidImageUrl = (url) => {
   }
 };
 
+/**
+ * Validates a MongoDB ObjectId (hex string, ObjectId instance, or other value Mongoose accepts).
+ *
+ * @param {unknown} id The value to validate.
+ * @returns {boolean} True when the value is a valid ObjectId per Mongoose.
+ */
+const isValidObjectId = (id) => {
+  if (id == null || id === "") return false;
+  if (typeof id === "string") {
+    const s = id.trim();
+    if (!s) return false;
+    return mongoose.isValidObjectId(s);
+  }
+  return mongoose.isValidObjectId(id);
+};
+
 module.exports = {
   isValidEmail,
   isValidPhoneNumber,
   isValidDateFormat,
   isValidImageUrl,
+  isValidObjectId,
 };

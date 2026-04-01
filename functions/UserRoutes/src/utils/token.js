@@ -25,7 +25,7 @@ function generateRefreshToken() {
 }
 
 /**
- * Issues a short-lived JWT access token for an authenticated user.
+ * Issues a JWT access token for an authenticated user (1 hour expiry).
  *
  * @param {{_id: {toString: function(): string}, email: string}} user The authenticated user payload.
  * @returns {string} Signed JWT access token.
@@ -39,7 +39,7 @@ function issueAccessToken(user) {
     process.env.JWT_SECRET,
     {
       algorithm: "HS256",
-      expiresIn: "15m",
+      expiresIn: "1h",
     }
   );
 }
