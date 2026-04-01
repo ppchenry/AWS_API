@@ -1,0 +1,59 @@
+{
+    "common": {
+        "invalidJSON": "無效的 JSON 格式"
+    },
+    "methodNotAllowed": "不允許的方法",
+    "missingPetId": "需要寵物身分證",
+    "invalidPetIdFormat": "無效的寵物 ID 格式",
+    "petNotFound": "未找到寵物",
+    "petDeleted": "寵物已被刪除",
+    "transferPath": {
+        "postSuccess": "寵物詳細資訊傳輸已成功創建",
+        "putMissingTransferId": "需要轉帳ID",
+        "invalidTransferIdFormat": "無效的轉帳 ID 格式",
+        "transferNotFound": "未找到轉帳記錄",
+        "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式",
+        "invalidPhoneFormat": "無效的電話號碼格式",
+        "putSuccess": "寵物詳細資訊傳輸更新成功",
+        "deleteMissingTransferId": "需要轉帳ID",
+        "deleteSuccess": "寵物詳細資料轉移刪除成功"
+    },
+    "ngoTransfer": {
+        "missingRequiredFields": "需要 UserEmail 和 UserContact",
+        "invalidEmailFormat": "無效的電子郵件格式",
+        "invalidPhoneFormat": "無效的電話號碼格式",
+        "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式",
+        "userEmailNotFound": "找不到使用此電子郵件的用戶",
+        "userPhoneNotFound": "找不到使用此電話號碼的用戶"
+    },
+    "petDetailInfo": {
+        "getDetailNotFound": "未找到寵物詳細信息",
+        "getDetailSuccess": "寵物詳細資訊檢索成功",
+        "postDetailSuccess": "寵物詳細資訊更新成功",
+        "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式"
+    },
+    "petSource": {
+        "getNotFound": "找不到此寵物的救援／來源資料",
+        "getSuccess": "成功取得救援／來源資料",
+        "postSuccess": "救援／來源紀錄創建成功",
+        "putMissingSourceId": "救援／來源紀錄 ID 為必填",
+        "invalidSourceIdFormat": "救援／來源紀錄 ID 格式無效",
+        "recordNotFound": "找不到救援／來源紀錄",
+        "putSuccess": "救援／來源紀錄更新成功",
+        "noFieldsToUpdate": "未提供任何要更新的欄位",
+        "missingRequiredFields": "至少需要提供來源地或渠道其中一項"
+    },
+    "petAdoption": {
+        "getNotFound": "未找到領養後記錄",
+        "getSuccess": "成功獲取領養後記錄",
+        "invalidDateFormat": "日期格式無效。請使用 ISO 8601 格式 (YYYY-MM-DD)",
+        "postSuccess": "領養後記錄創建成功",
+        "putMissingAdoptionId": "需要領養記錄 ID",
+        "invalidAdoptionIdFormat": "無效的領養記錄 ID 格式",
+        "recordNotFound": "未找到領養後記錄",
+        "noFieldsToUpdate": "未提供需要更新的欄位",
+        "putSuccess": "領養後記錄更新成功",
+        "deleteMissingAdoptionId": "需要領養記錄 ID",
+        "deleteSuccess": "領養後記錄刪除成功"
+    }
+}

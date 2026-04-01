@@ -1,0 +1,21 @@
+{
+  "common": {
+    "invalidJSON": "Invalid JSON format"
+  },
+  "missingPetId": "Pet ID is required",
+  "invalidPetIdFormat": "Invalid pet ID format",
+  "petNotFound": "Pet not found",
+  "petDeleted": "Pet has been deleted",
+  "methodNotAllowed": "Method Not Allowed",
+  "vaccineRecord": {
+    "getNotFound": "Pet vaccine record not found",
+    "getSuccess": "Pet vaccine record retrieved successfully",
+    "postSuccess": "Pet vaccine record created successfully",
+    "putMissingVaccineId": "Vaccine ID is required",
+    "invalidVaccineIdFormat": "Invalid vaccine ID format",
+    "vaccineRecordNotFound": "Vaccine record not found",
+    "putSuccess": "Pet vaccine record updated successfully",
+    "deleteSuccess": "Pet vaccine record deleted successfully",
+    "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format"
+  }
+}

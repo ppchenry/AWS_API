@@ -1,0 +1,59 @@
+# --- Node.js ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.npm
+package-lock.json
+yarn.lock
+
+# --- AWS & Serverless Frameworks ---
+.aws-sam/
+.serverless/
+.webpack/
+.dynamodb/
+dist/
+build/
+out/
+*.zip
+*.jar
+
+# --- Environment & Secrets (CRITICAL) ---
+.env
+.env.*
+!.env.example
+secrets.json
+RESOURCES.md
+
+# --- OS Specific (Windows/Mac) ---
+Thumbs.db
+desktop.ini
+.DS_Store
+*.stackdump
+
+# --- IDEs & Editors ---
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# --- Testing ---
+coverage/
+.nyc_output/
+
+# --- macOS Metadata ---
+.DS_Store
+.AppleDouble
+.LSOverride
+__MACOSX/
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent

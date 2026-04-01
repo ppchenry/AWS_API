@@ -1,0 +1,84 @@
+{
+    "verification": {
+      "invalidPhone": "與該帳戶關聯的電話號碼不存在。",
+      "codeExpired": "驗證碼已過期。",
+      "codeIncorrect": "驗證碼不正確，請重試。",
+      "missingCodeParams": "驗證碼參數缺失。",
+      "success": "帳戶驗證成功。",
+      "generateWhatsappSuccess": "驗證碼已透過 whatsapp 傳送。",
+      "generateSMSSuccess": "驗證碼已透過簡訊發送。",
+      "invalidPhoneAccount": "有一個與電話號碼或電郵關聯的帳戶。",
+      "missingParams": "缺少電話參數。",
+      "notSamePassword": "密碼和確認密碼不一樣。",
+      "failed": "驗證失敗",
+      "invalidPhoneFormat": "電話號碼格式無效"
+    },
+    "registration": {
+      "successful": "帳戶已成功註冊。"
+    },
+    "login": {
+      "successful": "帳號已成功登入。",
+      "accountDeleted": "與該郵箱關聯的帳戶已被刪除。請嘗試使用其他郵箱登入。"
+    },
+    "phoneRegister": {
+      "paramsMissing": "所有欄位均為必填",
+      "userExist": "用戶已存在",
+      "existWithEmail": "使用此電郵的使用者已存在",
+      "invalidPhoneFormat": "電話號碼格式無效",
+      "invalidEmailFormat": "電子郵件格式無效"
+    },
+    "emailRegister": {
+      "existWithPhone": "此電話號碼已存在用戶",
+      "invalidEmailFormat": "電子郵件格式無效",
+      "invalidPhoneFormat": "電話號碼格式無效"
+    },
+    "emailLogin": {
+      "paramsMissing": "需要電郵和密碼",
+      "invalidUserCredential": "使用者憑證無效",
+      "userNGONotFound": "未找到 NGO 使用者存取權限",
+      "NGONotFound": "未找到非政府組織",
+      "success": "登入成功",
+      "invalidEmailFormat": "電子郵件格式無效"
+    },
+    "updatePassword": {
+      "passwordLong": "新密碼必須至少包含 8 個字符",
+      "userNotFound": "未找到用戶",
+      "currentPasswordInvalid": "目前密碼不正確",
+      "success": "密碼更新成功",
+      "invalidUserId": "用戶 ID 格式無效",
+      "passwordUnchanged": "新密碼不能與舊密碼相同"
+    },
+    "updateImage": {
+      "success": "已成功更新使用者的新圖片",
+      "invalidUserId": "用戶 ID 格式無效",
+      "invalidImageUrl": "圖片 URL 格式無效",
+      "userNotFound": "未找到用戶"
+    },
+    "others": {
+      "invalidGET": "userId_toGet 無效或缺失",
+      "missingParams": "缺少電話參數。",
+      "getUserNotFound": "未找到用戶",
+      "getSuccess": "成功檢索使用者數據",
+      "invalidPUT": "使用者 ID 無效或缺失",
+      "putUserNotFound": "未找到用戶或用戶已被刪除",
+      "putUserSuccess": "成功更新用戶數據",
+      "deleteUserSuccess": "用戶刪除成功",
+      "invalidJSON": "無效的 JSON 格式",
+      "missingUserId": "缺少用戶 ID 參數",
+      "userDeleted": "用戶已被刪除",
+      "invalidEmailFormat": "電子郵件格式無效",
+      "invalidPhoneFormat": "電話號碼格式無效",
+      "invalidDateFormat": "日期格式無效",
+      "invalidDELETE": "用戶 ID 無效或缺失",
+      "userNotFound": "未找到用戶"
+    },
+    "deleteAccount": {
+      "paramsMissing": "缺少參數",
+      "userNotFound": "找不到與該電子郵件地址關聯的帳戶。",
+      "success": "帳戶已成功刪除",
+      "invalidEmailFormat": "電子郵件格式無效",
+      "userAlreadyDeleted": "用戶已被刪除"
+    }
+  }
+  
+  

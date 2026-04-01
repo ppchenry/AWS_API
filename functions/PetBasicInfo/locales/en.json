@@ -1,0 +1,48 @@
+{
+  "petBasicInfo": {
+    "errors": {
+      "invalidJSON": "Invalid JSON format",
+      "petIdRequired": "Pet ID is required",
+      "invalidPetIdFormat": "Invalid pet ID format",
+      "petNotFound": "Pet not found",
+      "petDeleted": "Pet has been deleted",
+      "petBasicInfoNotFound": "Pet basic info not found",
+      "emptyUpdateBody": "At least one field must be provided for update",
+      "invalidBirthdayFormat": "Invalid date format for birthday. Expected YYYY-MM-DD or DD/MM/YYYY format",
+      "invalidReceivedDateFormat": "Invalid date format for receivedDate. Expected YYYY-MM-DD or DD/MM/YYYY format",
+      "invalidsterilizationDateFormat": "Invalid date format for sterilizationDate. Expected YYYY-MM-DD or DD/MM/YYYY format",
+      "invalidImageUrl": "Invalid image URL format in breedimage",
+      "invalidWeightType": "Invalid type for weight. Expected a number",
+      "invalidOwnerContact1Type": "Invalid type for ownerContact1. Expected a number",
+      "invalidOwnerContact2Type": "Invalid type for ownerContact2. Expected a number",
+      "invalidSterilizationType": "Invalid type for sterilization. Expected a boolean",
+      "invalidContact1ShowType": "Invalid type for contact1Show. Expected a boolean",
+      "invalidContact2ShowType": "Invalid type for contact2Show. Expected a boolean",
+      "invalidIsRegisteredType": "Invalid type for isRegistered. Expected a boolean",
+      "duplicateTagId": "Duplicated pet with tagId",
+      "duplicateNgoPetId": "Duplicated pet with ngoPetId",
+      "errorCheckingDuplicateTagId": "Error checking duplicate tagId",
+      "errorCheckingDuplicateNgoPetId": "Error checking duplicate ngoPetId",
+      "noValidFieldsToUpdate": "No valid fields to update",
+      "validationError": "Validation error",
+      "invalidDataFormat": "Invalid data format",
+      "errorUpdatingPet": "Error updating pet",
+      "methodNotAllowed": "Method Not Allowed",
+      "methodNotAllowedEyeLog": "Method Not Allowed. Only GET method is supported for eyeLog endpoint",
+      "methodNotAllowedDelete": "Method Not Allowed. Only DELETE method is supported for this endpoint",
+      "databaseConnectionNotAvailable": "Database connection not available",
+      "eyeAnalysisModelNotFound": "EyeAnalysisRecord model not found",
+      "errorRetrievingEyeLog": "Error retrieving eye analysis log",
+      "petNotFoundOrDeleted": "Pet not found or already deleted",
+      "errorDeletingPet": "Error deleting pet",
+      "databaseConnectionFailed": "Database connection failed. Please try again later.",
+      "internalServerError": "Internal Server Error"
+    },
+    "success": {
+      "retrievedSuccessfully": "Pet basic info retrieved successfully",
+      "updatedSuccessfully": "Pet basic info updated successfully",
+      "deletedSuccessfully": "Pet deleted successfully",
+      "eyeLogRetrievedSuccessfully": "Retrieve eye analysis log list successfully!"
+    }
+  }
+}

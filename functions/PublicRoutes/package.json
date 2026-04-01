@@ -1,0 +1,16 @@
+{
+  "name": "publicroutes",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "mongoose": "^8.17.1",
+    "perf_hooks": "^0.0.1"
+  }
+}

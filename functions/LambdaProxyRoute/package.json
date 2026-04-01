@@ -1,0 +1,9 @@
+{
+  "name": "ptag-proxy-lambda",
+  "version": "1.0.0",
+  "description": "AWS Lambda proxy for PTag API",
+  "main": "lambda.js",
+  "dependencies": {
+    "axios": "^1.7.9"
+  }
+}

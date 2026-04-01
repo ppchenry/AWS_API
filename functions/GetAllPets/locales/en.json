@@ -1,0 +1,33 @@
+{
+    "common": {
+        "invalidJSON": "Invalid JSON format"
+    },
+    "ngoPath": {
+        "missingNgoId": "NGO ID is required",
+        "invalidNgoIdFormat": "Invalid NGO ID format",
+        "noPetsFound": "No pets found",
+        "success": "Pets retrieved successfully"
+    },
+    "deleteStatus": {
+        "missingPetId": "Pet ID is required",
+        "invalidPetIdFormat": "Invalid pet ID format",
+        "petNotFound": "Pet not found",
+        "petAlreadyDeleted": "Pet has already been deleted",
+        "success": "Pet deleted successfully"
+    },
+    "updatePetEye": {
+        "missingRequiredFields": "petId, date, leftEyeImage1PublicAccessUrl, and rightEyeImage1PublicAccessUrl are required",
+        "invalidPetIdFormat": "Invalid pet ID format",
+        "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD format",
+        "invalidImageUrlFormat": "Invalid image URL format",
+        "petNotFound": "Pet not found",
+        "petDeleted": "Pet has been deleted",
+        "success": "Successfully updated pet eye image"
+    },
+    "getPetsByUser": {
+        "missingUserId": "User ID is required",
+        "invalidUserIdFormat": "Invalid user ID format",
+        "noPetsFound": "No pets found",
+        "success": "Pets retrieved successfully"
+    }
+}

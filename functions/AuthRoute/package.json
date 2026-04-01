@@ -1,0 +1,12 @@
+{
+  "name": "auth-route",
+  "version": "1.0.0",
+  "description": "AWS Lambda Auth Route Handler",
+  "main": "index.js",
+  "type": "commonjs",
+  "dependencies": {
+    "crypto": "^1.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.21.0"
+  }
+}

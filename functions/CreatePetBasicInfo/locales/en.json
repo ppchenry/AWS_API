@@ -1,0 +1,18 @@
+{
+    "invalidJSON": "Invalid JSON format",
+    "missingUserId": "User ID required",
+    "missingName": "Name is required",
+    "missingBirthday": "Birthday is required",
+    "missingSex": "Sex is required",
+    "missingAnimal": "Animal is required",
+    "invalidUserIdFormat": "Invalid user ID format",
+    "userNotFound": "User not found",
+    "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
+    "invalidWeightFormat": "Invalid weight format. Expected a number",
+    "invalidBooleanFormat": "Invalid boolean format",
+    "invalidBreedimageFormat": "Invalid breedimage format. Expected an array",
+    "invalidImageUrlFormat": "Invalid image URL format in breedimage",
+    "duplicatePetNgoId": "Duplicate pet with ngoPetId",
+    "duplicatePetTagId": "Duplicate pets with tagId",
+    "success": "Pet added successfully"
+}

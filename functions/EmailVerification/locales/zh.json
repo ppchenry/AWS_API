@@ -1,0 +1,15 @@
+{
+    "codeNotMatch": "驗證碼不匹配，請重試",
+    "codeExpired": "驗證碼已過期。",
+    "notExist": "電郵或驗證碼不存在",
+    "missingParams": "需要電郵和重置驗證碼",
+    "missingEmailParams": "缺少電郵",
+    "generateSuccessful": "驗證碼生成成功",
+    "verifySuccessful": "帳戶驗證碼成功",
+    "invalidJSON": "無效的 JSON 格式",
+    "invalidEmailFormat": "電子郵件格式無效",
+    "invalidResetCodeFormat": "驗證碼格式無效，必須為 6 位數字",
+    "emailServiceUnavailable": "電子郵件服務暫時無法使用",
+    "accountDeleted": "帳戶已被刪除",
+    "noCodeFound": "未找到驗證碼，請先生成驗證碼"
+}

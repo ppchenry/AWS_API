@@ -1,0 +1,21 @@
+{
+  "common": {
+    "invalidJSON": "無效的 JSON 格式"
+  },
+  "missingPetId": "需要寵物身分證",
+  "invalidPetIdFormat": "無效的寵物 ID 格式",
+  "petNotFound": "未找到寵物",
+  "petDeleted": "寵物已被刪除",
+  "methodNotAllowed": "不允許的方法",
+  "vaccineRecord": {
+    "getNotFound": "未找到寵物疫苗記錄",
+    "getSuccess": "寵物疫苗記錄檢索成功",
+    "postSuccess": "寵物疫苗記錄創建成功",
+    "putMissingVaccineId": "需要疫苗 ID",
+    "invalidVaccineIdFormat": "無效的疫苗 ID 格式",
+    "vaccineRecordNotFound": "未找到疫苗記錄",
+    "putSuccess": "寵物疫苗記錄更新成功",
+    "deleteSuccess": "寵物疫苗記錄刪除成功",
+    "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式"
+  }
+}

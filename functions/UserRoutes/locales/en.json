@@ -1,0 +1,81 @@
+{
+    "verification": {
+      "invalidPhone": "Phone number connected to this account does not exist.",
+      "codeExpired": "Verification code has expired.",
+      "codeIncorrect": "Verification code is incorrect, please try again.",
+      "missingCodeParams": "Verification code parameter is missing",
+      "success": "Account verified successfully.",
+      "generateWhatsappSuccess": "Verification code has been sent through whatsapp",
+      "generateSMSSuccess": "Verification code has been sent through sms",
+      "invalidPhoneAccount": "There is an account connected to the phone number or email.",
+      "missingParams": "Phone parameter is missing.",
+      "notSamePassword": "Password and confirm password are not the same",
+      "invalidPhoneFormat": "Invalid phone number format"
+    },
+    "registration": {
+      "successful": "Account has been successfully registered."
+    },
+    "login": {
+      "successful": "Account has been successfully logged in.",
+      "accountDeleted": "Account associated to the email has been deleted. Please try to log in with another email"
+    },
+    "phoneRegister": {
+      "paramsMissing": "All fields are required",
+      "userExist": "User already exists",
+      "existWithEmail": "A user with this email already exists",
+      "invalidPhoneFormat": "Invalid phone number format",
+      "invalidEmailFormat": "Invalid email format"
+    },
+    "emailRegister": {
+      "existWithPhone": "This phone number already exists",
+      "invalidEmailFormat": "Invalid email format",
+      "invalidPhoneFormat": "Invalid phone number format"
+    },
+    "emailLogin": {
+      "paramsMissing": "Email and password required",
+      "invalidUserCredential": "Invalid user credentials",
+      "userNGONotFound": "NGO user access rights not found",
+      "NGONotFound": "No NGO found",
+      "success": "Login successful",
+      "invalidEmailFormat": "Invalid email format"
+    },
+    "updatePassword": {
+      "passwordLong": "New password must contain at least 8 characters",
+      "userNotFound": "User not found",
+      "currentPasswordInvalid": "The current password is incorrect",
+      "success": "Password updated successfully",
+      "invalidUserId": "Invalid user ID format",
+      "passwordUnchanged": "New password cannot be the same as the old password"
+    },
+    "updateImage": {
+      "success": "Successfully updated the user's new picture",
+      "invalidUserId": "Invalid user ID format",
+      "invalidImageUrl": "Invalid image URL format",
+      "userNotFound": "User not found"
+    },
+    "others": {
+      "invalidGET": "userId_toGet is invalid or missing",
+      "getUserNotFound": "User not found",
+      "getSuccess": "Successfully retrieved user data",
+      "invalidPUT": "Invalid or missing user ID",
+      "putUserNotFound": "User not found or has been deleted",
+      "putUserSuccess": "User data updated successfully",
+      "deleteUserSuccess": "User deleted successfully",
+      "invalidJSON": "Invalid JSON format",
+      "missingParams": "Missing parameters",
+      "missingUserId": "Missing user ID parameter",
+      "userDeleted": "User has been deleted",
+      "invalidEmailFormat": "Invalid email format",
+      "invalidPhoneFormat": "Invalid phone number format",
+      "invalidDateFormat": "Invalid date format",
+      "invalidDELETE": "Invalid or missing user ID",
+      "userNotFound": "User not found"
+    },
+    "deleteAccount": {
+      "paramsMissing": "There are missing parameters",
+      "userNotFound": "No account could be found associated with this email address.",
+      "success": "Account has been successfully deleted",
+      "invalidEmailFormat": "Invalid email format",
+      "userAlreadyDeleted": "User has already been deleted"
+    }
+  }
