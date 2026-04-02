@@ -1,0 +1,17 @@
+{
+  "httpMethod": "DELETE",
+  "resource": "/",
+  "path": "/pets/607d1b226f556a338c23d123",
+  "pathParameters": {
+    "petID": "607d1b226f556a338c23d123"
+  },
+  "headers": {
+    "Authorization": "Bearer mock-token",
+    "origin": "http://localhost:3000"
+  },
+  "queryStringParameters": null,
+  "requestContext": {
+    "resourcePath": "/pets/{petID}",
+    "httpMethod": "DELETE"
+  }
+}

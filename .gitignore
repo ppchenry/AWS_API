@@ -44,6 +44,7 @@ desktop.ini
 # --- Testing ---
 coverage/
 .nyc_output/
+env.json
 
 # --- macOS Metadata ---
 .DS_Store

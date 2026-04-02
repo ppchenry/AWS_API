@@ -22,6 +22,71 @@ The goal is to restructure this repository into a clean monorepo where:
 
 This monorepo will be incrementally restructured around a few basic engineering principles.
 
+## Recommended Lambda Architecture
+
+The target architecture for new or refactored Lambdas is intentionally simple.
+
+It is not meant to be a strict framework. Different functions can adapt it to their own needs. The goal is to give each Lambda a similar shape so engineers can move between functions without re-learning a completely different structure every time.
+
+### Recommended Structure
+
+```text
+src/
+|-- handler.js
+|-- router.js
+|-- middleware/
+|   |-- authJWT.js
+|   `-- <route guard files>
+|-- services/
+|   `-- <route or domain services>
+|-- utils/
+|   |-- response.js
+|   |-- i18n.js
+|   |-- validators.js
+|   `-- <small lambda-specific helpers>
+|-- config/
+|   `-- db.js
+|-- models/
+`-- locales/
+```
+
+### Layer Responsibilities
+
+- `handler.js`: Lambda entrypoint orchestration only. It should set up request state, load translations, open shared connections, run global guards, call the router, and handle top-level errors.
+- `router.js`: Route selection only. It should map normalized route keys such as `GET /basic-info` or `PUT /basic-info` to the correct service function.
+- `middleware/`: Request guards that can stop execution before route logic runs, such as JWT authentication, request validation, or resource existence checks.
+- `services/`: Route behavior and business logic. In this monorepo, services may return final API Gateway responses directly to keep Lambdas simple.
+- `utils/`: Small reusable helpers local to the Lambda, such as response builders, i18n helpers, and validation helpers.
+- `config/`: Configuration and connection setup such as database initialization.
+- `models/`: Mongoose schemas or other persistence models owned by that Lambda.
+- `locales/`: Translation files used by that Lambda.
+
+### Request Flow
+
+The recommended flow is:
+
+1. `index.js` delegates to `src/handler.js`.
+2. `handler.js` prepares a request object and runs top-level guards.
+3. `router.js` resolves the route from the HTTP method and normalized path.
+4. A service function handles the route and returns the final response.
+5. Shared response builders in `utils/response.js` keep success and error payloads consistent.
+
+### Design Rules
+
+- Keep `handler.js` thin. If it starts growing large, move route behavior out first.
+- Use one router per Lambda when the function handles multiple endpoints.
+- Keep auth and request guards in `middleware/` when they block the request before route logic.
+- Let services return final Lambda responses if that avoids introducing an unnecessary controller layer.
+- Keep `utils/` and `config/` local to the Lambda unless the code is stable and duplicated across multiple functions.
+- Move code to `shared/` only when it is truly reusable, stable, and not tightly coupled to one Lambda's domain.
+- Do not add speculative layers. Empty folders such as unused `controllers/` should be removed.
+
+### Not a Strict Rulebook
+
+This structure is a default, not a mandate.
+
+Some Lambdas may need fewer files. Some may need one more guard or one more service. The important part is that the code remains readable, the request flow is obvious, and engineers can recognize the same basic shape across the repository.
+
 ### 1. Separation of Concerns
 
 Handler files should stop doing everything.
