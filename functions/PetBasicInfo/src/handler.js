@@ -1,8 +1,10 @@
-import { getReadConnection } from './config/db';
-import { loadTranslations } from './utils/i18n';
-import { validatePetRequest } from './middleware/petGuard';
-import { createErrorResponse } from './utils/response';
-import { routeRequest } from './router';
+const { getReadConnection } = require('./config/db');
+const { loadTranslations } = require('./utils/i18n');
+const { validatePetRequest } = require('./middleware/petGuard');
+const { createErrorResponse } = require('./utils/response');
+const { routeRequest } = require('./router');
+const { handleOptions } = require('./cors');
+const { authJWT } = require('./middleware/authJWT');
 
 /**
  * Orchestrates the lifecycle of a single Lambda invocation.
@@ -12,11 +14,19 @@ import { routeRequest } from './router';
  * @param {import('aws-lambda').Context} context - The Lambda execution context (contains methods like callbackWaitsForEmptyEventLoop).
  * @returns {Promise<import('aws-lambda').APIGatewayProxyResult>} The standardized HTTP response for API Gateway.
  */
-export async function handleRequest(event, context) {
+async function handleRequest(event, context) {
   context.callbackWaitsForEmptyEventLoop = false;
   let translations = null;
 
   try {
+    // Handle CORS preflight before anything else
+    const optionsResponse = handleOptions(event);
+    if (optionsResponse) return optionsResponse;
+
+    // Authenticate before processing
+    const authError = authJWT(event);
+    if (authError) return authError;
+
     await getReadConnection();
     const lang = event.cookies?.language || event.queryStringParameters?.lang || 'zh';
     translations = loadTranslations(lang);
@@ -33,7 +43,10 @@ export async function handleRequest(event, context) {
     if (!petValidation.isValid) return petValidation.error;
 
     return await routeRequest({
-      ...request,
+      event,
+      petID: request.petID,
+      lang: request.lang,
+      translations: request.translations,
       httpMethod: event.httpMethod,
       resource: event.resource,
       path: event.path,
@@ -50,3 +63,5 @@ export async function handleRequest(event, context) {
     );
   }
 }
+
+module.exports = { handleRequest };

@@ -9,22 +9,37 @@ const { createErrorResponse } = require('../utils/response');
  *
  * @param {{event: import("aws-lambda").APIGatewayProxyEvent | Record<string, any>, body?: string | null, petID?: string, translations: Record<string, any>}} request Prepared request data containing the raw body, pet ID, translation map, and original event.
  * @returns {Promise<
- *   | { isValid: true, body: Record<string, any>, data: any }
+ *   | { isValid: true, body: Record<string, any> | null, data: any } // body: parsed JSON object if present, or null if no body
  *   | { isValid: false, error: { statusCode: number, headers: Record<string, string>, body: string } }
- * >} Validation result containing either the parsed body and pet document or an error response.
+ * >} Validation result containing either the parsed body (object or null) and pet document, or an error response.
  */
-export const validatePetRequest = async (request) => {
+const validatePetRequest = async (request) => {
   const { event, body, petID, translations } = request;
-  let parsedBody = {};
 
-  try {
-    parsedBody = body ? JSON.parse(body) : {};
-  } catch (error) {
+  let parsedBody = null;
+  if (typeof body === 'string' && body.trim().length > 0) {
+    try {
+      parsedBody = JSON.parse(body);
+    } catch (error) {
+      return {
+        isValid: false,
+        error: createErrorResponse(
+          400,
+          "petBasicInfo.errors.invalidJSON",
+          translations,
+          event
+        )
+      };
+    }
+  }
+
+  const method = event?.httpMethod?.toUpperCase();
+  if ((method === 'PUT' || method === 'POST') && (!parsedBody || Object.keys(parsedBody).length === 0)) {
     return {
       isValid: false,
       error: createErrorResponse(
         400,
-        "petBasicInfo.errors.invalidJSON",
+        "petBasicInfo.errors.emptyUpdateBody",
         translations,
         event
       )
@@ -44,7 +59,7 @@ export const validatePetRequest = async (request) => {
   }
 
   const Pet = mongoose.model("Pet");
-  const pet = await Pet.findById(petID);
+  const pet = await Pet.findById(petID).lean();
 
   if (!pet || pet.deleted) {
     return { 
@@ -63,4 +78,4 @@ export const validatePetRequest = async (request) => {
   return { isValid: true, body: parsedBody, data: pet };
 };
 
-
+module.exports = { validatePetRequest };

@@ -1,16 +1,22 @@
-import { createErrorResponse } from "./utils/response";
+const { deletePetBasicInfo, getPetBasicInfo, updatePetBasicInfo } = require("./services/basicInfo");
+const { getPetEyeAnalysisLogs } = require("./services/eyeLog");
+const { createErrorResponse } = require("./utils/response");
 
 /**
- * Maps normalized method-and-path keys to route handlers for this Lambda.
- *
+ * @typedef {Object.<string, (routeContext: any) => Promise<any>>} RouteMap
+ * Maps normalized method-and-path keys to route handler functions.
  * Each key should follow the format `<HTTP_METHOD> <PATH_SUFFIX>`.
  * Example: `GET /basic-info`.
  */
+
+/**
+ * @type {RouteMap}
+ */
 const routes = {
-  'GET /basic-info': () => {},
-  'PUT /basic-info': () => {},
-  'GET /eyeLog': () => {},
-  'DELETE /': () => {},
+  'GET /basic-info': getPetBasicInfo,
+  'PUT /basic-info': updatePetBasicInfo,
+  'GET /eyeLog': getPetEyeAnalysisLogs,
+  'DELETE /': deletePetBasicInfo,
 };
 
 /**
@@ -19,18 +25,18 @@ const routes = {
  *
  * @param {{
  *   event: import("aws-lambda").APIGatewayProxyEvent | Record<string, any>,
- *   body?: Record<string, any>,
- *   pet?: any,
- *   petID?: string,
- *   lang?: string,
+ *   body: Record<string, any> | null, // parsed request body (object) or null if no body
+ *   pet: any, // validated pet document
+ *   petID: string,
+ *   lang: string,
  *   translations: Record<string, any>,
  *   httpMethod: string,
  *   resource?: string,
  *   path?: string
- * }} routeContext Prepared request data for route resolution and downstream handlers.
+ * }} routeContext - Prepared request data for route resolution and downstream handlers. No raw body, only parsed body, and no duplicated fields.
  * @returns {Promise<Function | {statusCode: number, headers: Record<string, string>, body: string}>} The matched route handler or a method-not-allowed response.
  */
-export async function routeRequest(routeContext) {
+async function routeRequest(routeContext) {
   const { event, httpMethod, resource, path, translations } = routeContext;
   const routePath = resource || path || '/';
   const routeKey = `${httpMethod} ${routePath}`;
@@ -46,3 +52,5 @@ export async function routeRequest(routeContext) {
   }
   return await routeAction(routeContext);
 }
+
+module.exports = { routeRequest };

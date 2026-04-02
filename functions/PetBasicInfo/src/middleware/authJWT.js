@@ -3,8 +3,8 @@
  * Provides helpers to verify Bearer tokens from the Authorization header
  * and to gate Lambda routes behind authentication.
  */
-
 const jwt = require("jsonwebtoken");
+const { createErrorResponse } = require("../utils/response");
 
 /**
  * Verifies the JWT Bearer token attached to an incoming Lambda event.
@@ -18,9 +18,9 @@ const jwt = require("jsonwebtoken");
  */
 function verifyJWT(event) {
   try {
-    // ✅ DEV BYPASS
-    if (process.env.JWT_BYPASS === "true") {
-      console.log("⚠️ JWT BYPASS ENABLED");
+    // ✅ DEV BYPASS — only in non-production environments
+    if (process.env.JWT_BYPASS === "true" && process.env.NODE_ENV !== "production") {
+      console.log("⚠️ JWT BYPASS ENABLED (non-production)");
 
       return {
         userId: "dev-user-id",
@@ -94,18 +94,12 @@ function authJWT(event) {
   const user = verifyJWT(event);
 
   if (!user) {
-    return {
-      statusCode: 401,
-      body: JSON.stringify({
-        success: false,
-        error: "Authentication required",
-        error_message:
-          "Invalid or missing JWT token. Please provide a valid Authorization header with Bearer token.",
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
+    return createErrorResponse(
+      401,
+      "Authentication required. Please provide a valid Authorization header with Bearer token.",
+      null,
+      event
+    );
   }
 
   // Attach user info to event for use in handler

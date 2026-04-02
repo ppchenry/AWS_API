@@ -34,6 +34,33 @@ const createErrorResponse = (statusCode, error, translations, event) => {
   };
 };
 
+/**
+ * Builds a standardized JSON success response with CORS headers.
+ *
+ * @param {string} messageKey The translation key for the success message.
+ * @param {Record<string, any>} data Additional fields to include in the response body alongside `message`.
+ * @param {Record<string, any> | undefined | null} translations Translation dictionary used to resolve the message.
+ * @param {import("aws-lambda").APIGatewayProxyEvent | Record<string, any>} event The Lambda event used to derive response CORS headers.
+ * @returns {{statusCode: number, headers: Record<string, string>, body: string}} Serialized success response.
+ */
+const createSuccessResponse = (messageKey, data, translations, event) => {
+  return {
+    statusCode: 200,
+    headers: {
+      "Content-Type": "application/json",
+      ...corsHeaders(event),
+    },
+    body: JSON.stringify({
+      success: true,
+      message: translations
+        ? getTranslation(translations, messageKey)
+        : messageKey,
+      ...data,
+    }),
+  };
+};
+
 module.exports = {
   createErrorResponse,
+  createSuccessResponse,
 };

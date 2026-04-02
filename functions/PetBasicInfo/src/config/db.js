@@ -9,16 +9,26 @@ const PetSchema = require("../models/pet");
 const eyeAnalysisLogSchema = require("../models/EyeAnalysisRecord");
 
 let conn = null;
+let connPromise = null;
 
 /**
  * Creates and caches the Mongoose connection for the current Lambda runtime.
  * On first connection it also registers all schemas used by this function.
+ * Reuses the same promise to avoid duplicate connection attempts during cold start.
  *
  * @async
  * @returns {Promise<typeof mongoose>} The cached Mongoose connection instance.
  */
 const connectToMongoDB = async () => {
-  if (conn == null) {
+  if (conn && mongoose.connection.readyState === 1) {
+    return conn;
+  }
+
+  if (connPromise) {
+    return connPromise;
+  }
+
+  connPromise = (async () => {
     try {
       conn = await mongoose.connect(process.env.MONGODB_URI, {
         serverSelectionTimeoutMS: 5000,
@@ -28,12 +38,16 @@ const connectToMongoDB = async () => {
 
       mongoose.model("Pet", PetSchema);
       mongoose.model("EyeAnalysisRecord", eyeAnalysisLogSchema, "eye_analysis_log");
+      return conn;
     } catch (error) {
+      connPromise = null;
+      conn = null;
       console.error("MongoDB connection error:", error);
       throw new Error("Failed to connect to database");
     }
-  }
-  return conn;
+  })();
+
+  return connPromise;
 };
 
 /**
