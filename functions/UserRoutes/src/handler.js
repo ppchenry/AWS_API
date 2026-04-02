@@ -54,27 +54,23 @@ async function handleRequest(event, context) {
   let translations = null;
 
   try {
-    // 1. OPTIONS fast-path (before auth, DB, everything)
     const optionsResponse = handleOptions(event);
     if (optionsResponse) return optionsResponse;
 
-    // 2. Resolve language and load translations
     const lang = requestLang(event);
     translations = loadTranslations(lang);
 
-    // 3. Normalise resource path
-    const resource = normalizeResource(event.path, event.resource);
+    const userId = event.pathParameters?.userId;
 
-    // 4. Authenticate (skip for public routes)
+    const resource = normalizeResource(event.path, event.resource, userId || "/account");
+
     const authError = authJWT(event, translations);
     if (authError && !PUBLIC_PATHS.includes(resource)) {
       return authError;
     }
 
-    // 5. Connect to DB
     await getReadConnection();
 
-    // 6. Route the request
     return await routeRequest({
       event,
       httpMethod: (event.httpMethod || "GET").toUpperCase(),

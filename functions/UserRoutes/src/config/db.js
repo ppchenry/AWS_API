@@ -23,26 +23,31 @@ let connPromise = null;
  * @returns {Promise<typeof mongoose>} The cached Mongoose connection instance.
  */
 const connectToMongoDB = async () => {
-  if (!process.env.MONGODB_URI) {
-    throw new Error("MONGODB_URI environment variable is required");
-  }
   if (mongoose.connection.readyState === 1) return conn;
   if (connPromise) return connPromise;
 
-  connPromise = mongoose.connect(process.env.MONGODB_URI, {
-    serverSelectionTimeoutMS: 5000,
-    maxPoolSize: 1,
-  }).then((connection) => {
-    conn = connection;
+  connPromise = (async () => {
+    try {
+      conn = await mongoose.connect(process.env.MONGODB_URI, {
+        serverSelectionTimeoutMS: 5000,
+        maxPoolSize: 1,
+      });
+      console.log("MongoDB primary connected to database: petpetclub");
 
-    mongoose.model("User", UserSchema, "users");
-    mongoose.model("NgoUserAccess", NgoUserAccessSchema, "ngo_user_access");
-    mongoose.model("NGO", NGOSchema, "ngos");
-    mongoose.model("RefreshToken", RefreshTokenSchema, "refresh_tokens");
-    mongoose.model("NgoCounters", NGOCounterSchema, "ngo_counters");
-
-    return conn;
-  });
+      mongoose.models.User || mongoose.model("User", UserSchema, "users");
+      mongoose.models.NgoUserAccess || mongoose.model("NgoUserAccess", NgoUserAccessSchema, "ngo_user_access");
+      mongoose.models.NGO || mongoose.model("NGO", NGOSchema, "ngos");
+      mongoose.models.RefreshToken || mongoose.model("RefreshToken", RefreshTokenSchema, "refresh_tokens");
+      mongoose.models.NgoCounters || mongoose.model("NgoCounters", NGOCounterSchema, "ngo_counters");
+    
+      return conn; 
+    } catch (error) {
+      connPromise = null;
+      conn = null;
+      console.error("MongoDB connection error:", error);
+      throw new Error("Failed to connect to database");
+    }
+  })();
 
   return connPromise;
 };
