@@ -5,7 +5,7 @@ const { connectToMongoDB, getReadConnection } = require("../config/db");
 const { generateRefreshToken, hashToken } = require("../utils/token");
 const { isValidEmail } = require("../utils/validators");
 const { createErrorResponse, createSuccessResponse } = require("../utils/response");
-const { loadTranslations, getTranslation } = require("../helpers/i18n");
+const { loadTranslations, getTranslation } = require("../utils/i18n");
 const { corsHeaders } = require("../cors");
 const { tryParseJsonBody } = require("../utils/parseBody");
 
@@ -22,7 +22,7 @@ async function emailLogin(event, context) {
       }),
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
+        ...corsHeaders(event),
       },
     };
   }
@@ -33,7 +33,6 @@ async function emailLogin(event, context) {
    const UserRead = readConn.model("User");
    const NgoUserAccessRead = readConn.model("NgoUserAccess");
    const NGORead = readConn.model("NGO");
-   console.log("EVENT BODY", JSON.stringify(event.body));
 
    const lang =
      event.cookies?.language || body.lang?.toLowerCase() || "zh";
@@ -52,7 +51,7 @@ async function emailLogin(event, context) {
        }),
        headers: {
          "Content-Type": "application/json",
-         "Access-Control-Allow-Origin": "*",
+         ...corsHeaders(event),
        },
      };
    }
@@ -68,15 +67,13 @@ async function emailLogin(event, context) {
        }),
        headers: {
          "Content-Type": "application/json",
-         "Access-Control-Allow-Origin": "*",
+         ...corsHeaders(event),
        },
      };
    }
 
    // Find user (using read connection)
    const user = await UserRead.findOne({ email });
-   console.log("USER", user);
-
    if (!user || !(await bcrypt.compare(password, user.password))) {
      return {
        statusCode: 401,
@@ -87,7 +84,7 @@ async function emailLogin(event, context) {
        }),
        headers: {
          "Content-Type": "application/json",
-         "Access-Control-Allow-Origin": "*",
+         ...corsHeaders(event),
        },
      };
   }
@@ -103,7 +100,7 @@ async function emailLogin(event, context) {
        }),
        headers: {
          "Content-Type": "application/json",
-         "Access-Control-Allow-Origin": "*",
+         ...corsHeaders(event),
        },
      };
    }
@@ -120,7 +117,7 @@ async function emailLogin(event, context) {
    //     }),
    //     headers: {
    //       "Content-Type": "application/json",
-   //       "Access-Control-Allow-Origin": "*",
+   //       ...corsHeaders(event),
    //     },
    //   };
    // }
@@ -140,7 +137,6 @@ async function emailLogin(event, context) {
        userId: user._id,
        isActive: true,
      });
-     console.log("NGO USER ACCESS", ngoUserAccess);
 
      if (!ngoUserAccess) {
        return {
@@ -151,13 +147,12 @@ async function emailLogin(event, context) {
          }),
          headers: {
            "Content-Type": "application/json",
-           "Access-Control-Allow-Origin": "*",
+           ...corsHeaders(event),
          },
        };
      }
 
      const ngo = await NGORead.findOne({ _id: ngoUserAccess.ngoId });
-     console.log("NGO", ngo);
 
      if (!ngo) {
        return {
@@ -168,7 +163,7 @@ async function emailLogin(event, context) {
          }),
          headers: {
            "Content-Type": "application/json",
-           "Access-Control-Allow-Origin": "*",
+           ...corsHeaders(event),
          },
        };
      }
@@ -213,7 +208,7 @@ async function emailLogin(event, context) {
        }),
        headers: {
          "Set-Cookie": `refreshToken=${newRefreshToken}; HttpOnly; Secure; SameSite=Strict; Path=${cookiePath}; Max-Age=${14 * 24 * 60 * 60}`,
-         "Access-Control-Allow-Origin": "*",
+         ...corsHeaders(event),
          "Access-Control-Allow-Credentials": "true"
        },
      };
@@ -263,7 +258,7 @@ async function emailLogin(event, context) {
      }),
      headers: {
        "Set-Cookie": `refreshToken=${newRefreshToken}; HttpOnly; Secure; SameSite=Strict; Path=${cookiePath}; Max-Age=${14 * 24 * 60 * 60}`,
-       "Access-Control-Allow-Origin": "*",
+       ...corsHeaders(event),
        "Access-Control-Allow-Credentials": "true"
      },
    };
@@ -295,7 +290,6 @@ async function login2(event, context) {
    if (body.email) query.email = body.email;
    if (body.phone) query.phoneNumber = body.phone;
    const user = await UserRead.findOne(query);
-   console.log("USER: ", user);
    if (!user) {
      return {
        statusCode: 200,

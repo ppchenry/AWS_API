@@ -6,7 +6,8 @@ const {
   isValidDateFormat,
 } = require("../utils/validators");
 const { createErrorResponse } = require("../utils/response");
-const { loadTranslations, getTranslation } = require("../helpers/i18n");
+const { corsHeaders } = require("../cors");
+const { loadTranslations, getTranslation } = require("../utils/i18n");
 const { tryParseJsonBody } = require("../utils/parseBody");
 
 async function isGetUserDetails(event) {
@@ -38,7 +39,7 @@ async function isGetUserDetails(event) {
     }),
     headers: {
       "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
+      ...corsHeaders(event),
     },
   };
 }
@@ -85,7 +86,7 @@ async function isUpdateUserDetails(event) {
           error: getTranslation(t, "others.emailExists"),
           code: "EMAIL_EXISTS",
         }),
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        headers: { "Content-Type": "application/json", ...corsHeaders(event) },
       };
     }
   }
@@ -102,7 +103,7 @@ async function isUpdateUserDetails(event) {
           error: getTranslation(t, "others.phoneExists"),
           code: "PHONE_EXISTS",
         }),
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        headers: { "Content-Type": "application/json", ...corsHeaders(event) },
       };
     }
   }
@@ -138,7 +139,7 @@ async function isUpdateUserDetails(event) {
       message: getTranslation(t, "others.putUserSuccess"),
       user: updatedUser,
     }),
-    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    headers: { "Content-Type": "application/json", ...corsHeaders(event) },
   };
 }
 
@@ -173,7 +174,7 @@ async function isDeleteUser(event) {
     }),
     headers: {
       "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
+      ...corsHeaders(event),
     },
   };
 }

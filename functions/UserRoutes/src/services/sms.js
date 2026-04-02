@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const { connectToMongoDB, getReadConnection } = require("../config/db");
 const { generateRefreshToken, hashToken } = require("../utils/token");
 const { isValidPhoneNumber } = require("../utils/validators");
-const { loadTranslations, getTranslation } = require("../helpers/i18n");
+const { loadTranslations, getTranslation } = require("../utils/i18n");
 const { corsHeaders } = require("../cors");
 const { tryParseJsonBody } = require("../utils/parseBody");
 

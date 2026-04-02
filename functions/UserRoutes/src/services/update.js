@@ -3,7 +3,7 @@ const bcrypt = require("bcrypt");
 const { connectToMongoDB, getReadConnection } = require("../config/db");
 const { isValidObjectId, isValidImageUrl } = require("../utils/validators");
 const { createErrorResponse, createSuccessResponse } = require("../utils/response");
-const { loadTranslations, getTranslation } = require("../helpers/i18n");
+const { loadTranslations, getTranslation } = require("../utils/i18n");
 const { corsHeaders } = require("../cors");
 const { tryParseJsonBody } = require("../utils/parseBody");
 
@@ -49,7 +49,6 @@ async function updatePassword(event, context) {
 
 async function updateUserImage(event, context) {
   const readConn = await getReadConnection();
-  console.log("IS UPDATE USER IMAGE FUNCTION");
       const UserRead = readConn.model("User");
       try {
         const parsed = tryParseJsonBody(event);
@@ -123,7 +122,7 @@ async function updateUserImage(event, context) {
               getTranslation(t, "updateImage.success"),
             user: updatedUser,
           }),
-          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          headers: { "Content-Type": "application/json", ...corsHeaders(event) },
         };
       } catch (e) {
         console.error('Error:', e.message);

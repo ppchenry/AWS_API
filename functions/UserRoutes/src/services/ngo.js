@@ -1,9 +1,10 @@
 const mongoose = require("mongoose");
 const { getReadConnection } = require("../config/db");
-const { checkDuplicates } = require("../helpers/duplicateCheck");
-const { flattenToDot, pickAllowed, hasKeys } = require("../helpers/objectUtils");
+const { checkDuplicates } = require("../utils/duplicateCheck");
+const { flattenToDot, pickAllowed, hasKeys } = require("../utils/objectUtils");
 const { createErrorResponse } = require("../utils/response");
-const { loadTranslations } = require("../helpers/i18n");
+const { corsHeaders } = require("../cors");
+const { loadTranslations } = require("../utils/i18n");
 const { tryParseJsonBody } = require("../utils/parseBody");
 
 async function isGetUserListNgo(event) {
@@ -62,7 +63,7 @@ async function isGetUserListNgo(event) {
       statusCode: 200,
       headers: {
         "content-type": "application/json",
-        "access-control-allow-origin": "*",
+        ...corsHeaders(event),
       },
       body: JSON.stringify({
         userList,
@@ -117,7 +118,7 @@ async function isGetPetPlacementOptions(event) {
     }),
     headers: {
       "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
+      ...corsHeaders(event),
     },
   };
 }
@@ -146,7 +147,7 @@ async function isGetNgoDetails(event) {
     statusCode: 200,
     headers: {
       "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
+      ...corsHeaders(event),
     },
     body: JSON.stringify({
       userProfile: pick(0),
@@ -211,7 +212,7 @@ async function isEditNgo(event) {
         statusCode: 400,
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
+          ...corsHeaders(event),
         },
         body: JSON.stringify({ message: "Missing path parameter: ngoId" }),
       };
@@ -282,7 +283,7 @@ async function isEditNgo(event) {
           statusCode: 401,
           headers: {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
+            ...corsHeaders(event),
           },
           body: JSON.stringify({ message: "Missing user identity (userId)" }),
         };
@@ -339,7 +340,7 @@ async function isEditNgo(event) {
         statusCode: 200,
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
+          ...corsHeaders(event),
         },
         body: JSON.stringify({ message: "No valid fields provided to update." }),
       };
@@ -353,7 +354,7 @@ async function isEditNgo(event) {
       statusCode: 200,
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
+        ...corsHeaders(event),
       },
       body: JSON.stringify({
         message: "Updated successfully",
@@ -366,7 +367,7 @@ async function isEditNgo(event) {
       statusCode: 500,
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
+        ...corsHeaders(event),
       },
       body: JSON.stringify({
         message: "Internal Server Error",

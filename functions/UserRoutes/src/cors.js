@@ -4,8 +4,8 @@
  */
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  .split(",")
-  .map(o => o.trim());
+  ? process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim())
+  : [];
 
 /**
  * Builds CORS headers for the incoming request origin when it is allowed.
@@ -37,8 +37,6 @@ function corsHeaders(event) {
  * @returns {{statusCode: number, headers: Record<string, string>, body: string} | undefined} Preflight response for OPTIONS requests.
  */
 function handleOptions(event) {
-  console.log("Allowed Origins:", allowedOrigins);
-
   if (event.httpMethod === "OPTIONS") {
     return {
       statusCode: 204,

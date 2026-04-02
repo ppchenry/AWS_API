@@ -5,7 +5,7 @@ const { connectToMongoDB, getReadConnection } = require("../config/db");
 const { generateRefreshToken, hashToken } = require("../utils/token");
 const { isValidEmail, isValidPhoneNumber } = require("../utils/validators");
 const { createErrorResponse } = require("../utils/response");
-const { loadTranslations, getTranslation } = require("../helpers/i18n");
+const { loadTranslations, getTranslation } = require("../utils/i18n");
 const { corsHeaders } = require("../cors");
 const { tryParseJsonBody } = require("../utils/parseBody");
 
@@ -190,7 +190,6 @@ async function isPhoneRegister(event, context) {
 }
 
 async function isEmailRegister(event, context) {
-  console.log("IS EMAIL REGISTER");
 
   const readConn = await getReadConnection();
       const UserRead = readConn.model("User");
@@ -214,7 +213,6 @@ async function isEmailRegister(event, context) {
 
       // Check if all required fields are provided
       if (!firstName || !lastName || !email || !phoneNumber) {
-        console.log('error', body);
         return createErrorResponse(
           400,
           'phoneRegister.paramsMissing',
@@ -716,7 +714,6 @@ async function isRegisterNgo(event, context) {
      subscribe
    } = body;
 
-   console.log("BODY: ", body);
    // Check if all required fields are provided
    if (!firstName || !lastName || !email || !password || !phoneNumber || !ngoName || !businessRegistrationNumber || !ngoPrefix || !address || !confirmPassword) {
      return createErrorResponse(
@@ -872,10 +869,6 @@ async function isRegisterNgo(event, context) {
      ngoPrefix: ngoPrefix.toUpperCase()
    });
 
-
-   
-   console.log("NEW USER: ", newUser);
-   console.log("NEW NGO: ", newNgo);
 
    return {
      statusCode: 201,

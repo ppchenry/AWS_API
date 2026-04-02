@@ -12,10 +12,12 @@ const NGOCounterSchema = require("../models/NgoCounters.js");
 const RefreshTokenSchema = require("../models/RefreshToken.js");
 
 let conn = null;
+let connPromise = null;
 
 /**
  * Creates and caches the Mongoose connection for the current Lambda runtime.
  * On first connection it also registers all schemas used by this function.
+ * Caches the connection promise to prevent duplicate attempts during concurrent cold-start requests.
  *
  * @async
  * @returns {Promise<typeof mongoose>} The cached Mongoose connection instance.
@@ -24,20 +26,25 @@ const connectToMongoDB = async () => {
   if (!process.env.MONGODB_URI) {
     throw new Error("MONGODB_URI environment variable is required");
   }
-  if (conn == null) {
-    conn = await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000,
-      maxPoolSize: 1,
-    });
-    console.log("MongoDB connected to database: petpetclub");
+  if (mongoose.connection.readyState === 1) return conn;
+  if (connPromise) return connPromise;
+
+  connPromise = mongoose.connect(process.env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 5000,
+    maxPoolSize: 1,
+  }).then((connection) => {
+    conn = connection;
 
     mongoose.model("User", UserSchema, "users");
     mongoose.model("NgoUserAccess", NgoUserAccessSchema, "ngo_user_access");
     mongoose.model("NGO", NGOSchema, "ngos");
     mongoose.model("RefreshToken", RefreshTokenSchema, "refresh_tokens");
     mongoose.model("NgoCounters", NGOCounterSchema, "ngo_counters");
-  }
-  return conn;
+
+    return conn;
+  });
+
+  return connPromise;
 };
 
 /**

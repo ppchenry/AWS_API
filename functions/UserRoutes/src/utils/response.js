@@ -3,7 +3,7 @@
  */
 
 const { corsHeaders } = require("../cors");
-const { getTranslation } = require("../helpers/i18n");
+const { getTranslation } = require("./i18n");
 
 /**
  * Builds a standardized JSON error response with CORS headers.

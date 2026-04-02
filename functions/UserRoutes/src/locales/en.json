@@ -73,7 +73,8 @@
       "userNotFound": "User not found",
       "routeNotFound": "No handler for this path",
       "methodNotAllowed": "Method not allowed for this path",
-      "internalError": "Something went wrong. Please try again later."
+      "internalError": "Something went wrong. Please try again later.",
+      "unauthorized": "Authentication required. Please log in."
     },
     "deleteAccount": {
       "paramsMissing": "There are missing parameters",

@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Declarative router for UserRoutes Lambda.
+ * Flat route map following the same pattern as PetBasicInfo/src/router.js.
+ * Each key is `METHOD /path-suffix` — adding a new route is one line.
+ */
+
 const { emailLogin, login2 } = require("./services/login");
 const { isPhoneRegister, isEmailRegister, isRegisterNgo, isRegister, isEmailRegisterV2 } = require("./services/register");
 const { generateSmsCode, verifySmsCode } = require("./services/sms");
@@ -5,244 +11,57 @@ const { isGetUserListNgo, isEditNgo, isGetPetPlacementOptions, isGetNgoDetails }
 const { isGetUserDetails, isUpdateUserDetails, isDeleteUser } = require("./services/user");
 const { updatePassword, updateUserImage } = require("./services/update");
 const { createErrorResponse } = require("./utils/response");
-const { loadTranslations } = require("./helpers/i18n");
 
 /**
- * @param {import("aws-lambda").APIGatewayProxyEvent} event
- * @returns {string}
+ * @typedef {Object.<string, (routeContext: any) => Promise<any>>} RouteMap
+ * Maps normalised `METHOD /path-suffix` keys to handler functions.
  */
-function requestLang(event) {
-  let bodyLang;
-  try {
-    const body = event.body ? JSON.parse(event.body) : {};
-    bodyLang = body.lang?.toLowerCase();
-  } catch {
-    bodyLang = undefined;
-  }
-  return event.cookies?.language || bodyLang || "zh";
-}
 
-/**
- * login-2 is handled elsewhere in the monolithic handler; exclude it from plain /login.
- * @param {import("aws-lambda").APIGatewayProxyEvent} event
- */
-function isLogin2Route(event) {
-  const path = event.path || "";
-  const resource = event.resource || "";
-  return path.includes("/login-2") || resource.includes("/login-2");
-}
-
-function isEmailLoginRoute(event) {
-  if (isLogin2Route(event)) return false;
-  const path = event.path || "";
-  const resource = event.resource || "";
-  return path.includes("/login") || resource.includes("/login");
-}
-
-function isUpdatePasswordRoute(event) {
-  const path = event.path || "";
-  const resource = event.resource || "";
-  return path.includes("/update-password") || resource.includes("/update-password");
-}
-
-function isPhoneRegisterRoute(event) {
-  const path = event.path || "";
-  const resource = event.resource || "";
-  return (
-    path.includes("/register-by-phoneNumber") ||
-    resource.includes("/register-by-phoneNumber")
-  );
-}
-
-function isEmailRegisterRoute(event) {
-  const path = event.path || "";
-  const resource = event.resource || "";
-  return path.includes("/register-by-email") || resource.includes("/register-by-email");
-}
-
-function isRegisterNgoRoute(event) {
-  const path = event.path || "";
-  const resource = event.resource || "";
-  return path.includes("/register-ngo") || resource.includes("/register-ngo");
-}
-
-function isEmailRegisterV2Route(event) {
-  const path = event.path || "";
-  const resource = event.resource || "";
-  return (
-    path.includes("/register-email-2") ||
-    resource.includes("/register-email-2") ||
-    path.includes("/register-email-app") ||
-    resource.includes("/register-email-app")
-  );
-}
-
-/** Plain /register only (not phone/email/ngo/app variants — order in routeMatchers must stay after specific routes). */
-function isRegisterRoute(event) {
-  const path = event.path || "";
-  const resource = event.resource || "";
-  const s = `${path} ${resource}`;
-  if (!s.includes("/register")) return false;
-  if (s.includes("/register-by-phoneNumber")) return false;
-  if (s.includes("/register-by-email")) return false;
-  if (s.includes("/register-email-2") || s.includes("/register-email-app")) return false;
-  if (s.includes("/register-ngo")) return false;
-  return true;
-}
-
-function isGenerateSmsCodeRoute(event) {
-  const path = event.path || "";
-  const resource = event.resource || "";
-  return path.includes("/generate-sms-code") || resource.includes("/generate-sms-code");
-}
-
-function isVerifySmsCodeRoute(event) {
-  const path = event.path || "";
-  const resource = event.resource || "";
-  return path.includes("/verify-sms-code") || resource.includes("/verify-sms-code");
-}
-
-function isUpdateUserImageRoute(event) {
-  const path = event.path || "";
-  const resource = event.resource || "";
-  return path.includes("/update-image") || resource.includes("/update-image");
-}
-
-function isGetUserListNgoRoute(event) {
-  const path = event.path || "";
-  const resource = event.resource || "";
-  return path.includes("/user-list") || resource.includes("/user-list");
-}
-
-function isEditNgoRoute(event) {
-  const path = event.path || "";
-  const resource = event.resource || "";
-  return path.includes("/edit-ngo") || resource.includes("/edit-ngo");
-}
-
-function isGetPetPlacementOptionsRoute(event) {
-  const path = event.path || "";
-  const resource = event.resource || "";
-  return path.includes("/pet-placement-options") || resource.includes("/pet-placement-options");
-}
-
-function isUserRoute(event) {
-  const path = event.path || "";
-  const resource = event.resource || "";
-  return path.includes("/user") || resource.includes("/user");
-}
-
-/**
- * Maps logical route names → predicate(event). First matching key wins (insertion order).
- * @type {Record<string, (event: import("aws-lambda").APIGatewayProxyEvent) => boolean>}
- */
-const routeMatchers = {
-  login: isEmailLoginRoute,
-  login2: isLogin2Route,
-  updatePassword: isUpdatePasswordRoute,
-  phoneRegister: isPhoneRegisterRoute,
-  emailRegister: isEmailRegisterRoute,
-  registerNgo: isRegisterNgoRoute,
-  emailRegisterV2: isEmailRegisterV2Route,
-  generateSmsCode: isGenerateSmsCodeRoute,
-  verifySmsCode: isVerifySmsCodeRoute,
-  updateUserImage: isUpdateUserImageRoute,
-  getUserListNgo: isGetUserListNgoRoute,
-  editNgo: isEditNgoRoute,
-  getPetPlacementOptions: isGetPetPlacementOptionsRoute,
-  user: isUserRoute,
-  register: isRegisterRoute,
+/** @type {RouteMap} */
+const routes = {
+  'POST /login-2':                    login2,
+  'POST /login':                      emailLogin,
+  'PUT  /update-password':            updatePassword,
+  'POST /register-by-phoneNumber':    isPhoneRegister,
+  'POST /register-by-email':          isEmailRegister,
+  'POST /register-ngo':               isRegisterNgo,
+  'POST /register-email-2':           isEmailRegisterV2,
+  'POST /register-email-app':         isEmailRegisterV2,
+  'POST /register':                   isRegister,
+  'POST /generate-sms-code':          generateSmsCode,
+  'POST /verify-sms-code':            verifySmsCode,
+  'POST /update-image':               updateUserImage,
+  'GET  /user-list':                  isGetUserListNgo,
+  'PUT  /edit-ngo':                   isEditNgo,
+  'GET  /edit-ngo':                   isGetNgoDetails,
+  'GET  /pet-placement-options':      isGetPetPlacementOptions,
+  'GET  /user':                       isGetUserDetails,
+  'PUT  /user':                       isUpdateUserDetails,
+  'DELETE /user':                     isDeleteUser,
 };
 
 /**
- * Maps route name → HTTP method → handler.
- * @type {Record<string, Partial<Record<string, (event: any, context: any) => Promise<any>>>>}
+ * Resolves the current request to a route handler based on the normalised
+ * route key (`METHOD /suffix`). Returns a 404 when no route matches, or
+ * a 405 when the path exists but the method is not allowed.
+ *
+ * @param {{
+ *   event: import("aws-lambda").APIGatewayProxyEvent,
+ *   httpMethod: string,
+ *   resource: string,
+ *   translations: Record<string, any>,
+ * }} routeContext
+ * @returns {Promise<import("aws-lambda").APIGatewayProxyResult>}
  */
-const routeHandlers = {
-  login: {
-    POST: emailLogin,
-  },
-  login2: {
-    POST: login2,
-  },
-  updatePassword: {
-    PUT: updatePassword,
-  },
-  phoneRegister: {
-    POST: isPhoneRegister,
-  },
-  emailRegister: {
-    POST: isEmailRegister,
-  },
-  registerNgo: {
-    POST: isRegisterNgo,
-  },
-  register: {
-    POST: isRegister,
-  },
-  emailRegisterV2: {
-    POST: isEmailRegisterV2,
-  },
-  generateSmsCode: {
-    POST: generateSmsCode,
-  },
-  verifySmsCode: {
-    POST: verifySmsCode,
-  },
-  updateUserImage: {
-    POST: updateUserImage,
-  },
-  getUserListNgo: {
-    GET: isGetUserListNgo,
-  },
-  editNgo: {
-    PUT: isEditNgo,
-    GET: isGetNgoDetails,
-  },
-  getPetPlacementOptions: {
-    GET: isGetPetPlacementOptions,
-  },
-  user: {
-    GET: isGetUserDetails,
-    PUT: isUpdateUserDetails,
-    DELETE: isDeleteUser,
-  },
-};
+async function routeRequest(routeContext) {
+  const { event, httpMethod, resource, translations } = routeContext;
+  const routeKey = `${httpMethod} ${resource}`;
+  const handler = routes[routeKey];
 
-/**
- * @param {import("aws-lambda").APIGatewayProxyEvent} event
- * @returns {string | null}
- */
-function resolveRouteKey(event) {
-  const key = Object.keys(routeMatchers).find((name) => routeMatchers[name](event));
-  return key ?? null;
-}
-
-/**
- * @param {import("aws-lambda").APIGatewayProxyEvent} event
- * @param {import("aws-lambda").Context} context
- */
-async function router(event, context) {
-  const lang = requestLang(event);
-  const t = loadTranslations(lang);
-  const method = (event.httpMethod || "GET").toUpperCase();
-
-  const routeKey = resolveRouteKey(event);
-  if (!routeKey) {
-    return createErrorResponse(404, "others.routeNotFound", t, event);
-  }
-
-  const handler = routeHandlers[routeKey]?.[method];
   if (!handler) {
-    return createErrorResponse(405, "others.methodNotAllowed", t, event);
+    return createErrorResponse(405, "others.methodNotAllowed", translations, event);
   }
-
-  try {
-    return await handler(event, context);
-  } catch (err) {
-    console.error("router handler error:", err);
-    return createErrorResponse(500, "others.internalError", t, event);
-  }
+  return handler(event, routeContext);
 }
 
-module.exports = { router };
+module.exports = { routeRequest };
