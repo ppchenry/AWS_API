@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31 
+
+Resources:
+  PetBasicInfoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 60
+      MemorySize: 512
+      CodeUri: functions/PetBasicInfo/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Events:
+        ApiBase:
+          Type: Api
+          Properties:
+            Path: /pet/{petID}
+            Method: ANY
+        ApiProxy:
+          Type: Api
+          Properties:
+            Path: /pet/{petID}/{proxy+}
+            Method: ANY
+      Environment:
+        Variables:
+          JWT_SECRET: "" 
+          JWT_BYPASS: ""
+          MONGODB_URI: ""
+          ALLOWED_ORIGINS: ""
+          NODE_ENV: "development"

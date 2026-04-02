@@ -36,8 +36,8 @@ const connectToMongoDB = async () => {
       });
       console.log("MongoDB primary connected to database: petpetclub");
 
-      mongoose.model("Pet", PetSchema);
-      mongoose.model("EyeAnalysisRecord", eyeAnalysisLogSchema, "eye_analysis_log");
+      mongoose.models.Pet || mongoose.model("Pet", PetSchema);
+      mongoose.models.EyeAnalysisRecord || mongoose.model("EyeAnalysisRecord", eyeAnalysisLogSchema, "eye_analysis_log");
       return conn;
     } catch (error) {
       connPromise = null;

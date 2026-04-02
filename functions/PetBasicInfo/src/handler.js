@@ -5,6 +5,7 @@ const { createErrorResponse } = require('./utils/response');
 const { routeRequest } = require('./router');
 const { handleOptions } = require('./cors');
 const { authJWT } = require('./middleware/authJWT');
+const { normalizeResource } = require('./utils/normalizeResource');
 
 /**
  * Orchestrates the lifecycle of a single Lambda invocation.
@@ -42,13 +43,16 @@ async function handleRequest(event, context) {
     const petValidation = await validatePetRequest(request);
     if (!petValidation.isValid) return petValidation.error;
 
+    const petID = request.petID;
+    const resource = normalizeResource(event.path, event.resource, petID);
+
     return await routeRequest({
       event,
-      petID: request.petID,
+      petID,
       lang: request.lang,
       translations: request.translations,
       httpMethod: event.httpMethod,
-      resource: event.resource,
+      resource,
       path: event.path,
       pet: petValidation.data,
       body: petValidation.body,

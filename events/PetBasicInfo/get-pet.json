@@ -1,0 +1,19 @@
+{
+  "httpMethod": "GET",
+  "resource": "/basic-info",
+  "path": "/pets/692293931cab4eb4c7070d92/basic-info",
+  "pathParameters": {
+    "petID": "692293931cab4eb4c7070d92"
+  },
+  "headers": {
+    "Authorization": "Bearer mock-token",
+    "origin": "http://localhost:3000"
+  },
+  "queryStringParameters": {
+    "lang": "en"
+  },
+  "requestContext": {
+    "resourcePath": "/pets/{petID}/basic-info",
+    "httpMethod": "GET"
+  }
+}
