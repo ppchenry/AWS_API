@@ -23,7 +23,7 @@ let connPromise = null;
  * @returns {Promise<typeof mongoose>} The cached Mongoose connection instance.
  */
 const connectToMongoDB = async () => {
-  if (mongoose.connection.readyState === 1) return conn;
+  if (conn && mongoose.connection.readyState === 1) return conn;
   if (connPromise) return connPromise;
 
   connPromise = (async () => {

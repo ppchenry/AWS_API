@@ -1,114 +1,77 @@
 /**
- * @fileoverview JWT authentication middleware for the PetBasicInfo Lambda.
- * Provides helpers to verify Bearer tokens from the Authorization header
- * and to gate Lambda routes behind authentication.
+ * @fileoverview Standardized JWT Authentication Middleware.
+ * Provides consistent token verification and identity mapping across all Lambdas.
  */
 const jwt = require("jsonwebtoken");
 const { createErrorResponse } = require("../utils/response");
 
 /**
- * Verifies the JWT Bearer token attached to an incoming Lambda event.
- *
- * When the `JWT_BYPASS` environment variable is `"true"` a hard-coded
- * developer payload is returned instead of performing real verification.
- *
- * @param {import("aws-lambda").APIGatewayProxyEvent | Record<string, any>} event The Lambda event whose `Authorization` header will be inspected.
- * @returns {{userId: string, email: string, role: string, [key: string]: any} | null} The decoded JWT payload when the token is valid, or `null` when the token is missing, malformed, or expired.
- * @throws {Error} Re-throws unexpected errors that are not standard JWT verification failures.
+ * Verifies the JWT and attaches the identity to the event.
+ * * @param {import("aws-lambda").APIGatewayProxyEvent} event
+ * @param {Object} translations - Loaded i18n object
+ * @returns {import("aws-lambda").APIGatewayProxyResult | null} 401 error or null to continue
  */
-function verifyJWT(event) {
-  try {
-    // ✅ DEV BYPASS — only in non-production environments
-    if (process.env.JWT_BYPASS === "true" && process.env.NODE_ENV !== "production") {
-      console.log("⚠️ JWT BYPASS ENABLED (non-production)");
+function authJWT({ event, translations }) {
+  // 1. Skip for OPTIONS (CORS preflight)
+  if (event.httpMethod === "OPTIONS") return null;
 
-      return {
+  try {
+    // 2. DEV BYPASS — only in non-production
+    if (process.env.JWT_BYPASS === "true" && process.env.NODE_ENV !== "production") {
+      console.log("⚠️ JWT BYPASS ENABLED");
+      const devUser = {
         userId: "dev-user-id",
         email: "dev@test.com",
         role: "developer",
       };
-    }
-    // Extract Authorization header
-    const authHeader =
-      event.headers?.Authorization || event.headers?.authorization;
-
-    if (!authHeader) {
+      _attachUserToEvent(event, devUser);
       return null;
     }
 
-    // Check if it starts with "Bearer "
-    if (!authHeader.startsWith("Bearer ")) {
-      return null;
+    // 3. Extract Header
+    const authHeader = event.headers?.Authorization || event.headers?.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return createErrorResponse(401, "others.unauthorized", translations, event);
     }
 
-    // Extract token
+    // 4. Verify Token
     const token = authHeader.split(" ")[1];
-    if (!token) {
-      return null;
-    }
-
-    // Verify token using JWT_SECRET (HS256 algorithm)
     const jwtSecret = process.env.JWT_SECRET;
+
     if (!jwtSecret) {
-      console.error("JWT_SECRET environment variable is not set");
-      throw new Error("JWT_SECRET not configured");
+      console.error("CRITICAL: JWT_SECRET not configured");
+      return createErrorResponse(500, "others.internalError", translations, event);
     }
 
     const decoded = jwt.verify(token, jwtSecret);
 
-    // Return decoded token payload (contains userId, userEmail, userRole, etc.)
-    return decoded;
+    // 5. Attach user info to event for downstream use (Guards/Services)
+    _attachUserToEvent(event, decoded);
+
+    return null; // Success
   } catch (error) {
     console.error("JWT verification error:", error.message);
-
-    // Return null for invalid/expired tokens (don't throw, let handler decide)
-    if (
-      error.name === "JsonWebTokenError" ||
-      error.name === "TokenExpiredError"
-    ) {
-      return null;
-    }
-
-    // Re-throw unexpected errors
-    throw error;
+    // Explicitly handle expired tokens if you want a different key, 
+    // otherwise default to unauthorized.
+    return createErrorResponse(401, "others.unauthorized", translations, event);
   }
 }
 
 /**
- * Middleware that gates a Lambda route behind JWT authentication.
- *
- * Skips verification for OPTIONS (CORS preflight) requests.
- * When the token is valid the decoded user fields are attached directly
- * to the `event` object (`event.user`, `event.userId`, `event.userEmail`,
- * `event.userRole`) and `null` is returned so the caller can continue.
- *
- * @param {import("aws-lambda").APIGatewayProxyEvent | Record<string, any>} event The Lambda event to authenticate. Mutated in-place on success.
- * @returns {{statusCode: number, headers: Record<string, string>, body: string} | null} A 401 error response when authentication fails, or `null` when the request is authenticated and the caller may proceed.
+ * Internal helper to map JWT payload fields to standard event properties.
+ * Maps both standard 'sub' and custom 'userId' keys for flexibility.
+ * * @private
  */
-function authJWT(event) {
-  // Skip authentication for OPTIONS requests (CORS preflight)
-  if (event.httpMethod === "OPTIONS") {
-    return null;
-  }
-
-  const user = verifyJWT(event);
-
-  if (!user) {
-    return createErrorResponse(
-      401,
-      "Authentication required. Please provide a valid Authorization header with Bearer token.",
-      null,
-      event
-    );
-  }
-
-  // Attach user info to event for use in handler
-  event.user = user;
-  event.userId = user.userId || user.sub;
-  event.userEmail = user.userEmail || user.email;
-  event.userRole = user.userRole || user.role;
-
-  return null; // Authentication successful, continue processing
+function _attachUserToEvent(event, payload) {
+  event.user = payload;
+  event.userId = payload.userId || payload.sub;
+  event.userEmail = payload.userEmail || payload.email;
+  event.userRole = payload.userRole || payload.role;
+  
+  // Also attach to requestContext to mimic AWS Authorizer behavior
+  event.requestContext = event.requestContext || {};
+  event.requestContext.authorizer = payload;
 }
 
-module.exports = { authJWT, verifyJWT };
+module.exports = { authJWT };

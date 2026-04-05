@@ -3,19 +3,29 @@ const { isValidObjectId } = mongoose;
 const { createErrorResponse } = require('../utils/response');
 
 /**
- * Validates the request body, pet ID, and pet existence before any service logic runs.
- * Returns a standardized error response payload when the body is not valid JSON,
- * the pet ID is invalid, or the pet cannot be found or has been soft-deleted.
- *
- * @param {{event: import("aws-lambda").APIGatewayProxyEvent | Record<string, any>, body?: string | null, petID?: string, translations: Record<string, any>}} request Prepared request data containing the raw body, pet ID, translation map, and original event.
- * @returns {Promise<
- *   | { isValid: true, body: Record<string, any> | null, data: any } // body: parsed JSON object if present, or null if no body
- *   | { isValid: false, error: { statusCode: number, headers: Record<string, string>, body: string } }
- * >} Validation result containing either the parsed body (object or null) and pet document, or an error response.
+ * @typedef {Object} ValidationSuccess
+ * @property {true} isValid
+ * @property {Object|null} body - The parsed JSON body.
+ * @property {Object} data - The Mongoose pet document.
+ * * @typedef {Object} ValidationError
+ * @property {false} isValid
+ * @property {import('aws-lambda').APIGatewayProxyResult} error - Standardized error response.
  */
-const validatePetRequest = async (request) => {
-  const { event, body, petID, translations } = request;
 
+/**
+ * Validates request body, pet ID format, and existence in database.
+ * * @async
+ * @param {Object} request
+ * @param {import('aws-lambda').APIGatewayProxyEvent} request.event
+ * @param {Object} request.translations
+ * @returns {Promise<ValidationSuccess | ValidationError>}
+ */
+async function validatePetRequest({ event, translations }) {
+  const { body, pathParameters, httpMethod } = event;
+  const petID = pathParameters?.petID;
+  const method = httpMethod?.toUpperCase();
+
+  // Parse Body
   let parsedBody = null;
   if (typeof body === 'string' && body.trim().length > 0) {
     try {
@@ -23,52 +33,38 @@ const validatePetRequest = async (request) => {
     } catch (error) {
       return {
         isValid: false,
-        error: createErrorResponse(
-          400,
-          "petBasicInfo.errors.invalidJSON",
-          translations,
-          event
-        )
+        error: createErrorResponse(400, "petBasicInfo.errors.invalidJSON", translations, event)
       };
     }
   }
 
-  const method = event?.httpMethod?.toUpperCase();
+  // Ensure Body is present for mutations
   if ((method === 'PUT' || method === 'POST') && (!parsedBody || Object.keys(parsedBody).length === 0)) {
     return {
       isValid: false,
-      error: createErrorResponse(
-        400,
-        "petBasicInfo.errors.emptyUpdateBody",
-        translations,
-        event
-      )
+      error: createErrorResponse(400, "petBasicInfo.errors.emptyUpdateBody", translations, event)
     };
   }
 
+  // Validate ID Format
   if (!petID || !isValidObjectId(petID)) {
     return { 
       isValid: false, 
-      error: createErrorResponse(
-        400, 
-        "petBasicInfo.errors.invalidPetIdFormat", 
-        translations, 
-        event
-      ) 
+      error: createErrorResponse(400, "petBasicInfo.errors.invalidPetIdFormat", translations, event) 
     };
   }
 
+  // Fetch from DB
   const Pet = mongoose.model("Pet");
   const pet = await Pet.findById(petID).lean();
 
+  // Check existence and soft-delete status
   if (!pet || pet.deleted) {
     return { 
       isValid: false, 
       error: createErrorResponse(
         pet?.deleted ? 410 : 404,
-        pet?.deleted
-          ? "petBasicInfo.errors.petDeleted"
-          : "petBasicInfo.errors.petNotFound",
+        pet?.deleted ? "petBasicInfo.errors.petDeleted" : "petBasicInfo.errors.petNotFound",
         translations, 
         event
       ) 

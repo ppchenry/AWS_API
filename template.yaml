@@ -14,12 +14,12 @@ Resources:
         ApiBase:
           Type: Api
           Properties:
-            Path: /pet/{petID}
+            Path: /pets/{petID}
             Method: ANY
         ApiProxy:
           Type: Api
           Properties:
-            Path: /pet/{petID}/{proxy+}
+            Path: /pets/{petID}/{proxy+}
             Method: ANY
       Environment:
         Variables:
