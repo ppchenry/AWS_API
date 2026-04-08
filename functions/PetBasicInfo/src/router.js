@@ -17,8 +17,8 @@ const { createErrorResponse } = require("./utils/response");
 const routes = {
   "GET /pets/{petID}/basic-info": getPetBasicInfo,
   "PUT /pets/{petID}/basic-info": updatePetBasicInfo,
-  "GET /pets/{petID}/eyeLog":      getPetEyeAnalysisLogs,
-  "DELETE /pets/{petID}":          deletePetBasicInfo,
+  "GET /pets/{petID}/eyeLog":     getPetEyeAnalysisLogs,
+  "DELETE /pets/{petID}":         deletePetBasicInfo,
 };
 
 /**

@@ -121,54 +121,46 @@ exports.handler = async (event, context) => {
 
     if (isngoPath) {
       const ngoId = event.pathParameters?.ngoId;
-      console.log("ngoId:", ngoId);
-      const lang =
-      event.cookies?.language || "zh";
+      // Get page from query string, default to 1, ensure it's a number
+      const pageNumber = Math.max(1, parseInt(event.queryStringParameters?.page || 1, 10));
+      const limitNumber = 30; // Increased to 30 per page
+      
+      const lang = event.cookies?.language || "zh";
       const t = loadTranslations(lang);
 
       if (!ngoId) {
-        return createErrorResponse(
-          400,
-          "ngoPath.missingNgoId",
-          t,
-          event
-        );
+        return createErrorResponse(400, "ngoPath.missingNgoId", t, event);
       }
 
-      // // Validate ngoId format if it should be ObjectId
-      // if (!isValidObjectId(ngoId)) {
-      //   return createErrorResponse(
-      //     400,
-      //     "ngoPath.invalidNgoIdFormat",
-      //     t,
-      //     event
-      //   );
-      // }
-
-      // Get the Pet model from read connection
       const Pet = readConn.model("Pet");
 
-      // Find all pets for the given ngoId (using read connection)
-      const pets = await Pet.find({ ngoId });
+      // 1. Fetch Paginated Results
+      // .lean() is critical here to handle 30 docs without hitting memory limits
+      const pets = await Pet.find({ ngoId, deleted: false })
+        .sort({ updatedAt: -1 })
+        .skip((pageNumber - 1) * limitNumber)
+        .limit(limitNumber)
+        .lean(); 
+
+      // 2. Fetch Total Count
+      const totalNumber = await Pet.countDocuments({ ngoId, deleted: false });
 
       if (!pets || pets.length === 0) {
-        return createErrorResponse(
-          404,
-          "ngoPath.noPetsFound",
-          t,
-          event
-        );
+        return createErrorResponse(404, "ngoPath.noPetsFound", t, event);
       } else {
         return {
           statusCode: 200,
-          body: JSON.stringify({
-            message: getTranslation(t, "ngoPath.success"),
-            pets,
-          }),
           headers: {
             "Content-Type": "application/json",
             ...corsHeaders(event)
           },
+          body: JSON.stringify({
+            message: getTranslation(t, "ngoPath.success"),
+            pets,
+            total: totalNumber,
+            currentPage: pageNumber,
+            perPage: limitNumber
+          }),
         };
       }
     }

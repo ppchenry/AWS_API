@@ -1,143 +1,82 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
-const { connectToMongoDB, getReadConnection } = require("../config/db");
-const { isValidObjectId, isValidImageUrl } = require("../utils/validators");
 const { createErrorResponse, createSuccessResponse } = require("../utils/response");
-const { loadTranslations, getTranslation } = require("../utils/i18n");
-const { corsHeaders } = require("../cors");
-const { tryParseJsonBody } = require("../utils/parseBody");
+const { userUpdatePasswordSchema, userUpdateImageSchema } = require("../zodSchema/userUpdateSchema");
 
-async function updatePassword(event, context) {
-  const parsed = tryParseJsonBody(event);
-  if (!parsed.ok) {
-    const lang = event.cookies?.language || "zh";
-    const t = loadTranslations(lang);
-    return createErrorResponse(400, "others.invalidJSON", t, event);
-  }
-  const body = parsed.body;
+async function updatePassword({ event, translations, body }) {
+  try {
+    const User = mongoose.model("User");
+    
+    // 1. Validation
+    const parseResult = userUpdatePasswordSchema.safeParse(body);
+    if (!parseResult.success) {
+      return createErrorResponse(400, parseResult.error.errors[0].message, translations, event);
+    }
 
-  const readConn = await getReadConnection();
-  const User = readConn.model("User");
-  const lang = event.cookies?.language || body.lang?.toLowerCase() || "zh";
-  const t = loadTranslations(lang);
-  const { userId, oldPassword, newPassword } = body;
-  if (!userId || !isValidObjectId(userId) || !oldPassword || !newPassword) {
-    return createErrorResponse(400, "updatePassword.paramsMissing", t, event);
+    const { userId, oldPassword, newPassword } = parseResult.data;
+
+    // 2. Logic: Check if passwords are the same BEFORE hitting the DB
+    if (oldPassword === newPassword) {
+      return createErrorResponse(400, "updatePassword.passwordUnchanged", translations, event);
+    }
+
+    // 3. Database Retrieval
+    const user = await User.findOne({ _id: userId, deleted: false });
+    if (!user) {
+      return createErrorResponse(404, "updatePassword.userNotFound", translations, event);
+    }
+
+    // 4. Password Verification
+    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    if (!isPasswordValid) {
+      return createErrorResponse(400, "updatePassword.currentPasswordInvalid", translations, event);
+    }
+
+    // 5. Hashing & Saving (Using the .env SALT_ROUNDS)
+    const saltRounds = parseInt(process.env.SALT_ROUNDS, 10) || 10;
+    user.password = await bcrypt.hash(newPassword, saltRounds);
+    await user.save();
+
+    return createSuccessResponse(200, event, {
+      message: translations?.["updatePassword.success"] || "Password updated successfully",
+    });
+
+  } catch (e) {
+    // This catches DB connection errors, hashing failures, etc.
+    console.error("Update Password Error:", e);
+    return createErrorResponse(500, e.message, translations, event);
   }
-  if (newPassword.length < 8) {
-    return createErrorResponse(400, "updatePassword.passwordLong", t, event);
-  }
-  const user = await User.findOne({ _id: userId });
-  if (!user) {
-    return createErrorResponse(400, "updatePassword.userNotFound", t, event);
-  }
-  const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
-  if (!isPasswordValid) {
-    return createErrorResponse(400, "updatePassword.currentPasswordInvalid", t, event);
-  }
-  if (oldPassword === newPassword) {
-    return createErrorResponse(400, "updatePassword.passwordUnchanged", t, event);
-  }
-  const saltRounds = 10;
-  const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-  user.password = hashedPassword;
-  await user.save();
-  return createSuccessResponse(200, event, {
-    message: getTranslation(t, "updatePassword.success"),
-  });
 }
 
-async function updateUserImage(event, context) {
-  const readConn = await getReadConnection();
-      const UserRead = readConn.model("User");
-      try {
-        const parsed = tryParseJsonBody(event);
-        if (!parsed.ok) {
-          const lang = event.cookies?.language || "zh";
-          const t = loadTranslations(lang);
-          return createErrorResponse(400, "others.invalidJSON", t, event);
-        }
-        const form = parsed.body;
-        const lang =
-          event.cookies?.language || form.lang?.toLowerCase() || "zh";
-        const t = loadTranslations(lang);
+async function updateUserImage({ event, translations, body }) {
+  try {
+    const User = mongoose.model("User");
 
-        if (!form.userId || !form.image) {
-          return createErrorResponse(
-            400,
-            "others.missingParams",
-            t,
-            event
-          );
-        }
-
-        // Validate user ID format
-        if (!isValidObjectId(form.userId)) {
-          return createErrorResponse(
-            400,
-            "updateImage.invalidUserId",
-            t,
-            event
-          );
-        }
-
-        // Validate image URL format
-        if (!isValidImageUrl(form.image)) {
-          return createErrorResponse(
-            400,
-            "updateImage.invalidImageUrl",
-            t,
-            event
-          );
-        }
-
-        // Check if user exists (using read connection)
-        const userExists = await UserRead.findOne({ _id: form.userId });
-        if (!userExists) {
-          return createErrorResponse(
-            404,
-            "updateImage.userNotFound",
-            t,
-            event
-          );
-        }
-
-
-        // Connect to primary database for writes
-        await connectToMongoDB();
-        const UserModel = mongoose.model("User");
-        
-        const updatedUser = await UserModel.findOneAndUpdate({ _id: form.userId },
-          {
-            image: form.image
-          },
-          { new: true }
-        );
-
-        return {
-          statusCode: 200,
-          body: JSON.stringify({
-            success: true,
-            message:
-              getTranslation(t, "updateImage.success"),
-            user: updatedUser,
-          }),
-          headers: { "Content-Type": "application/json", ...corsHeaders(event) },
-        };
-      } catch (e) {
-        console.error('Error:', e.message);
-        return {
-          statusCode: 500,
-          headers: {
-            'Content-Type': 'application/json',
-            ...corsHeaders(event),
-          },
-          body: JSON.stringify({
-            success: false,
-            error: e.message
-          }),
-        };
-      }
+    const parseResult = userUpdateImageSchema.safeParse(body);
+    if (!parseResult.success) {
+      const zodError = parseResult.error.errors[0];
+      return createErrorResponse(400, zodError.message, translations, event);
+    }
+    const { userId, image } = parseResult.data;
+    // Check if user exists
+    const userExists = await User.findOne({ _id: userId, deleted: false });
+    if (!userExists) {
+      return createErrorResponse(404, "updateImage.userNotFound", translations, event);
+    }
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: userId, deleted: false },
+      { image },
+      { new: true }
+    );
+    return createSuccessResponse(200, event, {
+      success: true,
+      message: translations ? translations["updateImage.success"] : "Image updated successfully",
+      user: updatedUser,
+    });
+  } catch (e) {
+    console.error("Error:", e.message);
+    return createErrorResponse(500, e.message, translations, event);
+  }
 }
 
 module.exports = { updatePassword, updateUserImage };  

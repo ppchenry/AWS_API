@@ -57,18 +57,13 @@ async function validateUserRequest({ event, translations }) {
 
   // Database Fetch
   const User = mongoose.model("User");
-  const user = await User.findById(userId).lean();
+  const user = await User.findOne({ _id: userId, deleted: false }).lean();
 
-  // Existence & Deletion Check (Matching your 'others' keys)
-  if (!user || user.deleted) {
+  // Existence Check (Matching your 'others' keys)
+  if (!user) {
     return { 
       isValid: false, 
-      error: createErrorResponse(
-        user?.deleted ? 410 : 404,
-        user?.deleted ? "others.userDeleted" : "others.getUserNotFound",
-        translations, 
-        event
-      ) 
+      error: createErrorResponse(404, "others.getUserNotFound", translations, event)
     };
   }
 

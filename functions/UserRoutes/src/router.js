@@ -1,7 +1,7 @@
-const { emailLogin, login2 } = require("./services/login");
-const { isPhoneRegister, isEmailRegister, isRegisterNgo, isRegister, isEmailRegisterV2 } = require("./services/register");
+const { emailLogin, checkUserExists } = require("./services/login");
+const { registerNgo, register } = require("./services/register");
 const { generateSmsCode, verifySmsCode } = require("./services/sms");
-const { isGetUserListNgo, isEditNgo, isGetPetPlacementOptions, isGetNgoDetails } = require("./services/ngo");
+const { getNgoUserList, editNgo, getNgoPetPlacementOptions, getNgoDetails } = require("./services/ngo");
 const { isGetUserDetails, isUpdateUserDetails, isDeleteUser } = require("./services/user");
 const { updatePassword, updateUserImage } = require("./services/update");
 const { createErrorResponse } = require("./utils/response");
@@ -22,17 +22,17 @@ const routes = {
   'DELETE /account/{userId}': isDeleteUser,
 
   'POST /account/login': emailLogin,
-  'POST /account/login-2': login2,
+  'POST /account/login-2': checkUserExists,
   'POST /account/generate-sms-code': generateSmsCode,
   'POST /account/verify-sms-code': verifySmsCode,
   'POST /account/generate-email-code': null,
   'POST /account/generate-email-code-2': null,
   'POST /account/verify-email-code': null,
 
-  'POST /account/register': isRegister,
-  'POST /account/register-by-email': isEmailRegister,
-  'POST /account/register-by-phoneNumber': isPhoneRegister,
-  'POST /account/register-email-2': isEmailRegisterV2,
+  'POST /account/register': register,
+  'POST /account/register-by-email': null,
+  'POST /account/register-by-phoneNumber': null,
+  'POST /account/register-email-2': null,
 
   'PUT /account/update-password': updatePassword,
   'POST /account/update-image': updateUserImage,
@@ -40,12 +40,12 @@ const routes = {
 
   // --- Missing from Console (Standardized with /account prefix) ---
   // These likely won't trigger unless added to AWS, but kept for logic safety
-  'POST /account/register-ngo': isRegisterNgo,
-  'POST /account/register-email-app': isEmailRegisterV2,
-  'GET /account/user-list': isGetUserListNgo,
-  'PUT /account/edit-ngo': isEditNgo,
-  'GET /account/edit-ngo': isGetNgoDetails,
-  'GET /account/pet-placement-options': isGetPetPlacementOptions,
+  'POST /account/register-ngo': registerNgo,
+  'POST /account/register-email-app': registerByEmailV2,
+  'GET /account/user-list': getNgoUserList,
+  'PUT /account/edit-ngo': editNgo,
+  'GET /account/edit-ngo': getNgoDetails,
+  'GET /account/pet-placement-options': getNgoPetPlacementOptions,
 };
 
 /**

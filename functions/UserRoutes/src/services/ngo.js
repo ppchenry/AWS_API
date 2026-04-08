@@ -1,301 +1,264 @@
 const mongoose = require("mongoose");
-const { getReadConnection } = require("../config/db");
-const { checkDuplicates } = require("../utils/duplicateCheck");
 const { flattenToDot, pickAllowed, hasKeys } = require("../utils/objectUtils");
-const { createErrorResponse } = require("../utils/response");
-const { corsHeaders } = require("../cors");
-const { loadTranslations } = require("../utils/i18n");
-const { tryParseJsonBody } = require("../utils/parseBody");
+const { createErrorResponse, createSuccessResponse } = require("../utils/response");
+const { editNgoBodySchema } = require("../zodSchema/editNgoSchema");
 
-async function isGetUserListNgo(event) {
-  const readConn = await getReadConnection();
-  const User = readConn.model("User");
-  const NgoCounters = readConn.model("NgoCounters");
-  const Ngo = readConn.model("NGO");
-  const NgoUserAccess = readConn.model("NgoUserAccess");
+async function getNgoUserList({ event }) {
+  const NgoUserAccess = mongoose.model("NgoUserAccess");
   const qs = event.queryStringParameters || {};
 
   try {
-    const search = (qs.search || "").trim();
-    const pageNum = parseInt(qs.page || "1", 10);
-    const page = Number.isFinite(pageNum) && pageNum > 0 ? pageNum : 1;
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const searchRaw = (qs.search || "").trim();
+    const search = escapeRegex(searchRaw);
+    const page = Math.max(parseInt(qs.page || "1", 10), 1);
     const limit = 50;
     const skip = (page - 1) * limit;
-    const sort = { createdAt: -1 };
-    const data = await NgoUserAccess.find({}).sort(sort).skip(skip).limit(limit).lean();
 
-    const userList = [];
-    for (let i = 0; i < data.length; i++) {
-      const user = await User.findOne({ _id: data[i].userId });
-      const ngo = await Ngo.findOne({ _id: data[i].ngoId });
-      if (!user || !ngo) continue;
-      if (
-        search &&
-        !(
-          (user.firstName && user.firstName.includes(search)) ||
-          (user.lastName && user.lastName.includes(search)) ||
-          (ngo.registrationNumber && ngo.registrationNumber.includes(search)) ||
-          (ngo.name && ngo.name.includes(search))
-        )
-      ) {
-        continue;
-      }
-      const ngoCounter = await NgoCounters.findOne({ ngoId: ngo._id });
-      const sequence = ngoCounter?.seq;
-      const ngoSequence = sequence == null ? "" : String(sequence);
-      userList.push({
-        _id: data[i]?.userId ?? "",
-        firstName: user?.firstName ?? "",
-        role: user?.role ?? "",
-        lastName: user?.lastName ?? "",
-        email: user?.email ?? "",
-        deleted: user?.deleted,
-        ngoName: ngo?.name ?? "",
-        ngoId: data[i].ngoId ?? "",
-        businessRegistrationNumber: ngo?.registrationNumber ?? "",
-        country: ngo?.address?.country ?? "",
-        ngoPrefix: ngoCounter?.ngoPrefix ?? "",
-        sequence: ngoSequence,
+    // Build the Pipeline
+    let pipeline = [];
+
+    pipeline.push(
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      {
+        $lookup: {
+          from: "ngos",
+          localField: "ngoId",
+          foreignField: "_id",
+          as: "ngo",
+        },
+      },
+      { $unwind: "$ngo" }
+    );
+
+    if (search) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { "user.firstName": { $regex: search, $options: "i" } },
+            { "user.lastName": { $regex: search, $options: "i" } },
+            { "ngo.name": { $regex: search, $options: "i" } },
+            { "ngo.registrationNumber": { $regex: search, $options: "i" } },
+          ],
+        },
       });
     }
-    const totalPages = Math.max(Math.ceil(userList.length / limit), 1);
-    return {
-      statusCode: 200,
-      headers: {
-        "content-type": "application/json",
-        ...corsHeaders(event),
-      },
-      body: JSON.stringify({
-        userList,
-        totalPages,
-        totalDocs: userList.length,
-      }),
-    };
+
+    pipeline.push(
+      { $sort: { createdAt: -1 } },
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $lookup: {
+                from: "ngocounters",
+                localField: "ngoId",
+                foreignField: "ngoId",
+                as: "ngoCounter",
+              },
+            },
+            { $unwind: { path: "$ngoCounter", preserveNullAndEmptyArrays: true } },
+          ],
+        },
+      }
+    );
+
+    const [results] = await NgoUserAccess.aggregate(pipeline).exec();
+    const totalDocs = results.metadata[0]?.total || 0;
+    const totalPages = Math.ceil(totalDocs / limit) || 1;
+
+    const userList = results.data.map((item) => ({
+      _id: item.userId,
+      firstName: item.user?.firstName ?? "",
+      lastName: item.user?.lastName ?? "",
+      email: item.user?.email ?? "",
+      role: item.user?.role ?? "",
+      ngoName: item.ngo?.name ?? "",
+      ngoId: item.ngoId,
+      ngoPrefix: item.ngoCounter?.ngoPrefix ?? "",
+      sequence: item.ngoCounter?.seq?.toString() ?? "",
+    }));
+
+    return createSuccessResponse(200, event, { userList, totalPages, totalDocs });
   } catch (err) {
-    return {
-      statusCode: 500,
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        message: "Internal Server Error",
-        error: err?.message || String(err),
-      }),
-    };
+    return createErrorResponse(500, "Internal Server Error", null, event);
   }
 }
 
-async function isGetPetPlacementOptions(event) {
-  const readConn = await getReadConnection();
-  const Ngo = readConn.model("NGO");
-  const lang = event.cookies?.language || "zh";
-  const t = loadTranslations(lang);
+async function getNgoPetPlacementOptions({ event, translations }) {
+  try {
+    const Ngo = mongoose.model("NGO");
 
-  const ngoId_toGet = event.pathParameters?.ngoId;
-  if (!ngoId_toGet) {
-    return createErrorResponse(400, "Missing NgoId", t, event);
-  }
-  if (!mongoose.isValidObjectId(ngoId_toGet)) {
-    return createErrorResponse(
-      400,
-      "NgoId is not a valid mongoose object Id",
-      t,
-      event
-    );
-  }
-  const ngo = await Ngo.findOne({ _id: ngoId_toGet });
-  if (!ngo) {
-    return createErrorResponse(
-      400,
-      "There is no ngo account associated with the id.",
-      t,
-      event
-    );
-  }
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
+    const ngoId = event.pathParameters?.ngoId;
+    if (!ngoId) {
+      return createErrorResponse(400, "Missing NgoId", translations, event);
+    }
+
+    if (!mongoose.isValidObjectId(ngoId)) {
+      return createErrorResponse(400, "NgoId is not a valid mongoose object Id", translations, event);
+    }
+
+    const ngo = await Ngo.findOne({ _id: ngoId }).lean();
+    if (!ngo) {
+      return createErrorResponse(404, "There is no ngo account associated with the id.", translations, event);
+    }
+
+    return createSuccessResponse(200, event, {
       success: true,
-      petPlacementOptions: ngo.petPlacementOptions,
-    }),
-    headers: {
-      "Content-Type": "application/json",
-      ...corsHeaders(event),
-    },
-  };
+      petPlacementOptions: ngo.petPlacementOptions || [],
+    });
+  } catch (err) {
+    console.error("getNgoPetPlacementOptions Error:", err);
+    return createErrorResponse(500, "Internal Server Error", translations, event);
+  }
 }
 
-async function isGetNgoDetails(event) {
-  const readConn = await getReadConnection();
-  const User = readConn.model("User");
-  const NgoCounters = readConn.model("NgoCounters");
-  const Ngo = readConn.model("NGO");
-  const NgoUserAccess = readConn.model("NgoUserAccess");
+async function getNgoDetails({ event, translations }) {
+  try {
+    const User = mongoose.model("User");
+    const NgoCounters = mongoose.model("NgoCounters");
+    const Ngo = mongoose.model("NGO");
+    const NgoUserAccess = mongoose.model("NgoUserAccess");
 
-  const ngoId_toGet = event.pathParameters?.ngoId;
-  const ngo = await Ngo.findOne({ _id: ngoId_toGet });
-  const results = await Promise.allSettled([
-    User.findOne({ email: ngo?.email }).lean(),
-    NgoUserAccess.findOne({ ngoId: ngoId_toGet }).lean(),
-    NgoCounters.findOne({ ngoId: ngoId_toGet }).lean(),
-  ]);
-  const pick = (i) => (results[i].status === "fulfilled" ? results[i].value : null);
-  const err = (i) =>
-    results[i].status === "rejected"
-      ? String(results[i].reason?.message || results[i].reason)
-      : null;
+    const ngoId = event.pathParameters?.ngoId;
+    if (!mongoose.isValidObjectId(ngoId)) {
+      return createErrorResponse(400, "Invalid NGO ID format", translations, event);
+    }
 
-  return {
-    statusCode: 200,
-    headers: {
-      "Content-Type": "application/json",
-      ...corsHeaders(event),
-    },
-    body: JSON.stringify({
+    const ngo = await Ngo.findOne({ _id: ngoId }).lean();
+    if (!ngo) {
+      return createErrorResponse(404, "NGO not found", translations, event);
+    }
+
+    // Parallel fetch for associated data
+    const results = await Promise.allSettled([
+      User.findOne({ email: ngo?.email, deleted: false }).lean(),
+      NgoUserAccess.findOne({ ngoId: ngoId }).lean(),
+      NgoCounters.findOne({ ngoId: ngoId }).lean(),
+    ]);
+
+    const pick = (i) => (results[i].status === "fulfilled" ? results[i].value : null);
+    const errStatus = (i) => (results[i].status === "rejected" ? String(results[i].reason?.message || results[i].reason) : null);
+
+    return createSuccessResponse(200, event, {
       userProfile: pick(0),
       ngoProfile: ngo,
       ngoUserAccessProfile: pick(1),
       ngoCounters: pick(2),
       errors: {
-        userProfile: err(0),
-        ngoProfile: err(1),
-        ngoCounters: err(2),
+        userProfile: errStatus(0),
+        ngoUserAccessProfile: errStatus(1),
+        ngoCounters: errStatus(2),
       },
-    }),
-  };
+    });
+  } catch (err) {
+    console.error("getNgoDetails Error:", err);
+    return createErrorResponse(500, "Internal Server Error", translations, event);
+  }
 }
 
-async function isEditNgo(event) {
-  const readConn = await getReadConnection();
-  const User = readConn.model("User");
-  const NgoCounters = readConn.model("NgoCounters");
-  const Ngo = readConn.model("NGO");
-  const NgoUserAccess = readConn.model("NgoUserAccess");
-  const lang = event.cookies?.language || "zh";
-  const t = loadTranslations(lang);
+async function editNgo({ event, translations, body }) {
+  // Validate input using Zod
+  const parseResult = editNgoBodySchema.safeParse(body);
+  if (!parseResult.success) {
+    const errorMessages = parseResult.error.errors.map(e => e.message).join(", ");
+    return createErrorResponse(400, `Invalid request body: ${errorMessages}`, translations, event);
+  }
+  // Use the parsed data
+  body = parseResult.data;
+
+  // Start a session for the transaction to ensure atomic updates
+  const session = await mongoose.startSession();
+
+  const User = mongoose.model("User");
+  const NgoCounters = mongoose.model("NgoCounters");
+  const Ngo = mongoose.model("NGO");
+  const NgoUserAccess = mongoose.model("NgoUserAccess");
 
   try {
-    const USER_ALLOWED = new Set([
-      "firstName",
-      "lastName",
-      "email",
-      "phoneNumber",
-      "gender",
-      "deleted",
-    ]);
+    // 1. Setup Constants & Allowed Fields
+    const USER_ALLOWED = new Set(["firstName", "lastName", "email", "phoneNumber", "gender", "deleted"]);
     const NGO_ALLOWED = new Set([
-      "name",
-      "description",
-      "registrationNumber",
-      "email",
-      "website",
-      "address.street",
-      "address.city",
-      "address.state",
-      "address.zipCode",
-      "address.country",
+      "name", "description", "registrationNumber", "email", "website",
+      "address.street", "address.city", "address.state", "address.zipCode", "address.country",
       "petPlacementOptions",
     ]);
     const COUNTERS_ALLOWED = new Set(["ngoPrefix", "seq"]);
     const ACCESS_ALLOWED = new Set([
-      "roleInNgo",
-      "menuConfig.canViewPetList",
-      "menuConfig.canEditPetDetails",
-      "menuConfig.canManageAdoptions",
-      "menuConfig.canAccessFosterLog",
-      "menuConfig.canViewReports",
-      "menuConfig.canManageUsers",
-      "menuConfig.canManageNgoSettings",
+      "roleInNgo", "menuConfig.canViewPetList", "menuConfig.canEditPetDetails",
+      "menuConfig.canManageAdoptions", "menuConfig.canAccessFosterLog",
+      "menuConfig.canViewReports", "menuConfig.canManageUsers", "menuConfig.canManageNgoSettings",
     ]);
 
     const ngoId = event.pathParameters?.ngoId;
-    if (!ngoId) {
-      return {
-        statusCode: 400,
-        headers: {
-          "Content-Type": "application/json",
-          ...corsHeaders(event),
-        },
-        body: JSON.stringify({ message: "Missing path parameter: ngoId" }),
-      };
+    const userId = body.userProfile?.userId;
+
+    if (!ngoId || !userId) {
+      return createErrorResponse(400, "Missing ngoId or userId", translations, event);
     }
 
-    const parsed = tryParseJsonBody(event);
-    if (!parsed.ok) {
-      return createErrorResponse(400, "others.invalidJSON", t, event);
-    }
-    const payload = parsed.body;
-    const userId = payload.userProfile?.userId;
+    // 2. Prepare Updates using dot notation
+    const userDot = pickAllowed(flattenToDot(body.userProfile || {}), USER_ALLOWED);
+    const ngoDot = pickAllowed(flattenToDot(body.ngoProfile || {}), NGO_ALLOWED);
+    const countersDot = pickAllowed(flattenToDot(body.ngoCounters || {}), COUNTERS_ALLOWED);
+    const accessDot = pickAllowed(flattenToDot(body.ngoUserAccessProfile || {}), ACCESS_ALLOWED);
 
-    const emailLower = (s) => (typeof s === "string" ? s.trim().toLowerCase() : s);
-
-    const dup = await checkDuplicates(
-      { User, Ngo },
-      [
-        {
-          model: "User",
-          path: "email",
-          value: emailLower(payload.userProfile?.email),
-          label: "User email",
-        },
-        {
-          model: "User",
-          path: "phoneNumber",
-          value: payload.userProfile?.phoneNumber,
-          label: "User phoneNumber",
-        },
-        {
-          model: "Ngo",
-          path: "registrationNumber",
-          value: payload.ngoProfile?.registrationNumber?.trim(),
-          label: "NGO registrationNumber",
-        },
-        {
-          model: "Ngo",
-          path: "email",
-          value: emailLower(payload.ngoProfile?.email),
-          label: "NGO email",
-        },
-      ],
-      {
-        User: userId,
-        Ngo: ngoId,
+    // --- Manual duplicate checking for email, phone, registrationNumber ---
+    // Only check if the field is being updated
+    if (userDot.email) {
+      const existingUserWithEmail = await User.findOne({
+        email: userDot.email,
+        _id: { $ne: userId },
+        deleted: false,
+      });
+      if (existingUserWithEmail) {
+        return createErrorResponse(409, "others.emailExists", translations, event);
       }
-    );
-
-    if (!dup.ok) {
-      return createErrorResponse(
-        404,
-        "Duplicate values on email or phone number or business registration number. please use another phone or email or business registration number",
-        null,
-        event
-      );
     }
-
-    const userDot = pickAllowed(flattenToDot(payload.userProfile || {}), USER_ALLOWED);
-    const ngoDot = pickAllowed(flattenToDot(payload.ngoProfile || {}), NGO_ALLOWED);
-    const countersDot = pickAllowed(flattenToDot(payload.ngoCounters || {}), COUNTERS_ALLOWED);
-    const accessDot = pickAllowed(flattenToDot(payload.ngoUserAccessProfile || {}), ACCESS_ALLOWED);
+    if (userDot.phoneNumber) {
+      const existingUserWithPhone = await User.findOne({
+        phoneNumber: userDot.phoneNumber,
+        _id: { $ne: userId },
+        deleted: false,
+      });
+      if (existingUserWithPhone) {
+        return createErrorResponse(409, "others.phoneExists", translations, event);
+      }
+    }
+    if (ngoDot.registrationNumber) {
+      const existingNgoWithReg = await Ngo.findOne({
+        registrationNumber: ngoDot.registrationNumber,
+        _id: { $ne: ngoId },
+      });
+      if (existingNgoWithReg) {
+        return createErrorResponse(409, "others.registrationNumberExists", translations, event);
+      }
+    }
 
     const updates = [];
+    const responseData = {};
+
+    // 3. Start Transaction
+    session.startTransaction();
 
     if (hasKeys(userDot)) {
-      if (!userId) {
-        return {
-          statusCode: 401,
-          headers: {
-            "Content-Type": "application/json",
-            ...corsHeaders(event),
-          },
-          body: JSON.stringify({ message: "Missing user identity (userId)" }),
-        };
-      }
       updates.push(
         User.findOneAndUpdate(
           { _id: userId, role: "ngo" },
           { $set: userDot },
-          { new: true, runValidators: true }
-        )
-          .lean()
-          .then((doc) => ({ key: "userProfile", doc }))
+          { session, new: true, runValidators: true, lean: true }
+        ).then(doc => { responseData.userProfile = doc; })
       );
     }
 
@@ -304,10 +267,8 @@ async function isEditNgo(event) {
         Ngo.findOneAndUpdate(
           { _id: ngoId },
           { $set: ngoDot },
-          { new: true, runValidators: true }
-        )
-          .lean()
-          .then((doc) => ({ key: "ngoProfile", doc }))
+          { session, new: true, runValidators: true, lean: true }
+        ).then(doc => { responseData.ngoProfile = doc; })
       );
     }
 
@@ -316,10 +277,8 @@ async function isEditNgo(event) {
         NgoCounters.findOneAndUpdate(
           { ngoId },
           { $set: countersDot },
-          { new: true, runValidators: true, upsert: false }
-        )
-          .lean()
-          .then((doc) => ({ key: "ngoCounters", doc }))
+          { session, new: true, runValidators: true, lean: true }
+        ).then(doc => { responseData.ngoCounters = doc; })
       );
     }
 
@@ -328,58 +287,49 @@ async function isEditNgo(event) {
         NgoUserAccess.findOneAndUpdate(
           { ngoId, userId },
           { $set: accessDot },
-          { new: true, runValidators: true }
-        )
-          .lean()
-          .then((doc) => ({ key: "ngoUserAccessProfile", doc }))
+          { session, new: true, runValidators: true, lean: true }
+        ).then(doc => { responseData.ngoUserAccessProfile = doc; })
       );
     }
 
     if (updates.length === 0) {
-      return {
-        statusCode: 200,
-        headers: {
-          "Content-Type": "application/json",
-          ...corsHeaders(event),
-        },
-        body: JSON.stringify({ message: "No valid fields provided to update." }),
-      };
+      await session.abortTransaction();
+      return createSuccessResponse(200, event, { message: "No valid fields provided to update." });
     }
 
-    const results = await Promise.all(updates);
-    const response = {};
-    for (const r of results) response[r.key] = r.doc;
+    // 4. Execute all queries in parallel
+    await Promise.all(updates);
 
-    return {
-      statusCode: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders(event),
-      },
-      body: JSON.stringify({
-        message: "Updated successfully",
-        updated: Object.keys(response),
-        data: response,
-      }),
-    };
+    // 5. Commit all changes to DB
+    await session.commitTransaction();
+
+    return createSuccessResponse(200, event, {
+      message: "Updated successfully",
+      updated: Object.keys(responseData),
+      data: responseData,
+    });
+
   } catch (err) {
-    return {
-      statusCode: 500,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders(event),
-      },
-      body: JSON.stringify({
-        message: "Internal Server Error",
-        error: err?.message || String(err),
-      }),
-    };
+    // 6. Rollback if any single update fails
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
+
+    // Mongoose Validation Error
+    if (err.name === "ValidationError") {
+      return createErrorResponse(400, err.message, translations, event);
+    }
+
+    console.error("NGO Edit Error:", err);
+    return createErrorResponse(500, "Internal Server Error", translations, event);
+  } finally {
+    session.endSession();
   }
 }
 
 module.exports = {
-  isGetUserListNgo,
-  isEditNgo,
-  isGetPetPlacementOptions,
-  isGetNgoDetails,
+  getNgoUserList,
+  editNgo,
+  getNgoPetPlacementOptions,
+  getNgoDetails,
 };

@@ -1,320 +1,167 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const { connectToMongoDB, getReadConnection } = require("../config/db");
-const { generateRefreshToken, hashToken } = require("../utils/token");
-const { isValidEmail } = require("../utils/validators");
+const { issueUserAccessToken, issueNgoAccessToken, createRefreshToken } = require("../utils/token");
 const { createErrorResponse, createSuccessResponse } = require("../utils/response");
-const { loadTranslations, getTranslation } = require("../utils/i18n");
-const { corsHeaders } = require("../cors");
-const { tryParseJsonBody } = require("../utils/parseBody");
+const { getTranslation } = require("../utils/i18n");
+const { emailLoginSchema, checkUserExistsSchema } = require("../zodSchema/loginSchema");
 
-async function emailLogin(event, context) {
-  const parsed = tryParseJsonBody(event);
-  if (!parsed.ok) {
-    const lang = event.cookies?.language || "zh";
-    const t = loadTranslations(lang);
-    return {
-      statusCode: 400,
-      body: JSON.stringify({
-        success: false,
-        error: getTranslation(t, "others.invalidJSON"),
-      }),
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders(event),
-      },
-    };
-  }
-  const body = parsed.body;
+/**
+ * @typedef {Object} RouteContext
+ * @property {import('aws-lambda').APIGatewayProxyEvent} event
+ * @property {Object} translations
+ * @property {Object} body
+ */
 
-  const readConn = await getReadConnection();
-   // Use read connection for user lookup
-   const UserRead = readConn.model("User");
-   const NgoUserAccessRead = readConn.model("NgoUserAccess");
-   const NGORead = readConn.model("NGO");
-
-   const lang =
-     event.cookies?.language || body.lang?.toLowerCase() || "zh";
-   const t = loadTranslations(lang);
-
-   const { email, password } = body;
-
-   // Validate input
-   if (!email || !password) {
-     return {
-       statusCode: 400,
-       body: JSON.stringify({
-         success: false,
-         error: getTranslation(t, 'emailLogin.paramsMissing'),
-         code: "MISSING_FIELDS",
-       }),
-       headers: {
-         "Content-Type": "application/json",
-         ...corsHeaders(event),
-       },
-     };
-   }
-
-   // Validate email format
-   if (!isValidEmail(email)) {
-     return {
-       statusCode: 400,
-       body: JSON.stringify({
-         success: false,
-         error: getTranslation(t, 'emailLogin.invalidEmailFormat'),
-         code: "INVALID_EMAIL",
-       }),
-       headers: {
-         "Content-Type": "application/json",
-         ...corsHeaders(event),
-       },
-     };
-   }
-
-   // Find user (using read connection)
-   const user = await UserRead.findOne({ email });
-   if (!user || !(await bcrypt.compare(password, user.password))) {
-     return {
-       statusCode: 401,
-       body: JSON.stringify({
-         success: false,
-         error: getTranslation(t, 'emailLogin.invalidUserCredential'),
-         code: "INVALID_USER",
-       }),
-       headers: {
-         "Content-Type": "application/json",
-         ...corsHeaders(event),
-       },
-     };
-  }
-
-   // Check if account is deleted
-   if (user.deleted === true) {
-     return {
-       statusCode: 403,
-       body: JSON.stringify({
-         success: false,
-         error: getTranslation(t, 'login.accountDeleted'),
-         code: "ACCOUNT_DELETED",
-       }),
-       headers: {
-         "Content-Type": "application/json",
-         ...corsHeaders(event),
-       },
-     };
-   }
-
-   // Check if account is verified (if verification is required)
-   // Uncomment if verification is required before login
-   // if (!user.verified) {
-   //   return {
-   //     statusCode: 403,
-   //     body: JSON.stringify({
-   //       success: false,
-   //       error: getTranslation(t, 'login.accountNotVerified'),
-   //       code: "NOT_VERIFIED",
-   //     }),
-   //     headers: {
-   //       "Content-Type": "application/json",
-   //       ...corsHeaders(event),
-   //     },
-   //   };
-   // }
-
-   const stage = event.requestContext?.stage || "";
-   let cookiePath = "/auth/refresh"; // Default path
-   
-   if (stage === "Dev") {
-     cookiePath = "/Dev/auth/refresh";
-   } else if (stage === "Production") {
-     cookiePath = "/Production/auth/refresh";
-   }
-
-   // Handle NGO role
-   if (user.role === "ngo") {
-     const ngoUserAccess = await NgoUserAccessRead.findOne({
-       userId: user._id,
-       isActive: true,
-     });
-
-     if (!ngoUserAccess) {
-       return {
-         statusCode: 401,
-         body: JSON.stringify({
-           success: false,
-           error: getTranslation(t, 'emailLogin.userNGONotFound'),
-         }),
-         headers: {
-           "Content-Type": "application/json",
-           ...corsHeaders(event),
-         },
-       };
-     }
-
-     const ngo = await NGORead.findOne({ _id: ngoUserAccess.ngoId });
-
-     if (!ngo) {
-       return {
-         statusCode: 401,
-         body: JSON.stringify({
-           success: false,
-           error: getTranslation(t, 'emailLogin.NGONotFound'),
-         }),
-         headers: {
-           "Content-Type": "application/json",
-           ...corsHeaders(event),
-         },
-       };
-     }
-
-     const token = jwt.sign(
-       {
-         userId: user._id,
-         userEmail: user.email,
-         ngoId: ngo._id,
-         ngoName: ngo.name,
-       },
-       process.env.JWT_SECRET,
-       { expiresIn: "1h" }
-     );
-
-     const newRefreshToken = generateRefreshToken();
-     const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
-     const RefreshTokenModel = readConn.model("RefreshToken");
-     
-     // Create new refresh token record in primary database
-     const newRefreshTokenRecord = new RefreshTokenModel({
-       userId: user._id,
-       tokenHash: hashToken(newRefreshToken),
-       createdAt: new Date(),
-       lastUsedAt: new Date(),
-       expiresAt: expiresAt
-     });
-
-     await newRefreshTokenRecord.save();
-
-     return {
-       statusCode: 200,
-       body: JSON.stringify({
-         success: true,
-         message: getTranslation(t, 'emailLogin.success') + ` ${ngo.name}`,
-         data: {
-           token,
-           user,
-           ngo,
-           ngoUserAccess,
-         },
-       }),
-       headers: {
-         "Set-Cookie": `refreshToken=${newRefreshToken}; HttpOnly; Secure; SameSite=Strict; Path=${cookiePath}; Max-Age=${14 * 24 * 60 * 60}`,
-         ...corsHeaders(event),
-         "Access-Control-Allow-Credentials": "true"
-       },
-     };
-   }
-
-   // Handle non-NGO role
-   const token = jwt.sign(
-     {
-       userId: user._id,
-       userRole: user.role,
-     },
-     process.env.JWT_SECRET,
-     { expiresIn: "1h" }
-   );
-
-
-   const newRefreshToken = generateRefreshToken();
-   const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
-
-   // Connect to primary database for writes
-   await connectToMongoDB();
-   const RefreshTokenModel = mongoose.model("RefreshToken");
-   
-   // Create new refresh token record in primary database
-   const newRefreshTokenRecord = new RefreshTokenModel({
-     userId: user._id,
-     tokenHash: hashToken(newRefreshToken),
-     createdAt: new Date(),
-     lastUsedAt: new Date(),
-     expiresAt: expiresAt
-   });
-
-   await newRefreshTokenRecord.save();
-
-
-
-   return {
-     statusCode: 200,
-     body: JSON.stringify({
-       success: true,
-       message: getTranslation(t, 'emailLogin.success'),
-       u_id: user._id,
-       role: user.role,
-       token,
-       isVerified: user.verified,
-       email: user.email,
-     }),
-     headers: {
-       "Set-Cookie": `refreshToken=${newRefreshToken}; HttpOnly; Secure; SameSite=Strict; Path=${cookiePath}; Max-Age=${14 * 24 * 60 * 60}`,
-       ...corsHeaders(event),
-       "Access-Control-Allow-Credentials": "true"
-     },
-   };
+/**
+ * Gets the cookie path based on API Gateway stage.
+ */
+function getCookiePath(event) {
+  const stage = event.requestContext?.stage || "";
+  if (stage === "Dev") return "/Dev/auth/refresh";
+  if (stage === "Production") return "/Production/auth/refresh";
+  return "/auth/refresh";
 }
 
-async function login2(event, context) {
-  const parsed = tryParseJsonBody(event);
-  if (!parsed.ok) {
-    const lang = event.cookies?.language || "zh";
-    const t = loadTranslations(lang);
-    return {
-      statusCode: 400,
-      body: JSON.stringify({
-        success: false,
-        error: getTranslation(t, "others.invalidJSON"),
-      }),
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders(event),
-      },
-    };
-  }
-  const body = parsed.body;
+// TODO: rate limit
+/**
+ * Handles NGO user login logic.
+ * @param {Object} user - The user object
+ * @param {Object} event - The API Gateway event
+ * @param {Object} translations - Translation object
+ * @param {string} cookiePath - Cookie path for refresh token
+ * @returns {Promise<Object>} Response object
+ */
+async function handleNGOLogin(user, event, translations, cookiePath) {
+  const t = translations;
+  try {
+    const NgoUserAccess = mongoose.model("NgoUserAccess");
+    const NGO = mongoose.model("NGO");
 
-  const readConn = await getReadConnection();
-   // Use read connection for user lookup
-   const UserRead = readConn.model("User");
-   const query = {};
-   if (body.email) query.email = body.email;
-   if (body.phone) query.phoneNumber = body.phone;
-   const user = await UserRead.findOne(query);
-   if (!user) {
-     return {
-       statusCode: 200,
-       body: JSON.stringify({
-         userId: "new user",
-         newUser: true
-       }),
-       headers: {
-         'Content-Type': 'application/json',
-         ...corsHeaders(event)
-       },
-     };
-   } else {
-     return {
-       statusCode: 200,
-       body: JSON.stringify({
-         userId: user._id,
-         newUser: user.newUser
-       }),
-       headers: {
-         'Content-Type': 'application/json',
-         ...corsHeaders(event)
-       },
-     };
-   }
+    const ngoUserAccess = await NgoUserAccess.findOne({
+      userId: user._id,
+      isActive: true,
+    });
+
+    if (!ngoUserAccess) {
+      return createErrorResponse(401, "emailLogin.userNGONotFound", t, event);
+    }
+
+    const ngo = await NGO.findOne({ _id: ngoUserAccess.ngoId });
+    if (!ngo) {
+      return createErrorResponse(401, "emailLogin.NGONotFound", t, event);
+    }
+
+    const token = issueNgoAccessToken(user, ngo);
+
+    const { token: newRefreshToken } = await createRefreshToken(user._id);
+
+    return createSuccessResponse(
+      200,
+      event,
+      {
+        message: getTranslation(t, "emailLogin.success") + ` ${ngo.name}`,
+        data: { token, user, ngo, ngoUserAccess },
+      },
+      {
+        "Set-Cookie": `refreshToken=${newRefreshToken}; HttpOnly; Secure; SameSite=Strict; Path=${cookiePath}; Max-Age=${process.env.REFRESH_TOKEN_MAX_AGE_SEC}`,
+        "Access-Control-Allow-Credentials": "true",
+      }
+    );
+  } catch (err) {
+    return createErrorResponse(500, "Internal Server Error", t, event);
+  }
 }
-module.exports = { emailLogin, login2 };
+
+/**
+ * Handles email login for regular users and NGO users.
+ * @param {RouteContext} routeContext
+ */
+async function emailLogin({ event, translations, body }) {
+  const t = translations;
+  try {
+    // Validate input with Zod schema
+    const validationResult = emailLoginSchema.safeParse(body);
+    if (!validationResult.success) {
+      const errorMessage = validationResult.error.errors[0]?.message || "Invalid input";
+      return createErrorResponse(400, errorMessage, t, event);
+    }
+
+    const { email, password } = validationResult.data;
+
+    // Find user (connection already established by handler)
+    const User = mongoose.model("User");
+    const user = await User.findOne({ email, deleted: false });
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return createErrorResponse(401, "emailLogin.invalidUserCredential", t, event);
+    }
+
+    const cookiePath = getCookiePath(event);
+
+    // Handle NGO role
+    if (user.role === "ngo") {
+      const { password, ...userWithoutPassword } = user.toObject ? user.toObject() : user;
+      return handleNGOLogin(userWithoutPassword, event, translations, cookiePath);
+    }
+
+    // Handle non-NGO role
+    const token = issueUserAccessToken(user);
+
+    const { token: newRefreshToken } = await createRefreshToken(user._id);
+
+    return createSuccessResponse(
+      200,
+      event,
+      {
+        message: getTranslation(t, "emailLogin.success"),
+        u_id: user._id,
+        role: user.role,
+        token,
+        isVerified: user.verified,
+        email: user.email,
+      },
+      {
+        "Set-Cookie": `refreshToken=${newRefreshToken}; HttpOnly; Secure; SameSite=Strict; Path=${cookiePath}; Max-Age=${process.env.REFRESH_TOKEN_MAX_AGE_SEC}`,
+        "Access-Control-Allow-Credentials": "true",
+      }
+    );
+  } catch (err) {
+    return createErrorResponse(500, "Internal Server Error", t, event);
+  }
+}
+
+/**
+ * Checks if user exists by email or phone.
+ * @param {RouteContext} routeContext
+ */
+async function checkUserExists({ event, translations, body }) {
+  const t = translations;
+  try {
+    // Validate input with Zod schema
+    const validationResult = checkUserExistsSchema.safeParse(body);
+    if (!validationResult.success) {
+      const errorMessage = validationResult.error.errors[0]?.message || "Invalid input";
+      return createErrorResponse(400, errorMessage, t, event);
+    }
+
+    const User = mongoose.model("User");
+    const { email, phone } = validationResult.data;
+
+    const query = {};
+    if (email) query.email = email;
+    if (phone) query.phoneNumber = phone;
+
+    const user = await User.findOne({ ...query, deleted: false });
+
+    if (!user) {
+      return createSuccessResponse(200, event, { userId: "new user", newUser: true });
+    }
+
+    return createSuccessResponse(200, event, { userId: user._id, newUser: user.newUser });
+  } catch (err) {
+    return createErrorResponse(500, "Internal Server Error", t, event);
+  }
+}
+
+module.exports = { emailLogin, checkUserExists };
 

@@ -7,7 +7,9 @@
 - [x] Remove normalizeResource(), use "{HTTP Method} {event.resouce}" like "GET /pet/{petID}/basic-info" for routing
 - [x] Check all service handlers and modify as needed for clean code, performance, and security
 - [ ] Write events for UserRoutes to enable SAM CLI API testing
-- [ ] Use Zod to validate request body fields for all endpoints
+- [x] Use Zod to validate request body fields for all endpoints
 <!-- - [ ] standardized http status in response.js (userroutes and petbasicinfo) -->
 - [x] env check at the start of lambda at config/...
 - [x] standardize authJWT
+- [ ] body userid and ngoid check
+- [ ] fix /pet-list-ngo first !!!!

@@ -1,182 +1,84 @@
 const mongoose = require("mongoose");
-const { connectToMongoDB, getReadConnection } = require("../config/db");
-const {
-  isValidEmail,
-  isValidPhoneNumber,
-  isValidDateFormat,
-} = require("../utils/validators");
-const { createErrorResponse } = require("../utils/response");
-const { corsHeaders } = require("../cors");
-const { loadTranslations, getTranslation } = require("../utils/i18n");
-const { tryParseJsonBody } = require("../utils/parseBody");
+const { createErrorResponse, createSuccessResponse } = require("../utils/response");
+const { userUpdateDetailsSchema } = require("../zodSchema/userUpdateSchema");
 
-async function isGetUserDetails(event) {
-  const readConn = await getReadConnection();
-  const UserRead = readConn.model("User");
-  const lang = event.cookies?.language || "zh";
-  const t = loadTranslations(lang);
-
-  const userId_toGet = event.pathParameters?.userId;
-  if (!userId_toGet) {
-    return createErrorResponse(400, "others.missingUserId", t, event);
-  }
-  if (!mongoose.isValidObjectId(userId_toGet)) {
-    return createErrorResponse(400, "others.invalidGET", t, event);
-  }
-  const userData = await UserRead.findOne({ _id: userId_toGet });
-  if (!userData) {
-    return createErrorResponse(404, "others.getUserNotFound", t, event);
-  }
-  if (userData.deleted === true) {
-    return createErrorResponse(410, "others.userDeleted", t, event);
-  }
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      success: true,
-      message: getTranslation(t, "others.getSuccess"),
-      user: userData,
-    }),
-    headers: {
-      "Content-Type": "application/json",
-      ...corsHeaders(event),
-    },
-  };
+async function isGetUserDetails({ event, translations, user }) {
+  return createSuccessResponse(200, event, {
+    success: true,
+    message: translations ? translations["others.getSuccess"] : "Success",
+    user,
+  });
 }
 
-async function isUpdateUserDetails(event) {
-  const readConn = await getReadConnection();
-  const UserReadPut = readConn.model("User");
-  const lang = event.cookies?.language || "zh";
-  const t = loadTranslations(lang);
-
-  const parsed = tryParseJsonBody(event);
-  if (!parsed.ok) {
-    return createErrorResponse(400, "others.invalidJSON", t, event);
-  }
-  const body = parsed.body;
-  const { userId, firstName, lastName, birthday, email, district, image, phoneNumber } = body;
-
-  if (!userId) {
-    return createErrorResponse(400, "others.missingUserId", t, event);
-  }
-  if (!mongoose.isValidObjectId(userId)) {
-    return createErrorResponse(400, "others.invalidPUT", t, event);
-  }
-  if (email && !isValidEmail(email)) {
-    return createErrorResponse(400, "others.invalidEmailFormat", t, event);
-  }
-  if (phoneNumber && !isValidPhoneNumber(phoneNumber)) {
-    return createErrorResponse(400, "others.invalidPhoneFormat", t, event);
-  }
-  if (birthday && !isValidDateFormat(birthday)) {
-    return createErrorResponse(400, "others.invalidDateFormat", t, event);
-  }
-
-  if (email) {
-    const existingUserWithEmail = await UserReadPut.findOne({
-      email,
-      _id: { $ne: userId },
-    });
-    if (existingUserWithEmail) {
-      return {
-        statusCode: 409,
-        body: JSON.stringify({
-          success: false,
-          error: getTranslation(t, "others.emailExists"),
-          code: "EMAIL_EXISTS",
-        }),
-        headers: { "Content-Type": "application/json", ...corsHeaders(event) },
-      };
+async function isUpdateUserDetails({ event, translations, body }) {
+  try {
+    const User = mongoose.model("User");
+    // Validate input using Zod schema
+    const parseResult = userUpdateDetailsSchema.safeParse(body);
+    if (!parseResult.success) {
+      const zodError = parseResult.error.errors[0];
+      return createErrorResponse(400, zodError.message, translations, event);
     }
-  }
-  if (phoneNumber) {
-    const existingUserWithPhone = await UserReadPut.findOne({
-      phoneNumber,
-      _id: { $ne: userId },
-    });
-    if (existingUserWithPhone) {
-      return {
-        statusCode: 409,
-        body: JSON.stringify({
-          success: false,
-          error: getTranslation(t, "others.phoneExists"),
-          code: "PHONE_EXISTS",
-        }),
-        headers: { "Content-Type": "application/json", ...corsHeaders(event) },
-      };
+    const { userId, firstName, lastName, birthday, email, district, image, phoneNumber } = parseResult.data;
+
+    if (email || phoneNumber) {
+      const conflict = await User.findOne({
+        $or: [
+          ...(email ? [{ email }] : []),
+          ...(phoneNumber ? [{ phoneNumber }] : [])
+        ],
+        _id: { $ne: userId },
+        deleted: false
+      }).lean();
+
+      if (conflict) {
+        const key = conflict.email === email ? "others.emailExists" : "others.phoneExists";
+        return createErrorResponse(409, key, translations, event);
+      }
     }
-  }
 
-  await connectToMongoDB();
-  const UserModelPut = mongoose.model("User");
-  const updatedUser = await UserModelPut.findOneAndUpdate(
-    { _id: userId, deleted: false },
-    {
-      firstName,
-      lastName,
-      birthday: birthday ? new Date(birthday) : null,
-      email,
-      district,
-      image,
-      phoneNumber,
-    },
-    { new: true }
-  );
+    const updateFields = {};
+    if (firstName !== undefined) updateFields.firstName = firstName;
+    if (lastName !== undefined) updateFields.lastName = lastName;
+    if (district !== undefined) updateFields.district = district;
+    if (image !== undefined) updateFields.image = image;
+    if (email !== undefined) updateFields.email = email;
+    if (phoneNumber !== undefined) updateFields.phoneNumber = phoneNumber;
+    if (birthday !== undefined)  updateFields.birthday = birthday ? new Date(birthday) : null;
 
-  if (!updatedUser) {
-    const deletedUser = await UserReadPut.findOne({ _id: userId, deleted: true });
-    if (deletedUser) {
-      return createErrorResponse(410, "others.userDeleted", t, event);
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: userId, deleted: false },
+      { $set: updateFields },
+      { new: true, lean: true }
+    );
+
+    if (!updatedUser) {
+      return createErrorResponse(404, "others.putUserNotFound", translations, event);
     }
-    return createErrorResponse(404, "others.putUserNotFound", t, event);
-  }
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
+    return createSuccessResponse(200, event, {
       success: true,
-      message: getTranslation(t, "others.putUserSuccess"),
+      message: translations ? translations["others.putUserSuccess"] : "Success",
       user: updatedUser,
-    }),
-    headers: { "Content-Type": "application/json", ...corsHeaders(event) },
-  };
+    });
+  } catch (err) {
+    console.error("isUpdateUserDetails error:", err);
+    return createErrorResponse(500, "others.internalError", translations, event);
+  }
 }
 
-async function isDeleteUser(event) {
-  const readConn = await getReadConnection();
-  const UserRead = readConn.model("User");
-  const lang = event.cookies?.language || "zh";
-  const t = loadTranslations(lang);
-
-  const userId_to_delete = event.pathParameters?.userId;
-  if (!userId_to_delete) {
-    return createErrorResponse(400, "others.missingUserId", t, event);
+async function isDeleteUser({ event, translations, user }) {
+  try {
+    const User = mongoose.model("User");
+    await User.updateOne({ _id: user._id }, { deleted: true });
+    return createSuccessResponse(200, event, {
+      message: translations ? translations["others.deleteUserSuccess"] : "User deleted successfully",
+      UserId: user._id,
+    });
+  } catch (err) {
+    console.error("isDeleteUser error:", err);
+    return createErrorResponse(500, "others.internalError", translations, event);
   }
-  if (!mongoose.isValidObjectId(userId_to_delete)) {
-    return createErrorResponse(400, "others.invalidDELETE", t, event);
-  }
-
-  const userToDelete = await UserRead.findOne({ _id: userId_to_delete });
-  if (!userToDelete) {
-    return createErrorResponse(404, "others.userNotFound", t, event);
-  }
-
-  await connectToMongoDB();
-  const UserModelDelete = mongoose.model("User");
-  await UserModelDelete.deleteOne({ _id: userId_to_delete });
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      message: getTranslation(t, "others.deleteUserSuccess"),
-      UserId: userId_to_delete,
-    }),
-    headers: {
-      "Content-Type": "application/json",
-      ...corsHeaders(event),
-    },
-  };
 }
 
 module.exports = {
