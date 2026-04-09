@@ -544,7 +544,7 @@ exports.handler = async (event, context) => {
             );
 
             const newRefreshToken = generateRefreshToken();
-            const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
+            const expiresAt = new Date(Date.now() + Number(process.env.REFRESH_TOKEN_MAX_AGE_SEC) * 1000); // 14 days
         
             // Connect to primary database for writes
             await connectToMongoDB();
@@ -568,7 +568,7 @@ exports.handler = async (event, context) => {
                 headers: {
                     'Content-Type': 'application/json',
                     ...corsHeaders(event),
-                    "Set-Cookie": `refreshToken=${newRefreshToken}; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=${14 * 24 * 60 * 60}`,
+                    "Set-Cookie": `refreshToken=${newRefreshToken}; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=${process.env.REFRESH_TOKEN_MAX_AGE_SEC}}`,
                 },
                 body: JSON.stringify({
                     message: getTranslation(t, "verifySuccessful"),

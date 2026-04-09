@@ -73,6 +73,11 @@ const isValidImageUrl = (url) => {
   }
 };
 
+const escapeRegex = (value) => {
+  if (typeof value !== "string") return "";
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
 // Helper function to create error response
 const createErrorResponse = (statusCode, error, translations, event) => {
   const defaultHeaders = {
@@ -121,54 +126,63 @@ exports.handler = async (event, context) => {
 
     if (isngoPath) {
       const ngoId = event.pathParameters?.ngoId;
-      console.log("ngoId:", ngoId);
-      const lang =
-      event.cookies?.language || "zh";
+      const queryParams = event.queryStringParameters || {};
+      // Get page from query string, default to 1, ensure it's a number
+      const pageNumber = Math.max(1, parseInt(queryParams.page || 1, 10));
+      const limitNumber = 30;
+      const search = typeof queryParams.search === "string" ? queryParams.search.trim() : "";
+      const sortByAllowList = new Set(["updatedAt", "createdAt", "name", "animal", "breed", "birthday", "receivedDate", "ngoPetId"]);
+      const sortBy = sortByAllowList.has(queryParams.sortBy) ? queryParams.sortBy : "updatedAt";
+      const sortOrder = String(queryParams.sortOrder || "desc").toLowerCase() === "asc" ? 1 : -1;
+      const query = { ngoId, deleted: false };
+
+      if (search) {
+        const safeSearch = escapeRegex(search);
+        query.$or = [
+          { name: { $regex: safeSearch, $options: "i" } },
+          { animal: { $regex: safeSearch, $options: "i" } },
+          { breed: { $regex: safeSearch, $options: "i" } },
+          { ngoPetId: { $regex: safeSearch, $options: "i" } },
+          { owner: { $regex: safeSearch, $options: "i" } },
+        ];
+      }
+      
+      const lang = event.cookies?.language || "zh";
       const t = loadTranslations(lang);
 
       if (!ngoId) {
-        return createErrorResponse(
-          400,
-          "ngoPath.missingNgoId",
-          t,
-          event
-        );
+        return createErrorResponse(400, "ngoPath.missingNgoId", t, event);
       }
 
-      // // Validate ngoId format if it should be ObjectId
-      // if (!isValidObjectId(ngoId)) {
-      //   return createErrorResponse(
-      //     400,
-      //     "ngoPath.invalidNgoIdFormat",
-      //     t,
-      //     event
-      //   );
-      // }
-
-      // Get the Pet model from read connection
       const Pet = readConn.model("Pet");
 
-      // Find all pets for the given ngoId (using read connection)
-      const pets = await Pet.find({ ngoId });
+      // 1. Fetch Paginated Results
+      // .lean() is critical here to handle 30 docs without hitting memory limits
+      const pets = await Pet.find(query)
+        .sort({ [sortBy]: sortOrder, _id: -1 })
+        .skip((pageNumber - 1) * limitNumber)
+        .limit(limitNumber)
+        .lean(); 
+
+      // 2. Fetch Total Count
+      const totalNumber = await Pet.countDocuments(query);
 
       if (!pets || pets.length === 0) {
-        return createErrorResponse(
-          404,
-          "ngoPath.noPetsFound",
-          t,
-          event
-        );
+        return createErrorResponse(404, "ngoPath.noPetsFound", t, event);
       } else {
         return {
           statusCode: 200,
-          body: JSON.stringify({
-            message: getTranslation(t, "ngoPath.success"),
-            pets,
-          }),
           headers: {
             "Content-Type": "application/json",
             ...corsHeaders(event)
           },
+          body: JSON.stringify({
+            message: getTranslation(t, "ngoPath.success"),
+            pets,
+            total: totalNumber,
+            currentPage: pageNumber,
+            perPage: limitNumber
+          }),
         };
       }
     }

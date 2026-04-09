@@ -70,7 +70,12 @@
       "invalidPhoneFormat": "電話號碼格式無效",
       "invalidDateFormat": "日期格式無效",
       "invalidDELETE": "用戶 ID 無效或缺失",
-      "userNotFound": "未找到用戶"
+      "userNotFound": "未找到用戶",
+      "routeNotFound": "找不到此路徑的處理程序",
+      "methodNotAllowed": "不允許對此路徑使用該方法",
+      "internalError": "發生錯誤，請稍後再試。",
+      "unauthorized": "需要身份驗證，請登錄。",
+      "serviceUnavailable": "服務暫時無法使用，請稍後再試。"
     },
     "deleteAccount": {
       "paramsMissing": "缺少參數",

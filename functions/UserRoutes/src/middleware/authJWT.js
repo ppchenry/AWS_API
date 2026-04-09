@@ -4,21 +4,24 @@
  */
 const jwt = require("jsonwebtoken");
 const { createErrorResponse } = require("../utils/response");
+const { logWarn, logError } = require("../utils/logger");
 
 /**
  * Verifies the JWT and attaches the identity to the event.
  * * @param {import("aws-lambda").APIGatewayProxyEvent} event
- * @param {Object} translations - Loaded i18n object
  * @returns {import("aws-lambda").APIGatewayProxyResult | null} 401 error or null to continue
  */
-function authJWT({ event, translations }) {
+function authJWT({ event }) {
   // 1. Skip for OPTIONS (CORS preflight)
   if (event.httpMethod === "OPTIONS") return null;
 
   try {
     // 2. DEV BYPASS — only in non-production
     if (process.env.JWT_BYPASS === "true" && process.env.NODE_ENV !== "production") {
-      console.log("⚠️ JWT BYPASS ENABLED");
+      logWarn("JWT bypass enabled in non-production", {
+        scope: "middleware.authJWT",
+        event,
+      });
       const devUser = {
         userId: "dev-user-id",
         email: "dev@test.com",
@@ -32,7 +35,7 @@ function authJWT({ event, translations }) {
     const authHeader = event.headers?.Authorization || event.headers?.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return createErrorResponse(401, "others.unauthorized", translations, event);
+      return createErrorResponse(401, "others.unauthorized", event);
     }
 
     // 4. Verify Token
@@ -40,8 +43,11 @@ function authJWT({ event, translations }) {
     const jwtSecret = process.env.JWT_SECRET;
 
     if (!jwtSecret) {
-      console.error("CRITICAL: JWT_SECRET not configured");
-      return createErrorResponse(500, "others.internalError", translations, event);
+      logError("JWT secret not configured", {
+        scope: "middleware.authJWT",
+        event,
+      });
+      return createErrorResponse(500, "others.internalError", event);
     }
 
     const decoded = jwt.verify(token, jwtSecret);
@@ -51,10 +57,14 @@ function authJWT({ event, translations }) {
 
     return null; // Success
   } catch (error) {
-    console.error("JWT verification error:", error.message);
+    logWarn("JWT verification failed", {
+      scope: "middleware.authJWT",
+      event,
+      error,
+    });
     // Explicitly handle expired tokens if you want a different key, 
     // otherwise default to unauthorized.
-    return createErrorResponse(401, "others.unauthorized", translations, event);
+    return createErrorResponse(401, "others.unauthorized", event);
   }
 }
 

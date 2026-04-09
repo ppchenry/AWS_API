@@ -39,6 +39,8 @@ src/
 |   `-- <route guard files>
 |-- services/
 |   `-- <route or domain services>
+|-- zodSchemas/
+|   `-- <zod strict validations>
 |-- utils/
 |   |-- response.js
 |   |-- i18n.js

@@ -1,6 +1,5 @@
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  .split(",")
-  .map(o => o.trim());
+
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000").split(",").map(o => o.trim());
 
 function corsHeaders(event) {
   const origin = event.headers?.origin || event.headers?.Origin;

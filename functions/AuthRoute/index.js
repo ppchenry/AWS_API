@@ -284,7 +284,7 @@ exports.handler = async (event, context) => {
 
     // Generate new refresh token
     const newRefreshToken = generateRefreshToken();
-    const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
+    const expiresAt = new Date(Date.now() + Number(process.env.REFRESH_TOKEN_MAX_AGE_SEC) * 1000); // 14 days
 
     // Create new refresh token record in primary database
     const newRefreshTokenRecord = new RefreshTokenModel({
@@ -338,7 +338,7 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 200,
       headers: {
-        "Set-Cookie": `refreshToken=${newRefreshToken}; Secure; SameSite=None; HttpOnly; Path=/; Max-Age=${14 * 24 * 60 * 60}`,
+        "Set-Cookie": `refreshToken=${newRefreshToken}; Secure; SameSite=None; HttpOnly; Path=/; Max-Age=${process.env.REFRESH_TOKEN_MAX_AGE_SEC}}`,
         ...corsHeadersObj
       },
       body: JSON.stringify({ accessToken, id: user._id })

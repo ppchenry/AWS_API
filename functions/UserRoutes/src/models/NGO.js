@@ -118,11 +118,22 @@ NGOSchema.virtual("userCount", {
 });
 
 // 實例方法 - 檢查NGO是否可以操作
+/**
+ * Returns true if the NGO is both active and verified.
+ * @returns {boolean}
+ */
 NGOSchema.methods.canOperate = function () {
   return this.isActive && this.isVerified;
 };
 
 // 實例方法 - 更新統計資料
+/**
+ * Increments the NGO's stats counters and persists to the database.
+ * @param {number} [animalCount=0]
+ * @param {number} [volunteerCount=0]
+ * @param {number} [donationAmount=0]
+ * @returns {Promise<this>}
+ */
 NGOSchema.methods.updateStats = function (
   animalCount = 0,
   volunteerCount = 0,
@@ -135,6 +146,12 @@ NGOSchema.methods.updateStats = function (
 };
 
 // 靜態方法 - 取得活躍且已驗證的NGO
+/**
+ * Finds active and verified NGOs with pagination.
+ * @param {number} [limit=20]
+ * @param {number} [skip=0]
+ * @returns {import('mongoose').Query}
+ */
 NGOSchema.statics.getActiveNGOs = function (limit = 20, skip = 0) {
   return this.find({
     isActive: true,
@@ -147,6 +164,11 @@ NGOSchema.statics.getActiveNGOs = function (limit = 20, skip = 0) {
 };
 
 // 靜態方法 - 根據類別搜尋NGO
+/**
+ * Finds active and verified NGOs matching a specific category.
+ * @param {string} category
+ * @returns {import('mongoose').Query}
+ */
 NGOSchema.statics.findByCategory = function (category) {
   return this.find({
     categories: category,

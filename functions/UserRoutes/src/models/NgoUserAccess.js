@@ -101,10 +101,20 @@ NgoUserAccessSchema.virtual("assignedPets", {
 });
 
 // Instance methods
+/**
+ * Checks if the user has a specific menu permission enabled.
+ * @param {string} permission - The menuConfig key to check.
+ * @returns {boolean}
+ */
 NgoUserAccessSchema.methods.hasPermission = function (permission) {
   return this.menuConfig && this.menuConfig[permission] === true;
 };
 
+/**
+ * Returns true if the user can access a specific pet (admin can access all).
+ * @param {import('mongoose').Types.ObjectId|string} petId
+ * @returns {boolean}
+ */
 NgoUserAccessSchema.methods.canAccessPet = function (petId) {
   // Admin can access all pets in their NGO
   if (this.roleInNgo === "admin") {
@@ -115,6 +125,10 @@ NgoUserAccessSchema.methods.canAccessPet = function (petId) {
   return this.assignedPetIds.some((id) => id.toString() === petId.toString());
 };
 
+/**
+ * Returns true if this is an active foster role.
+ * @returns {boolean}
+ */
 NgoUserAccessSchema.methods.isFosterActive = function () {
   if (this.roleInNgo !== "foster") return false;
 
@@ -126,6 +140,12 @@ NgoUserAccessSchema.methods.isFosterActive = function () {
 };
 
 // Static methods
+/**
+ * Finds all NGO contexts for a user, with populated ngo and pet details.
+ * @param {string} userId
+ * @param {boolean} [isActiveOnly=true]
+ * @returns {import('mongoose').Query}
+ */
 NgoUserAccessSchema.statics.findUserContexts = function (
   userId,
   isActiveOnly = true
@@ -140,6 +160,13 @@ NgoUserAccessSchema.statics.findUserContexts = function (
     .populate("assignedPets", "name animal breed");
 };
 
+/**
+ * Finds all users in an NGO, optionally filtered by role.
+ * @param {string} ngoId
+ * @param {string|null} [role=null]
+ * @param {boolean} [isActiveOnly=true]
+ * @returns {import('mongoose').Query}
+ */
 NgoUserAccessSchema.statics.findNgoUsers = function (
   ngoId,
   role = null,
@@ -154,6 +181,12 @@ NgoUserAccessSchema.statics.findNgoUsers = function (
     .sort({ roleInNgo: 1, createdAt: -1 });
 };
 
+/**
+ * Finds a single access record for a user in a specific NGO.
+ * @param {string} userId
+ * @param {string} ngoId
+ * @returns {import('mongoose').Query}
+ */
 NgoUserAccessSchema.statics.findByUserAndNgo = function (userId, ngoId) {
   return this.findOne({
     userId,
@@ -184,6 +217,10 @@ NgoUserAccessSchema.pre("save", function (next) {
 });
 
 // Helper method for default menu configurations
+/**
+ * Returns default menu permissions based on the user's NGO role.
+ * @returns {Record<string, boolean>}
+ */
 NgoUserAccessSchema.methods.getDefaultMenuConfig = function () {
   const configs = {
     admin: {
