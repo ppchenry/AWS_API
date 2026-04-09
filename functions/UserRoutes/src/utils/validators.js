@@ -5,6 +5,28 @@
 const mongoose = require("mongoose");
 
 /**
+ * Normalizes an email address for consistent comparisons and lookups.
+ *
+ * @param {unknown} email The email value to normalize.
+ * @returns {string | undefined} Lowercased, trimmed email string, or the original undefined value.
+ */
+const normalizeEmail = (email) => {
+  if (typeof email !== "string") return email;
+  return email.trim().toLowerCase();
+};
+
+/**
+ * Normalizes a phone number for consistent comparisons and lookups.
+ *
+ * @param {unknown} phoneNumber The phone value to normalize.
+ * @returns {string | undefined} Trimmed phone string, or the original undefined value.
+ */
+const normalizePhone = (phoneNumber) => {
+  if (typeof phoneNumber !== "string") return phoneNumber;
+  return phoneNumber.trim();
+};
+
+/**
  * Validates an email address using a basic format check.
  *
  * @param {string} email The email address to validate.
@@ -73,6 +95,8 @@ const isValidObjectId = (id) => {
 };
 
 module.exports = {
+  normalizeEmail,
+  normalizePhone,
   isValidEmail,
   isValidPhoneNumber,
   isValidDateFormat,

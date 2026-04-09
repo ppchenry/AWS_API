@@ -1,10 +1,16 @@
 const { envSchema } = require("../zodSchema/envSchema");
+const { logError } = require("../utils/logger");
 
 // Validate process.env
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error("❌ Invalid environment variables:", JSON.stringify(parsed.error.format(), null, 2));
+  logError("Invalid environment variables", {
+    scope: "config.env",
+    extra: {
+      validation: parsed.error.format(),
+    },
+  });
   throw new Error("Invalid environment configuration. Check logs for details.");
 }
 

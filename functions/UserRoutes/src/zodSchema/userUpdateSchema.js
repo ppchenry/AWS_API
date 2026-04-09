@@ -26,8 +26,13 @@ const userUpdateDetailsSchema = z.object({
   phoneNumber: z.string().refine(isValidPhoneNumber, { message: "others.invalidPhoneFormat" }).optional(),
 });
 
+const deleteUserByEmailSchema = z.object({
+  email: z.string().refine(isValidEmail, { message: "deleteAccount.invalidEmailFormat" }),
+});
+
 module.exports = {
   userUpdatePasswordSchema,
   userUpdateImageSchema,
   userUpdateDetailsSchema,
+  deleteUserByEmailSchema,
 };

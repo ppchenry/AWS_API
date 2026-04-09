@@ -10,6 +10,7 @@ const NgoUserAccessSchema = require("../models/NgoUserAccess.js");
 const NGOSchema = require("../models/NGO.js");
 const NGOCounterSchema = require("../models/NgoCounters.js");
 const RefreshTokenSchema = require("../models/RefreshToken.js");
+const { logInfo, logError } = require("../utils/logger");
 
 let conn = null;
 let connPromise = null;
@@ -32,7 +33,12 @@ const connectToMongoDB = async () => {
         serverSelectionTimeoutMS: 5000,
         maxPoolSize: 1,
       });
-      console.log("MongoDB primary connected to database: petpetclub");
+      logInfo("MongoDB primary connected", {
+        scope: "config.db",
+        extra: {
+          database: "petpetclub",
+        },
+      });
 
       mongoose.models.User || mongoose.model("User", UserSchema, "users");
       mongoose.models.NgoUserAccess || mongoose.model("NgoUserAccess", NgoUserAccessSchema, "ngo_user_access");
@@ -44,7 +50,10 @@ const connectToMongoDB = async () => {
     } catch (error) {
       connPromise = null;
       conn = null;
-      console.error("MongoDB connection error:", error);
+      logError("MongoDB connection failed", {
+        scope: "config.db",
+        error,
+      });
       throw new Error("Failed to connect to database");
     }
   })();

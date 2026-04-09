@@ -1,8 +1,15 @@
 const mongoose = require("mongoose");
 const { flattenToDot, pickAllowed, hasKeys } = require("../utils/objectUtils");
 const { createErrorResponse, createSuccessResponse } = require("../utils/response");
+const { getJoinedZodIssueMessages } = require("../utils/zod");
+const { logError } = require("../utils/logger");
 const { editNgoBodySchema } = require("../zodSchema/editNgoSchema");
+const { buildNgoUserListPipeline } = require("./ngoUserListPipeline");
 
+/**
+ * Lists NGO users with search and pagination via aggregation pipeline.
+ * @param {RouteContext} routeContext
+ */
 async function getNgoUserList({ event }) {
   const NgoUserAccess = mongoose.model("NgoUserAccess");
   const qs = event.queryStringParameters || {};
@@ -14,67 +21,11 @@ async function getNgoUserList({ event }) {
     const page = Math.max(parseInt(qs.page || "1", 10), 1);
     const limit = 50;
     const skip = (page - 1) * limit;
+    const pipeline = buildNgoUserListPipeline({ search, skip, limit });
 
-    // Build the Pipeline
-    let pipeline = [];
-
-    pipeline.push(
-      {
-        $lookup: {
-          from: "users",
-          localField: "userId",
-          foreignField: "_id",
-          as: "user",
-        },
-      },
-      { $unwind: "$user" },
-      {
-        $lookup: {
-          from: "ngos",
-          localField: "ngoId",
-          foreignField: "_id",
-          as: "ngo",
-        },
-      },
-      { $unwind: "$ngo" }
-    );
-
-    if (search) {
-      pipeline.push({
-        $match: {
-          $or: [
-            { "user.firstName": { $regex: search, $options: "i" } },
-            { "user.lastName": { $regex: search, $options: "i" } },
-            { "ngo.name": { $regex: search, $options: "i" } },
-            { "ngo.registrationNumber": { $regex: search, $options: "i" } },
-          ],
-        },
-      });
-    }
-
-    pipeline.push(
-      { $sort: { createdAt: -1 } },
-      {
-        $facet: {
-          metadata: [{ $count: "total" }],
-          data: [
-            { $skip: skip },
-            { $limit: limit },
-            {
-              $lookup: {
-                from: "ngocounters",
-                localField: "ngoId",
-                foreignField: "ngoId",
-                as: "ngoCounter",
-              },
-            },
-            { $unwind: { path: "$ngoCounter", preserveNullAndEmptyArrays: true } },
-          ],
-        },
-      }
-    );
-
-    const [results] = await NgoUserAccess.aggregate(pipeline).exec();
+    const [results = { metadata: [], data: [] }] = await NgoUserAccess.aggregate(pipeline)
+      .allowDiskUse(true)
+      .exec();
     const totalDocs = results.metadata[0]?.total || 0;
     const totalPages = Math.ceil(totalDocs / limit) || 1;
 
@@ -92,39 +43,62 @@ async function getNgoUserList({ event }) {
 
     return createSuccessResponse(200, event, { userList, totalPages, totalDocs });
   } catch (err) {
-    return createErrorResponse(500, "Internal Server Error", null, event);
+    logError("Failed to list NGO users", {
+      scope: "services.ngo.getNgoUserList",
+      event,
+      error: err,
+      extra: {
+        search: qs.search,
+        page: qs.page,
+      },
+    });
+    return createErrorResponse(500, "others.internalError", event);
   }
 }
 
-async function getNgoPetPlacementOptions({ event, translations }) {
+/**
+ * Retrieves pet placement options for a specific NGO.
+ * @param {RouteContext} routeContext
+ */
+async function getNgoPetPlacementOptions({ event }) {
   try {
     const Ngo = mongoose.model("NGO");
 
     const ngoId = event.pathParameters?.ngoId;
     if (!ngoId) {
-      return createErrorResponse(400, "Missing NgoId", translations, event);
+      return createErrorResponse(400, "Missing NgoId", event);
     }
 
     if (!mongoose.isValidObjectId(ngoId)) {
-      return createErrorResponse(400, "NgoId is not a valid mongoose object Id", translations, event);
+      return createErrorResponse(400, "NgoId is not a valid mongoose object Id", event);
     }
 
     const ngo = await Ngo.findOne({ _id: ngoId }).lean();
     if (!ngo) {
-      return createErrorResponse(404, "There is no ngo account associated with the id.", translations, event);
+      return createErrorResponse(404, "There is no ngo account associated with the id.", event);
     }
 
     return createSuccessResponse(200, event, {
-      success: true,
       petPlacementOptions: ngo.petPlacementOptions || [],
     });
   } catch (err) {
-    console.error("getNgoPetPlacementOptions Error:", err);
-    return createErrorResponse(500, "Internal Server Error", translations, event);
+    logError("Failed to get NGO pet placement options", {
+      scope: "services.ngo.getNgoPetPlacementOptions",
+      event,
+      error: err,
+      extra: {
+        ngoId: event.pathParameters?.ngoId,
+      },
+    });
+    return createErrorResponse(500, "others.internalError", event);
   }
 }
 
-async function getNgoDetails({ event, translations }) {
+/**
+ * Fetches complete NGO profile with associated user, access, and counter data.
+ * @param {RouteContext} routeContext
+ */
+async function getNgoDetails({ event }) {
   try {
     const User = mongoose.model("User");
     const NgoCounters = mongoose.model("NgoCounters");
@@ -133,12 +107,12 @@ async function getNgoDetails({ event, translations }) {
 
     const ngoId = event.pathParameters?.ngoId;
     if (!mongoose.isValidObjectId(ngoId)) {
-      return createErrorResponse(400, "Invalid NGO ID format", translations, event);
+      return createErrorResponse(400, "Invalid NGO ID format", event);
     }
 
     const ngo = await Ngo.findOne({ _id: ngoId }).lean();
     if (!ngo) {
-      return createErrorResponse(404, "NGO not found", translations, event);
+      return createErrorResponse(404, "NGO not found", event);
     }
 
     // Parallel fetch for associated data
@@ -163,17 +137,29 @@ async function getNgoDetails({ event, translations }) {
       },
     });
   } catch (err) {
-    console.error("getNgoDetails Error:", err);
-    return createErrorResponse(500, "Internal Server Error", translations, event);
+    logError("Failed to get NGO details", {
+      scope: "services.ngo.getNgoDetails",
+      event,
+      error: err,
+      extra: {
+        ngoId: event.pathParameters?.ngoId,
+      },
+    });
+    return createErrorResponse(500, "others.internalError", event);
   }
 }
 
-async function editNgo({ event, translations, body }) {
+/**
+ * Atomically updates NGO-related records (user, NGO, counters, access)
+ * within a MongoDB transaction. Validates with Zod and checks for duplicates.
+ * @param {RouteContext} routeContext
+ */
+async function editNgo({ event, body }) {
   // Validate input using Zod
   const parseResult = editNgoBodySchema.safeParse(body);
   if (!parseResult.success) {
-    const errorMessages = parseResult.error.errors.map(e => e.message).join(", ");
-    return createErrorResponse(400, `Invalid request body: ${errorMessages}`, translations, event);
+    const errorMessages = getJoinedZodIssueMessages(parseResult.error);
+    return createErrorResponse(400, `Invalid request body: ${errorMessages}`, event);
   }
   // Use the parsed data
   body = parseResult.data;
@@ -205,7 +191,7 @@ async function editNgo({ event, translations, body }) {
     const userId = body.userProfile?.userId;
 
     if (!ngoId || !userId) {
-      return createErrorResponse(400, "Missing ngoId or userId", translations, event);
+      return createErrorResponse(400, "Missing ngoId or userId", event);
     }
 
     // 2. Prepare Updates using dot notation
@@ -223,7 +209,7 @@ async function editNgo({ event, translations, body }) {
         deleted: false,
       });
       if (existingUserWithEmail) {
-        return createErrorResponse(409, "others.emailExists", translations, event);
+        return createErrorResponse(409, "others.emailExists", event);
       }
     }
     if (userDot.phoneNumber) {
@@ -233,7 +219,7 @@ async function editNgo({ event, translations, body }) {
         deleted: false,
       });
       if (existingUserWithPhone) {
-        return createErrorResponse(409, "others.phoneExists", translations, event);
+        return createErrorResponse(409, "others.phoneExists", event);
       }
     }
     if (ngoDot.registrationNumber) {
@@ -242,63 +228,56 @@ async function editNgo({ event, translations, body }) {
         _id: { $ne: ngoId },
       });
       if (existingNgoWithReg) {
-        return createErrorResponse(409, "others.registrationNumberExists", translations, event);
+        return createErrorResponse(409, "others.registrationNumberExists", event);
       }
     }
 
-    const updates = [];
+    let hasUpdates = false;
     const responseData = {};
 
     // 3. Start Transaction
     session.startTransaction();
 
     if (hasKeys(userDot)) {
-      updates.push(
-        User.findOneAndUpdate(
-          { _id: userId, role: "ngo" },
-          { $set: userDot },
-          { session, new: true, runValidators: true, lean: true }
-        ).then(doc => { responseData.userProfile = doc; })
+      hasUpdates = true;
+      responseData.userProfile = await User.findOneAndUpdate(
+        { _id: userId, role: "ngo" },
+        { $set: userDot },
+        { session, new: true, runValidators: true, lean: true }
       );
     }
 
     if (hasKeys(ngoDot)) {
-      updates.push(
-        Ngo.findOneAndUpdate(
-          { _id: ngoId },
-          { $set: ngoDot },
-          { session, new: true, runValidators: true, lean: true }
-        ).then(doc => { responseData.ngoProfile = doc; })
+      hasUpdates = true;
+      responseData.ngoProfile = await Ngo.findOneAndUpdate(
+        { _id: ngoId },
+        { $set: ngoDot },
+        { session, new: true, runValidators: true, lean: true }
       );
     }
 
     if (hasKeys(countersDot)) {
-      updates.push(
-        NgoCounters.findOneAndUpdate(
-          { ngoId },
-          { $set: countersDot },
-          { session, new: true, runValidators: true, lean: true }
-        ).then(doc => { responseData.ngoCounters = doc; })
+      hasUpdates = true;
+      responseData.ngoCounters = await NgoCounters.findOneAndUpdate(
+        { ngoId },
+        { $set: countersDot },
+        { session, new: true, runValidators: true, lean: true }
       );
     }
 
     if (hasKeys(accessDot)) {
-      updates.push(
-        NgoUserAccess.findOneAndUpdate(
-          { ngoId, userId },
-          { $set: accessDot },
-          { session, new: true, runValidators: true, lean: true }
-        ).then(doc => { responseData.ngoUserAccessProfile = doc; })
+      hasUpdates = true;
+      responseData.ngoUserAccessProfile = await NgoUserAccess.findOneAndUpdate(
+        { ngoId, userId },
+        { $set: accessDot },
+        { session, new: true, runValidators: true, lean: true }
       );
     }
 
-    if (updates.length === 0) {
+    if (!hasUpdates) {
       await session.abortTransaction();
       return createSuccessResponse(200, event, { message: "No valid fields provided to update." });
     }
-
-    // 4. Execute all queries in parallel
-    await Promise.all(updates);
 
     // 5. Commit all changes to DB
     await session.commitTransaction();
@@ -317,11 +296,19 @@ async function editNgo({ event, translations, body }) {
 
     // Mongoose Validation Error
     if (err.name === "ValidationError") {
-      return createErrorResponse(400, err.message, translations, event);
+      return createErrorResponse(400, err.message, event);
     }
 
-    console.error("NGO Edit Error:", err);
-    return createErrorResponse(500, "Internal Server Error", translations, event);
+    logError("NGO edit failed", {
+      scope: "services.ngo.editNgo",
+      event,
+      error: err,
+      extra: {
+        ngoId: event.pathParameters?.ngoId,
+        userId,
+      },
+    });
+    return createErrorResponse(500, "others.internalError", event);
   } finally {
     session.endSession();
   }

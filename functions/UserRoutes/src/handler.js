@@ -2,12 +2,12 @@
 require("./config/env");
 
 const { getReadConnection } = require("./config/db");
-const { loadTranslations } = require("./utils/i18n");
 const { createErrorResponse } = require("./utils/response");
 const { handleOptions } = require("./cors");
 const { authJWT } = require("./middleware/authJWT");
 const { routeRequest } = require("./router");
 const { validateUserRequest } = require("./middleware/userGuard");
+const { logError } = require("./utils/logger");
 
 /** * Paths that do not require a valid JWT. 
  * Matches the 'event.resource' template from AWS.
@@ -34,44 +34,42 @@ const PUBLIC_RESOURCES = [
  */
 async function handleRequest(event, context) {
   context.callbackWaitsForEmptyEventLoop = false;
-  let translations = null;
 
   try {
     // 1. CORS Preflight
     const optionsResponse = handleOptions(event);
     if (optionsResponse) return optionsResponse;
 
-    // 2. Global Context Loading (i18n)
-    // We do this BEFORE Auth so Auth errors can be translated
-    translations = loadTranslations(
-      event.cookies?.language || event.queryStringParameters?.lang || 'zh'
-    );
-
     // 3. Authentication & Public Route Check
-    const authError = authJWT({ event, translations });
+    const authError = authJWT({ event });
     if (authError && !PUBLIC_RESOURCES.includes(event.resource)) return authError;
 
     // 4. Infrastructure Setup (DB)
     await getReadConnection();
 
     // 5. Data Guard / Validation
-    const userValidation = await validateUserRequest({ event, translations });
+    const userValidation = await validateUserRequest({ event });
     if (!userValidation.isValid) return userValidation.error;
 
     // 6. Routing
     return await routeRequest({
       event,
-      translations,
       user: userValidation.data,
       body: userValidation.body,
     });
 
   } catch (error) {
-    console.error("Error in handleRequest:", error);
+    logError("Unhandled request error", {
+      scope: "handler.handleRequest",
+      event,
+      error,
+      extra: {
+        awsRequestId: context.awsRequestId,
+      },
+    });
     return createErrorResponse(
       500, 
       "others.internalError", 
-      translations, 
       event
     );
   }

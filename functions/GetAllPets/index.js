@@ -123,7 +123,7 @@ exports.handler = async (event, context) => {
       const ngoId = event.pathParameters?.ngoId;
       // Get page from query string, default to 1, ensure it's a number
       const pageNumber = Math.max(1, parseInt(event.queryStringParameters?.page || 1, 10));
-      const limitNumber = 30; // Increased to 30 per page
+      const limitNumber = 30;
       
       const lang = event.cookies?.language || "zh";
       const t = loadTranslations(lang);

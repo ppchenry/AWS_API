@@ -4,22 +4,31 @@ This endpoint retrieves a list of pets associated with a specific NGO. It includ
 
 ---
 
+
 #### **Endpoint Overview**
-* **URL:** `/pet-list-ngo/{ngoId}`
+* **URL:** `https://udnh87tari.execute-api.ap-southeast-1.amazonaws.com/Dev/pets/pet-list-ngo/{ngoId}`
 * **Method:** `GET`
 * **Authentication:** Not Required (Public)
 * **Content-Type:** `application/json`
+* **x-api-key header:** **Required** (Requests without this header will be rejected with 403 Forbidden by API Gateway)
 
 ---
 
+
 #### **Request Parameters**
+
 
 **1. Path Parameters**
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `ngoId` | `string` | **Yes** | The unique identifier of the NGO. |
 
-**2. Query Parameters**
+**2. Headers**
+| Header | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `x-api-key` | `string` | **Yes** | API Gateway key required for authentication. |
+
+**3. Query Parameters**
 | Parameter | Type | Required | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `page` | `number` | No | `1` | The page number to retrieve. |

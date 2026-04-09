@@ -74,7 +74,8 @@
       "routeNotFound": "No handler for this path",
       "methodNotAllowed": "Method not allowed for this path",
       "internalError": "Something went wrong. Please try again later.",
-      "unauthorized": "Authentication required. Please log in."
+      "unauthorized": "Authentication required. Please log in.",
+      "serviceUnavailable": "Service temporarily unavailable. Please try again later."
     },
     "deleteAccount": {
       "paramsMissing": "There are missing parameters",

@@ -1,35 +1,41 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const { createErrorResponse, createSuccessResponse } = require("../utils/response");
+const { getFirstZodIssueMessage } = require("../utils/zod");
+const { logError } = require("../utils/logger");
 const { userUpdatePasswordSchema, userUpdateImageSchema } = require("../zodSchema/userUpdateSchema");
 
-async function updatePassword({ event, translations, body }) {
+/**
+ * Verifies the old password and updates to a new one.
+ * @param {RouteContext} routeContext
+ */
+async function updatePassword({ event, body }) {
   try {
     const User = mongoose.model("User");
     
     // 1. Validation
     const parseResult = userUpdatePasswordSchema.safeParse(body);
     if (!parseResult.success) {
-      return createErrorResponse(400, parseResult.error.errors[0].message, translations, event);
+      return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error), event);
     }
 
     const { userId, oldPassword, newPassword } = parseResult.data;
 
     // 2. Logic: Check if passwords are the same BEFORE hitting the DB
     if (oldPassword === newPassword) {
-      return createErrorResponse(400, "updatePassword.passwordUnchanged", translations, event);
+      return createErrorResponse(400, "updatePassword.passwordUnchanged", event);
     }
 
     // 3. Database Retrieval
     const user = await User.findOne({ _id: userId, deleted: false });
     if (!user) {
-      return createErrorResponse(404, "updatePassword.userNotFound", translations, event);
+      return createErrorResponse(404, "updatePassword.userNotFound", event);
     }
 
     // 4. Password Verification
     const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
     if (!isPasswordValid) {
-      return createErrorResponse(400, "updatePassword.currentPasswordInvalid", translations, event);
+      return createErrorResponse(400, "updatePassword.currentPasswordInvalid", event);
     }
 
     // 5. Hashing & Saving (Using the .env SALT_ROUNDS)
@@ -38,44 +44,58 @@ async function updatePassword({ event, translations, body }) {
     await user.save();
 
     return createSuccessResponse(200, event, {
-      message: translations?.["updatePassword.success"] || "Password updated successfully",
+      message: "Password updated successfully",
     });
 
   } catch (e) {
     // This catches DB connection errors, hashing failures, etc.
-    console.error("Update Password Error:", e);
-    return createErrorResponse(500, e.message, translations, event);
+    logError("Password update failed", {
+      scope: "services.update.updatePassword",
+      event,
+      error: e,
+      extra: {
+        userId: body?.userId,
+      },
+    });
+    return createErrorResponse(500, "others.internalError", event);
   }
 }
 
-async function updateUserImage({ event, translations, body }) {
+/**
+ * Validates and updates the user's profile image URL.
+ * @param {RouteContext} routeContext
+ */
+async function updateUserImage({ event, body }) {
   try {
     const User = mongoose.model("User");
 
     const parseResult = userUpdateImageSchema.safeParse(body);
     if (!parseResult.success) {
-      const zodError = parseResult.error.errors[0];
-      return createErrorResponse(400, zodError.message, translations, event);
+      return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error), event);
     }
     const { userId, image } = parseResult.data;
-    // Check if user exists
-    const userExists = await User.findOne({ _id: userId, deleted: false });
-    if (!userExists) {
-      return createErrorResponse(404, "updateImage.userNotFound", translations, event);
-    }
     const updatedUser = await User.findOneAndUpdate(
       { _id: userId, deleted: false },
       { image },
-      { new: true }
+      { new: true, lean: true }
     );
+    if (!updatedUser) {
+      return createErrorResponse(404, "updateImage.userNotFound", event);
+    }
     return createSuccessResponse(200, event, {
-      success: true,
-      message: translations ? translations["updateImage.success"] : "Image updated successfully",
+      message: "Image updated successfully",
       user: updatedUser,
     });
   } catch (e) {
-    console.error("Error:", e.message);
-    return createErrorResponse(500, e.message, translations, event);
+    logError("User image update failed", {
+      scope: "services.update.updateUserImage",
+      event,
+      error: e,
+      extra: {
+        userId: body?.userId,
+      },
+    });
+    return createErrorResponse(500, "others.internalError", event);
   }
 }
 

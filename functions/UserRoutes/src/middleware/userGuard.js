@@ -1,19 +1,20 @@
 const mongoose = require('mongoose');
 const { isValidObjectId } = mongoose;
 const { createErrorResponse } = require('../utils/response');
+const { validateSelfAccess } = require('./selfAccess');
 
 /**
  * Validates user existence for private routes and parses body for all routes.
  * @async
  * @param {Object} request
  * @param {import('aws-lambda').APIGatewayProxyEvent} request.event
- * @param {Object} request.translations
  * @returns {Promise<UserValidationResult>}
  */
-async function validateUserRequest({ event, translations }) {
+async function validateUserRequest({ event }) {
   const { body, pathParameters, httpMethod } = event;
   const userId = pathParameters?.userId;
   const method = httpMethod?.toUpperCase();
+  const routeKey = `${method} ${event.resource}`;
 
   // JSON Body Check
   let parsedBody = null;
@@ -23,7 +24,7 @@ async function validateUserRequest({ event, translations }) {
     } catch (error) {
       return {
         isValid: false,
-        error: createErrorResponse(400, "others.invalidJSON", translations, event)
+        error: createErrorResponse(400, "others.invalidJSON", event)
       };
     }
   }
@@ -33,12 +34,21 @@ async function validateUserRequest({ event, translations }) {
   if ((method === 'PUT' || method === 'POST') && (!parsedBody || Object.keys(parsedBody).length === 0)) {
     return {
       isValid: false,
-      error: createErrorResponse(
-        400, 
-        "others.missingParams", // Using your specific locale key
-        translations, 
-        event
-      )
+      error: createErrorResponse(400, "others.missingParams", event)
+    };
+  }
+
+  const selfAccessResult = await validateSelfAccess({
+    event,
+    routeKey,
+    parsedBody,
+    pathUserId: userId,
+  });
+
+  if (!selfAccessResult.isValid) {
+    return {
+      isValid: false,
+      error: selfAccessResult.error,
     };
   }
 
@@ -51,7 +61,7 @@ async function validateUserRequest({ event, translations }) {
   if (!isValidObjectId(userId)) {
     return { 
       isValid: false, 
-      error: createErrorResponse(400, "others.invalidGET", translations, event) 
+      error: createErrorResponse(400, "others.invalidGET", event) 
     };
   }
 
@@ -63,7 +73,7 @@ async function validateUserRequest({ event, translations }) {
   if (!user) {
     return { 
       isValid: false, 
-      error: createErrorResponse(404, "others.getUserNotFound", translations, event)
+      error: createErrorResponse(404, "others.getUserNotFound", event)
     };
   }
 

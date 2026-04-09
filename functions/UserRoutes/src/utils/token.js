@@ -69,6 +69,7 @@ function issueCustomAccessToken(payload, options = {}) {
 function issueUserAccessToken(user) {
   return issueCustomAccessToken({ 
     userId: user._id, 
+    userEmail: user.email,
     userRole: user.role 
   });
 }
@@ -87,12 +88,36 @@ function issueNgoAccessToken(user, ngo) {
   });
 }
 
+/**
+ * Derives the refresh-token cookie path from the API Gateway stage.
+ * @param {import('aws-lambda').APIGatewayProxyEvent} event
+ * @returns {string}
+ */
+function getCookiePath(event) {
+  const stage = event.requestContext?.stage || "";
+  if (stage === "Dev") return "/Dev/auth/refresh";
+  if (stage === "Production") return "/Production/auth/refresh";
+  return "/auth/refresh";
+}
+
+/**
+ * Builds a standardized Set-Cookie header value for the refresh token.
+ * @param {string} refreshToken
+ * @param {import('aws-lambda').APIGatewayProxyEvent} event
+ * @returns {string}
+ */
+function buildRefreshCookie(refreshToken, event) {
+  const cookiePath = getCookiePath(event);
+  return `refreshToken=${refreshToken}; HttpOnly; Secure; SameSite=Strict; Path=${cookiePath}; Max-Age=${process.env.REFRESH_TOKEN_MAX_AGE_SEC}`;
+}
+
 module.exports = {
   hashToken,
   generateRefreshToken,
-  issueAccessToken,
   issueCustomAccessToken,
   issueUserAccessToken,
   issueNgoAccessToken,
   createRefreshToken,
+  getCookiePath,
+  buildRefreshCookie,
 };
