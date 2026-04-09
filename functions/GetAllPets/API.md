@@ -32,6 +32,9 @@ This endpoint retrieves a list of pets associated with a specific NGO. It includ
 | Parameter | Type | Required | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `page` | `number` | No | `1` | The page number to retrieve. |
+| `search` | `string` | No | `""` | Case-insensitive search across `name`, `animal`, `breed`, `ngoPetId`, and `owner`. |
+| `sortBy` | `string` | No | `updatedAt` | Sort field. Supported values: `updatedAt`, `createdAt`, `name`, `animal`, `breed`, `birthday`, `receivedDate`, `ngoPetId`. |
+| `sortOrder` | `string` | No | `desc` | Sort direction. Supported values: `asc`, `desc`. |
 
 ---
 
@@ -83,5 +86,6 @@ This endpoint retrieves a list of pets associated with a specific NGO. It includ
 #### **Technical Constraints & Logic**
 * **Pagination:** Results are limited to **30 items per page**.
 * **Filtering:** Automatically filters out documents where `deleted: true`.
-* **Sorting:** Results are sorted by `updatedAt` in **descending order** (Newest entries first).
+* **Search:** When `search` is provided, results are filtered case-insensitively across `name`, `animal`, `breed`, `ngoPetId`, and `owner`.
+* **Sorting:** Results default to `updatedAt desc`, and can be customized with `sortBy` and `sortOrder`.
 * **Performance:** Uses `.lean()` execution to reduce Lambda memory overhead and database latency.

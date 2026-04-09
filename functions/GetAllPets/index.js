@@ -73,6 +73,11 @@ const isValidImageUrl = (url) => {
   }
 };
 
+const escapeRegex = (value) => {
+  if (typeof value !== "string") return "";
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
 // Helper function to create error response
 const createErrorResponse = (statusCode, error, translations, event) => {
   const defaultHeaders = {
@@ -121,9 +126,26 @@ exports.handler = async (event, context) => {
 
     if (isngoPath) {
       const ngoId = event.pathParameters?.ngoId;
+      const queryParams = event.queryStringParameters || {};
       // Get page from query string, default to 1, ensure it's a number
-      const pageNumber = Math.max(1, parseInt(event.queryStringParameters?.page || 1, 10));
+      const pageNumber = Math.max(1, parseInt(queryParams.page || 1, 10));
       const limitNumber = 30;
+      const search = typeof queryParams.search === "string" ? queryParams.search.trim() : "";
+      const sortByAllowList = new Set(["updatedAt", "createdAt", "name", "animal", "breed", "birthday", "receivedDate", "ngoPetId"]);
+      const sortBy = sortByAllowList.has(queryParams.sortBy) ? queryParams.sortBy : "updatedAt";
+      const sortOrder = String(queryParams.sortOrder || "desc").toLowerCase() === "asc" ? 1 : -1;
+      const query = { ngoId, deleted: false };
+
+      if (search) {
+        const safeSearch = escapeRegex(search);
+        query.$or = [
+          { name: { $regex: safeSearch, $options: "i" } },
+          { animal: { $regex: safeSearch, $options: "i" } },
+          { breed: { $regex: safeSearch, $options: "i" } },
+          { ngoPetId: { $regex: safeSearch, $options: "i" } },
+          { owner: { $regex: safeSearch, $options: "i" } },
+        ];
+      }
       
       const lang = event.cookies?.language || "zh";
       const t = loadTranslations(lang);
@@ -136,14 +158,14 @@ exports.handler = async (event, context) => {
 
       // 1. Fetch Paginated Results
       // .lean() is critical here to handle 30 docs without hitting memory limits
-      const pets = await Pet.find({ ngoId, deleted: false })
-        .sort({ updatedAt: -1 })
+      const pets = await Pet.find(query)
+        .sort({ [sortBy]: sortOrder, _id: -1 })
         .skip((pageNumber - 1) * limitNumber)
         .limit(limitNumber)
         .lean(); 
 
       // 2. Fetch Total Count
-      const totalNumber = await Pet.countDocuments({ ngoId, deleted: false });
+      const totalNumber = await Pet.countDocuments(query);
 
       if (!pets || pets.length === 0) {
         return createErrorResponse(404, "ngoPath.noPetsFound", t, event);
