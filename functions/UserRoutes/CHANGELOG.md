@@ -98,6 +98,56 @@ Examples verified during local testing:
 - invalid validation paths for register and SMS routes were re-tested after rebuild and confirmed to return `400`
 - CORS preflight was verified to work for configured local origins such as `http://localhost:3000`
 
+## Integration Test Suite
+
+73 end-to-end integration tests were written and passed against SAM local connected to the UAT MongoDB cluster.
+
+Test coverage by area:
+
+- registration (email): 6 tests including duplicate, missing fields, invalid format
+- login: 7 tests including wrong password, non-existent user, missing fields, invalid format, missing/garbage auth headers
+- login-2 (user existence check): 2 tests
+- get user: 2 tests including self-access enforcement
+- update user details: 4 tests including missing userId, mismatched userId, invalid email
+- update password: 4 tests including same password, wrong old password, short new password
+- update image: 3 tests including invalid URL, missing userId
+- user list: 2 tests including pagination and search
+- not-implemented routes: 3 tests confirming 405
+- NGO registration: 5 tests including duplicate, password mismatch, missing fields, invalid phone
+- NGO login: 1 test
+- NGO details (GET/PUT): 4 tests including invalid and non-existent ngoId
+- NGO pet placement options: 3 tests including invalid and non-existent ngoId
+- delete user by email: 6 tests including sacrificial user lifecycle and double-delete 409
+- SMS code generation: 3 tests including missing and invalid phone
+- SMS code verification: 4 tests including missing code, missing phone, invalid phone, wrong code
+- security: 12 tests covering tampered JWT, alg:none attack, arbitrary Bearer string, self-access enforcement on all protected mutation routes, mass assignment prevention, body userId injection on NGO edit, NoSQL injection via operator objects
+- delete user (cleanup): 3 tests including self-access enforcement
+
+## Cross-Audit Findings
+
+A separate AI cross-audit was performed against the full source and test suite. Findings:
+
+Confirmed correct:
+
+- request lifecycle layering (CORS, auth, DB, guard, route) is clean and well-separated
+- JWT auth rejects tampered tokens, alg:none, and missing/garbage headers
+- self-access middleware covers all 5 protected mutation routes via centralized policy map
+- Zod schemas use safeParse with i18n error keys; unknown fields stripped by default
+- editNgo uses whitelist-based field filtering; body userId is ignored in favor of JWT identity
+- soft-delete revokes all refresh tokens in the same operation
+- error response shape is consistent and production-grade for frontend traceability
+- NoSQL injection blocked by Zod type enforcement before reaching Mongoose
+
+Issues identified for follow-up:
+
+- `registerSchema` accepts `role` from request body; a caller could set `role: "ngo"` via regular registration — should hardcode to `"user"`
+- `USER_ALLOWED` in editNgo includes `"deleted"`; an NGO admin could soft-delete themselves via the edit endpoint — should remove from whitelist
+- no rate limiting on login, register, or SMS endpoints
+- no unique index on email in the User model; duplicate prevention relies on application-level checks
+- `/account/login-2` allows unauthenticated email/phone enumeration
+
+All follow-up items are tracked in the project TODO.
+
 ## Constraints And Deferred Work
 
 This stage intentionally respected the following constraints:
@@ -111,8 +161,11 @@ This stage intentionally respected the following constraints:
 Known constraints that still remain:
 
 - overall total code volume is still substantial; the gain is modularity, not dramatic code reduction
-- some broader hardening items are still deferred, including stronger abuse protection for public SMS endpoints
+- `role` is still accepted from request body on register; will be hardcoded to `"user"` in the next pass
+- `deleted` is still in the editNgo user whitelist; will be removed in the next pass
+- rate limiting on login, register, and SMS endpoints is not yet implemented
 - uniqueness guarantees still depend partly on application logic unless database indexes are enforced externally
+- `/account/login-2` is unauthenticated and can be used for email/phone enumeration
 - local SAM timings are useful for regressions and outliers, but not for final production performance judgment
 - README documentation may still lag behind the now-active handler/router architecture and should be refreshed in a later documentation pass
 

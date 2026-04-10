@@ -12,7 +12,7 @@ The goal is not to make every Lambda look identical. The goal is to make each La
 - [ ] align `template.yaml` or SAM events with the real router paths before local testing
 - [ ] validate required env vars early so bad config fails fast and predictably
 - [ ] centralize DB connection reuse instead of reconnecting inside each route
-- [ ] standardize success and error response shape before moving business logic around
+- [ ] standardize success and error response shape before moving business logic around — every error must include `success: false`, a machine-readable `errorKey` (locale dot-key), a translated `error` string, and a `requestId` for CloudWatch traceability
 - [ ] add structured logging for unexpected failures and important request-flow boundaries
 
 ## Validation And Safety
@@ -20,6 +20,7 @@ The goal is not to make every Lambda look identical. The goal is to make each La
 - [ ] add schema validation before business logic
 - [ ] make sure invalid input returns `400`, not `500`
 - [ ] if using Zod v4, read validation details from `error.issues`, not `error.errors`
+- [ ] use locale dot-keys as Zod error messages — never let raw Zod type-level strings (e.g. `"Invalid input: expected string, received undefined"`) reach the response; use `{ error: "locale.key" }` on every required `z.string()` field so type failures and missing-field failures both return a clean key
 - [ ] normalize identifiers like email and phone before lookups
 - [ ] reject unexpected fields where appropriate instead of silently accepting them
 - [ ] verify auth checks happen before private route logic, but after OPTIONS handling

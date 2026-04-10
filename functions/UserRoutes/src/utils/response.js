@@ -32,7 +32,9 @@ const createErrorResponse = (statusCode, error, event) => {
     headers: defaultHeaders,
     body: JSON.stringify({
       success: false,
+      errorKey: error,
       error: errorMessage,
+      ...(event.awsRequestId ? { requestId: event.awsRequestId } : {}),
     }),
   };
 };

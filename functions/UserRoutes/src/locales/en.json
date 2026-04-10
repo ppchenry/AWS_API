@@ -42,6 +42,7 @@
     },
     "updatePassword": {
       "passwordLong": "New password must contain at least 8 characters",
+      "paramsMissing": "Old password is required.",
       "userNotFound": "User not found",
       "currentPasswordInvalid": "The current password is incorrect",
       "success": "Password updated successfully",
@@ -75,7 +76,10 @@
       "methodNotAllowed": "Method not allowed for this path",
       "internalError": "Something went wrong. Please try again later.",
       "unauthorized": "Authentication required. Please log in.",
-      "serviceUnavailable": "Service temporarily unavailable. Please try again later."
+      "serviceUnavailable": "Service temporarily unavailable. Please try again later.",
+      "emailExists": "Email address is already in use.",
+      "phoneExists": "Phone number is already in use.",
+      "registrationNumberExists": "Business registration number is already in use."
     },
     "deleteAccount": {
       "paramsMissing": "There are missing parameters",
@@ -83,5 +87,42 @@
       "success": "Account has been successfully deleted",
       "invalidEmailFormat": "Invalid email format",
       "userAlreadyDeleted": "User has already been deleted"
+    },
+    "ngo": {
+      "missingId": "NGO ID is required.",
+      "invalidId": "Invalid NGO ID format.",
+      "notFound": "NGO not found.",
+      "invalidBody": "Invalid request body."
+    },
+    "register": {
+      "duplicate": {
+        "email": "Email address is already registered.",
+        "phone": "Phone number is already registered.",
+        "phoneNumber": "Phone number is already registered."
+      },
+      "errors": {
+        "firstNameRequired": "First name is required.",
+        "lastNameRequired": "Last name is required.",
+        "passwordRequired": "Password must be at least 8 characters.",
+        "invalidEmailFormat": "Invalid email format.",
+        "invalidPhoneFormat": "Invalid phone number format.",
+        "invalidImageUrl": "Invalid image URL format.",
+        "invalidBirthdayFormat": "Invalid date format.",
+        "emailOrPhoneRequired": "Either email or phone number is required."
+      }
+    },
+    "registerNgo": {
+      "duplicateBusinessReg": "Business registration number is already registered.",
+      "errors": {
+        "firstNameRequired": "First name is required.",
+        "lastNameRequired": "Last name is required.",
+        "passwordRequired": "Password must be at least 8 characters.",
+        "confirmPasswordRequired": "Please confirm your password.",
+        "ngoNameRequired": "NGO name is required.",
+        "ngoPrefixTooLong": "NGO prefix must not exceed 5 characters.",
+        "businessRegRequired": "Business registration number is required.",
+        "addressRequired": "Address is required.",
+        "passwordMismatch": "Password and confirm password do not match."
+      }
     }
   }

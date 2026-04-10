@@ -48,7 +48,13 @@ async function handleNGOLogin(user, event) {
       event,
       {
         message: `Login successful ${ngo.name}`,
-        data: { token, user, ngo, ngoUserAccess },
+        userId: user._id,
+        role: user.role,
+        token,
+        isVerified: user.verified,
+        email: user.email,
+        ngo,
+        ngoUserAccess,
       },
       {
         "Set-Cookie": buildRefreshCookie(newRefreshToken, event),

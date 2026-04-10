@@ -18,6 +18,14 @@
 - [ ] confirm all runtime dependencies are declared in `package.json` before relying on SAM build output
 - [ ] document what was improved and what was intentionally left constrained after each refactor stage
 
+## UserRoutes Follow-up
+
+- [ ] add rate limiting on login, register, and SMS endpoints to prevent brute-force and SMS abuse
+- [ ] hardcode `role: "user"` in register service instead of accepting `role` from request body; regular registration should never set `role` to `"ngo"` or anything else
+- [ ] remove `deleted` from `USER_ALLOWED` whitelist in editNgo service so NGO admins cannot soft-delete themselves via PUT `/account/edit-ngo/{ngoId}`
+- [ ] add unique index on `email` in the User model to prevent race-condition duplicates under concurrent registration requests
+- [ ] consider restricting `/account/login-2` to authenticated users or adding rate limiting to prevent email/phone enumeration
+
 ## PetBasicInfo Follow-up
 
 - [ ] add pet ownership or ngo-access checks for `GET/PUT/DELETE /pets/{petID}...`, taking reference from `UserRoutes/src/middleware/selfAccess.js`; current PetBasicInfo auth only checks that a JWT exists, not whether the caller is allowed to access that pet
@@ -28,3 +36,4 @@
 - [ ] add SAM event coverage and local API tests for PetBasicInfo routes, including explicit OPTIONS/CORS checks with allowed and disallowed origins like the UserRoutes local test pass
 - [ ] add invalid-input regression tests for PetBasicInfo update routes to confirm schema failures stay `400` and do not drift into `500`
 - [ ] review PetBasicInfo services for explicit field projections and update-result checks so DB writes/readbacks fail predictably and do not rely on implicit assumptions
+

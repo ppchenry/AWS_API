@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const { flattenToDot, pickAllowed, hasKeys } = require("../utils/objectUtils");
 const { createErrorResponse, createSuccessResponse } = require("../utils/response");
-const { getJoinedZodIssueMessages } = require("../utils/zod");
 const { logError } = require("../utils/logger");
 const { editNgoBodySchema } = require("../zodSchema/editNgoSchema");
 const { buildNgoUserListPipeline } = require("./ngoUserListPipeline");
@@ -66,16 +65,16 @@ async function getNgoPetPlacementOptions({ event }) {
 
     const ngoId = event.pathParameters?.ngoId;
     if (!ngoId) {
-      return createErrorResponse(400, "Missing NgoId", event);
+      return createErrorResponse(400, "ngo.missingId", event);
     }
 
     if (!mongoose.isValidObjectId(ngoId)) {
-      return createErrorResponse(400, "NgoId is not a valid mongoose object Id", event);
+      return createErrorResponse(400, "ngo.invalidId", event);
     }
 
     const ngo = await Ngo.findOne({ _id: ngoId }).lean();
     if (!ngo) {
-      return createErrorResponse(404, "There is no ngo account associated with the id.", event);
+      return createErrorResponse(404, "ngo.notFound", event);
     }
 
     return createSuccessResponse(200, event, {
@@ -107,12 +106,12 @@ async function getNgoDetails({ event }) {
 
     const ngoId = event.pathParameters?.ngoId;
     if (!mongoose.isValidObjectId(ngoId)) {
-      return createErrorResponse(400, "Invalid NGO ID format", event);
+      return createErrorResponse(400, "ngo.invalidId", event);
     }
 
     const ngo = await Ngo.findOne({ _id: ngoId }).lean();
     if (!ngo) {
-      return createErrorResponse(404, "NGO not found", event);
+      return createErrorResponse(404, "ngo.notFound", event);
     }
 
     // Parallel fetch for associated data
@@ -158,8 +157,7 @@ async function editNgo({ event, body }) {
   // Validate input using Zod
   const parseResult = editNgoBodySchema.safeParse(body);
   if (!parseResult.success) {
-    const errorMessages = getJoinedZodIssueMessages(parseResult.error);
-    return createErrorResponse(400, `Invalid request body: ${errorMessages}`, event);
+    return createErrorResponse(400, "ngo.invalidBody", event);
   }
   // Use the parsed data
   body = parseResult.data;
@@ -188,10 +186,10 @@ async function editNgo({ event, body }) {
     ]);
 
     const ngoId = event.pathParameters?.ngoId;
-    const userId = body.userProfile?.userId;
+    const userId = String(event.userId);
 
-    if (!ngoId || !userId) {
-      return createErrorResponse(400, "Missing ngoId or userId", event);
+    if (!ngoId) {
+      return createErrorResponse(400, "ngo.missingId", event);
     }
 
     // 2. Prepare Updates using dot notation
@@ -296,7 +294,7 @@ async function editNgo({ event, body }) {
 
     // Mongoose Validation Error
     if (err.name === "ValidationError") {
-      return createErrorResponse(400, err.message, event);
+      return createErrorResponse(400, "ngo.invalidBody", event);
     }
 
     logError("NGO edit failed", {
