@@ -4,13 +4,23 @@
 
 Refactored the PetBasicInfo Lambda from a single 600-line god function in `index.js` into a modular architecture under `src/`. Every route, middleware, utility, and schema now lives in its own file with a single responsibility.
 
+## 2026-04 Checklist Alignment
+
+- aligned PetBasicInfo request flow to thin entry -> handler -> guard -> router -> service
+- added explicit pet ownership and NGO access checks so valid JWTs can still receive `403`
+- restored translated success messages while keeping standardized error responses with `errorKey` and `requestId`
+- added structured logging for request boundaries, auth failures, DB failures, and unexpected service errors
+- enabled explicit SAM events for `/pets/{petID}`, `/basic-info`, and `/eyeLog` routes including OPTIONS preflight coverage
+- added a dedicated PetBasicInfo SAM integration suite for CORS, auth, ownership denial, invalid input, missing resources, update success, eye logs, and soft delete
+- remaining work is now mostly operational verification and future API redesign, not structural instability
+
 ---
 
 ## Architecture
 
 ### Before (Legacy)
 
-```
+```text
 index.js  — 600+ lines, all logic in one exports.handler
 ```
 
@@ -22,10 +32,10 @@ index.js  — 600+ lines, all logic in one exports.handler
 
 ### After (Refactored)
 
-```
+```text
 index.js           — 5 lines, delegates to handler
 src/
-  handler.js       — Orchestration: DB, auth, translations, petGuard, router
+  handler.js       — Orchestration: OPTIONS, auth, DB, petGuard, router
   router.js        — Declarative route table mapping method+path to service functions
   cors.js          — CORS origin validation and OPTIONS preflight handler
   config/db.js     — Singleton MongoDB connection with promise caching
@@ -38,6 +48,7 @@ src/
   utils/
     response.js    — createErrorResponse + createSuccessResponse helpers
     i18n.js        — Translation loading with per-container cache
+    logger.js      — Structured JSON logging helpers
     validators.js  — Stateless validation helpers (ObjectId, date, URL, number, boolean)
     dateParser.js  — DD/MM/YYYY and ISO date parser
   zodSchema/
@@ -46,14 +57,14 @@ src/
     en.json, zh.json
   models/
     pet.js, EyeAnalysisRecord.js
-```
+```text
 
 ---
 
 ## Security Improvements
 
 | # | Improvement | Detail |
-|---|------------|--------|
+| - | ----------- | ------ |
 | 1 | **Auth enforcement** | `authJWT()` is now wired into `handler.js` and runs globally on every request (except OPTIONS preflight). Previously it was commented out — all routes were fully public. |
 | 2 | **CORS origin validation** | Replaced hardcoded `Access-Control-Allow-Origin: "*"` with env-based `ALLOWED_ORIGINS` allowlist. Credentials-aware: uses specific origin, never wildcard. |
 | 3 | **JWT_BYPASS production guard** | `JWT_BYPASS=true` now only works when `NODE_ENV !== "production"`, preventing accidental auth bypass in prod. |
@@ -69,7 +80,7 @@ src/
 ## Performance Improvements
 
 | # | Improvement | Detail |
-|---|------------|--------|
+| - | ----------- | ------ |
 | 1 | **`.lean()` on pet lookup** | `petGuard.js` now uses `Pet.findById(petID).lean()`, skipping Mongoose document hydration on every request. |
 | 2 | **`.lean()` on eye log query** | `eyeLog.js` already used `.lean()` (added during refactor). |
 | 3 | **Eye log query limit** | Added `.limit(100)` to prevent unbounded result sets for pets with many eye analysis records. |
@@ -82,13 +93,14 @@ src/
 ## Code Quality Improvements
 
 | # | Improvement | Detail |
-|---|------------|--------|
+| - | ----------- | ------ |
 | 1 | **Consistent module system** | All files now use CommonJS (`require`/`module.exports`). Previously 6 files used ESM `import`/`export` while the rest used CJS — would fail without a bundler. |
-| 2 | **Standardized response helpers** | `createErrorResponse` and `createSuccessResponse` in `response.js` ensure every response has consistent shape (`{ success, message/error, ...data }`) with CORS headers. |
+| 2 | **Standardized response helpers** | `createErrorResponse` and `createSuccessResponse` in `response.js` ensure every response has consistent shape with CORS headers, translated success messages, and error traceability through `errorKey` plus `requestId`. |
 | 3 | **Declarative route table** | Routes are defined as a plain object in `router.js` (`'GET /basic-info': getPetBasicInfo`). Adding a new route is one line. |
 | 4 | **Zod schema validation** | Replaced 15+ inline `if` checks with a single `petBasicInfoUpdateSchema.safeParse(body)` call. All validation rules are co-located in one schema file. |
 | 5 | **Centralized pet guard** | Pet ID validation, body parsing, pet existence check, and soft-delete check all happen once in `petGuard.js` instead of being duplicated across route branches. |
-| 6 | **Thin handler** | `handler.js` only does: OPTIONS → auth → DB → translations → petGuard → router → global catch. No business logic. |
+| 6 | **Thin handler** | `handler.js` only does: OPTIONS → auth → DB → petGuard → router → global catch. No business logic. |
+| 8 | **Structured logs** | Request start/completion, DB failures, auth failures, and service exceptions now emit JSON logs with request context and serialized errors. |
 | 7 | **i18n support** | Bilingual error/success messages (en/zh) loaded from locale JSON files with dotted-key resolution. |
 
 ---

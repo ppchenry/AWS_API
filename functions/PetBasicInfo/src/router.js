@@ -1,24 +1,29 @@
-const { deletePetBasicInfo, getPetBasicInfo, updatePetBasicInfo } = require("./services/basicInfo");
-const { getPetEyeAnalysisLogs } = require("./services/eyeLog");
 const { createErrorResponse } = require("./utils/response");
 
 /**
  * @typedef {Object} RouteContext
  * @property {import('aws-lambda').APIGatewayProxyEvent} event
- * @property {Object} translations - Language map
+ * @property {string} [petID] - Pet id from the route path
  * @property {Object} [pet] - The pet document (if validated)
  * @property {Object} [body] - Parsed request body
  */
+
+function lazyRoute(modulePath, exportName) {
+  return async function routeHandler(ctx) {
+    const service = require(modulePath);
+    return await service[exportName](ctx);
+  };
+}
 
 /**
  * Mapping of AWS Resource paths to Service Functions
  * @type {Record<string, (ctx: RouteContext) => Promise<import('aws-lambda').APIGatewayProxyResult>>}
  */
 const routes = {
-  "GET /pets/{petID}/basic-info": getPetBasicInfo,
-  "PUT /pets/{petID}/basic-info": updatePetBasicInfo,
-  "GET /pets/{petID}/eyeLog":     getPetEyeAnalysisLogs,
-  "DELETE /pets/{petID}":         deletePetBasicInfo,
+  "GET /pets/{petID}/basic-info": lazyRoute("./services/basicInfo", "getPetBasicInfo"),
+  "PUT /pets/{petID}/basic-info": lazyRoute("./services/basicInfo", "updatePetBasicInfo"),
+  "GET /pets/{petID}/eyeLog": lazyRoute("./services/eyeLog", "getPetEyeAnalysisLogs"),
+  "DELETE /pets/{petID}": lazyRoute("./services/basicInfo", "deletePetBasicInfo"),
 };
 
 /**
@@ -28,17 +33,12 @@ const routes = {
  * @returns {Promise<import('aws-lambda').APIGatewayProxyResult>}
  */
 async function routeRequest(routeContext) {
-  const { event, translations } = routeContext;
+  const { event } = routeContext;
   const routeKey = `${event.httpMethod} ${event.resource}`;
   const routeAction = routes[routeKey];
 
   if (!routeAction) {
-    return createErrorResponse(
-      405,
-      'petBasicInfo.errors.methodNotAllowed', 
-      translations, 
-      event
-    );
+    return createErrorResponse(405, "petBasicInfo.errors.methodNotAllowed", event);
   }
 
   return await routeAction(routeContext);

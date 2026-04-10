@@ -29,7 +29,7 @@ const petBasicInfoUpdateSchema = z.object({
   receivedDate: z.string().refine(isValidDateFormat, { message: "petBasicInfo.errors.invalidReceivedDateFormat" }).optional(),
   location: z.string().optional(),
   position: z.string().optional(),
-}).strict()
+}).strict({ message: "petBasicInfo.errors.invalidUpdateField" })
 .refine(obj => Object.keys(obj).length > 0, {
   message: "petBasicInfo.errors.emptyUpdateBody"
 });

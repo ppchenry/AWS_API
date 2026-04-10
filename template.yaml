@@ -2,32 +2,63 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31 
 
 Resources:
-  # PetBasicInfoFunction:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     Timeout: 60
-  #     MemorySize: 512
-  #     CodeUri: functions/PetBasicInfo/
-  #     Handler: index.handler
-  #     Runtime: nodejs22.x
-  #     Events:
-  #       ApiBase:
-  #         Type: Api
-  #         Properties:
-  #           Path: /pets/{petID}
-  #           Method: ANY
-  #       ApiProxy:
-  #         Type: Api
-  #         Properties:
-  #           Path: /pets/{petID}/{proxy+}
-  #           Method: ANY
-  #     Environment:
-  #       Variables:
-  #         JWT_SECRET: "" 
-  #         JWT_BYPASS: ""
-  #         MONGODB_URI: ""
-  #         ALLOWED_ORIGINS: ""
-  #         NODE_ENV: "development"
+  PetBasicInfoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 60
+      MemorySize: 512
+      CodeUri: functions/PetBasicInfo/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Events:
+        PetDelete:
+          Type: Api
+          Properties:
+            Path: /pets/{petID}
+            Method: DELETE
+
+        PetDeleteOptions:
+          Type: Api
+          Properties:
+            Path: /pets/{petID}
+            Method: OPTIONS
+
+        PetBasicInfoGet:
+          Type: Api
+          Properties:
+            Path: /pets/{petID}/basic-info
+            Method: GET
+
+        PetBasicInfoPut:
+          Type: Api
+          Properties:
+            Path: /pets/{petID}/basic-info
+            Method: PUT
+
+        PetBasicInfoOptions:
+          Type: Api
+          Properties:
+            Path: /pets/{petID}/basic-info
+            Method: OPTIONS
+
+        PetEyeLogGet:
+          Type: Api
+          Properties:
+            Path: /pets/{petID}/eyeLog
+            Method: GET
+
+        PetEyeLogOptions:
+          Type: Api
+          Properties:
+            Path: /pets/{petID}/eyeLog
+            Method: OPTIONS
+      Environment:
+        Variables:
+          JWT_SECRET: ""
+          JWT_BYPASS: ""
+          MONGODB_URI: ""
+          ALLOWED_ORIGINS: ""
+          NODE_ENV: "development"
 
 
   # GetAllPetsFunction:

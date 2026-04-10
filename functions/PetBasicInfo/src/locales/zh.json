@@ -1,4 +1,8 @@
 {
+  "others": {
+    "unauthorized": "未授權",
+    "internalError": "內部伺服器錯誤"
+  },
   "petBasicInfo": {
     "errors": {
       "invalidJSON": "無效的 JSON 格式",
@@ -8,6 +12,7 @@
       "petDeleted": "寵物已被刪除",
       "petBasicInfoNotFound": "找不到寵物基本資訊",
       "emptyUpdateBody": "更新時必須提供至少一個欄位",
+      "invalidUpdateField": "此端點不允許更新其中一個或多個欄位",
       "invalidBirthdayFormat": "生日日期格式無效。預期格式為 YYYY-MM-DD 或 DD/MM/YYYY",
       "invalidReceivedDateFormat": "接收日期格式無效。預期格式為 YYYY-MM-DD 或 DD/MM/YYYY",
       "invalidsterilizationDateFormat": "絕育日期格式無效。預期格式為 YYYY-MM-DD 或 DD/MM/YYYY",

@@ -1,13 +1,13 @@
 // Trigger ENV validation immediately
 require("./config/env");
 
-const { getReadConnection } = require('./config/db');
-const { loadTranslations } = require('./utils/i18n');
-const { validatePetRequest } = require('./middleware/petGuard');
-const { createErrorResponse } = require('./utils/response');
-const { routeRequest } = require('./router');
-const { handleOptions } = require('./cors');
-const { authJWT } = require('./middleware/authJWT');
+const { getReadConnection } = require("./config/db");
+const { validatePetRequest } = require("./middleware/petGuard");
+const { createErrorResponse } = require("./utils/response");
+const { routeRequest } = require("./router");
+const { handleOptions } = require("./cors");
+const { authJWT } = require("./middleware/authJWT");
+const { logError } = require("./utils/logger");
 
 /**
  * Orchestrates the lifecycle of a single Lambda invocation.
@@ -19,43 +19,39 @@ const { authJWT } = require('./middleware/authJWT');
  */
 async function handleRequest(event, context) {
   context.callbackWaitsForEmptyEventLoop = false;
-  let translations = null;
+  event.awsRequestId = context.awsRequestId;
 
   try {
     // 1. CORS Preflight
     const optionsResponse = handleOptions(event);
     if (optionsResponse) return optionsResponse;
 
-    // 2. Global Context Loading (i18n)
-    // We do this BEFORE Auth so Auth errors can be translated
-    translations = loadTranslations(
-      event.cookies?.language || event.queryStringParameters?.lang || 'zh'
-    );
-
     // 3. Authentication & Public Route Check
-    const authError = authJWT({ event, translations });
+    const authError = authJWT({ event });
     if (authError) return authError;
 
     // 4. Infrastructure Setup (DB)
     await getReadConnection();
 
     // 5. Data Guard / Validation
-    const petValidation = await validatePetRequest({ event, translations });
+    const petValidation = await validatePetRequest({ event });
     if (!petValidation.isValid) return petValidation.error;
 
     // 6. Routing
     return await routeRequest({
       event,
-      translations,
       pet: petValidation.data,
       body: petValidation.body,
     });
   } catch (error) {
-    console.error('Error in handleRequest:', error);
+    logError("Unhandled PetBasicInfo request error", {
+      scope: "handler.handleRequest",
+      event,
+      error,
+    });
     return createErrorResponse(
       500,
-      'petBasicInfo.errors.internalServerError',
-      translations,
+      "petBasicInfo.errors.internalServerError",
       event
     );
   }

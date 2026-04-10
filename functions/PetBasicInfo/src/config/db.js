@@ -7,6 +7,7 @@
 const mongoose = require("mongoose");
 const PetSchema = require("../models/pet");
 const eyeAnalysisLogSchema = require("../models/EyeAnalysisRecord");
+const { logInfo, logError } = require("../utils/logger");
 
 let conn = null;
 let connPromise = null;
@@ -29,7 +30,12 @@ const connectToMongoDB = async () => {
         serverSelectionTimeoutMS: 5000,
         maxPoolSize: 1,
       });
-      console.log("MongoDB primary connected to database: petpetclub");
+      logInfo("MongoDB connection established", {
+        scope: "config.db.connectToMongoDB",
+        extra: {
+          readyState: mongoose.connection.readyState,
+        },
+      });
 
       mongoose.models.Pet || mongoose.model("Pet", PetSchema);
       mongoose.models.EyeAnalysisRecord || mongoose.model("EyeAnalysisRecord", eyeAnalysisLogSchema, "eye_analysis_log");
@@ -37,7 +43,10 @@ const connectToMongoDB = async () => {
     } catch (error) {
       connPromise = null;
       conn = null;
-      console.error("MongoDB connection error:", error);
+      logError("MongoDB connection failed", {
+        scope: "config.db.connectToMongoDB",
+        error,
+      });
       throw new Error("Failed to connect to database");
     }
   })();

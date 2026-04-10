@@ -1,4 +1,8 @@
 {
+  "others": {
+    "unauthorized": "Unauthorized",
+    "internalError": "Internal Server Error"
+  },
   "petBasicInfo": {
     "errors": {
       "invalidJSON": "Invalid JSON format",
@@ -8,6 +12,7 @@
       "petDeleted": "Pet has been deleted",
       "petBasicInfoNotFound": "Pet basic info not found",
       "emptyUpdateBody": "At least one field must be provided for update",
+      "invalidUpdateField": "One or more fields cannot be updated through this endpoint",
       "invalidBirthdayFormat": "Invalid date format for birthday. Expected YYYY-MM-DD or DD/MM/YYYY format",
       "invalidReceivedDateFormat": "Invalid date format for receivedDate. Expected YYYY-MM-DD or DD/MM/YYYY format",
       "invalidsterilizationDateFormat": "Invalid date format for sterilizationDate. Expected YYYY-MM-DD or DD/MM/YYYY format",

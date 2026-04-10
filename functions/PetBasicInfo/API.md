@@ -2,7 +2,7 @@
 
 ## Base URL
 
-```
+```text
 {API_GATEWAY_URL}/pets/{petID}
 ```
 
@@ -10,11 +10,12 @@
 
 All endpoints require a valid JWT Bearer token in the `Authorization` header.
 
-```
+```text
 Authorization: Bearer <token>
 ```
 
 Returns `401` if the token is missing, expired, or invalid.
+Returns `403` if the token is valid but the caller does not own the pet and is not authorized through the pet's `ngoId`.
 
 ## Language
 
@@ -31,7 +32,9 @@ All error responses follow this format:
 ```json
 {
   "success": false,
-  "error": "Translated error message"
+  "errorKey": "petBasicInfo.errors.petNotFound",
+  "error": "Translated error message",
+  "requestId": "aws-request-id"
 }
 ```
 
@@ -53,16 +56,16 @@ All success responses follow this format:
 
 ### 1. Get Pet Basic Info
 
-```
+```text
 GET /pets/{petID}/basic-info
 ```
 
 Retrieves the basic profile information for a pet.
 
-**Path Parameters**
+#### Update Path Parameters
 
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
+| --------- | ---- | -------- | ----------- |
 | `petID` | string (ObjectId) | Yes | The pet's MongoDB ID |
 
 **Success Response** — `200 OK`
@@ -106,12 +109,13 @@ Retrieves the basic profile information for a pet.
 }
 ```
 
-**Error Responses**
+#### Error Responses
 
 | Status | Condition |
-|--------|-----------|
+| ------ | --------- |
 | `400` | Invalid pet ID format |
 | `401` | Authentication required |
+| `403` | Caller does not own the pet and is not authorized through the pet NGO |
 | `404` | Pet not found |
 | `410` | Pet has been deleted |
 
@@ -119,16 +123,16 @@ Retrieves the basic profile information for a pet.
 
 ### 2. Update Pet Basic Info
 
-```
+```text
 PUT /pets/{petID}/basic-info
 ```
 
 Updates one or more fields on the pet's basic profile. Unknown fields are rejected.
 
-**Path Parameters**
+#### Path Parameters
 
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
+| --------- | ---- | -------- | ----------- |
 | `petID` | string (ObjectId) | Yes | The pet's MongoDB ID |
 
 **Request Body** — `application/json`
@@ -136,7 +140,7 @@ Updates one or more fields on the pet's basic profile. Unknown fields are reject
 All fields are optional. At least one must be provided.
 
 | Field | Type | Validation |
-|-------|------|------------|
+| ----- | ---- | ---------- |
 | `name` | string | — |
 | `breedimage` | string[] | Each must be a valid HTTP/HTTPS URL |
 | `animal` | string | — |
@@ -164,7 +168,7 @@ All fields are optional. At least one must be provided.
 
 > **Note**: `tagId` and `ngoPetId` are **not updatable** through this endpoint. Sending them will return a validation error.
 
-**Example Request**
+#### Update Example Request
 
 ```json
 {
@@ -185,15 +189,16 @@ All fields are optional. At least one must be provided.
 }
 ```
 
-**Error Responses**
+#### Update Error Responses
 
 | Status | Condition |
-|--------|-----------|
+| ------ | --------- |
 | `400` | Invalid JSON body |
 | `400` | Empty update body |
 | `400` | Validation error (wrong type, invalid date, invalid URL, unknown field) |
 | `400` | No valid fields to update |
 | `401` | Authentication required |
+| `403` | Caller does not own the pet and is not authorized through the pet NGO |
 | `404` | Pet not found |
 | `410` | Pet has been deleted |
 | `500` | Database error |
@@ -202,16 +207,16 @@ All fields are optional. At least one must be provided.
 
 ### 3. Delete Pet (Soft Delete)
 
-```
+```text
 DELETE /pets/{petID}
 ```
 
 Soft-deletes a pet by setting `deleted: true` and clearing `tagId`. The record remains in the database.
 
-**Path Parameters**
+#### Delete Path Parameters
 
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
+| --------- | ---- | -------- | ----------- |
 | `petID` | string (ObjectId) | Yes | The pet's MongoDB ID |
 
 **Success Response** — `200 OK`
@@ -224,12 +229,13 @@ Soft-deletes a pet by setting `deleted: true` and clearing `tagId`. The record r
 }
 ```
 
-**Error Responses**
+#### Delete Error Responses
 
 | Status | Condition |
-|--------|-----------|
+| ------ | --------- |
 | `400` | Invalid pet ID format |
 | `401` | Authentication required |
+| `403` | Caller does not own the pet and is not authorized through the pet NGO |
 | `404` | Pet not found |
 | `410` | Pet already deleted |
 | `500` | Database error |
@@ -238,16 +244,16 @@ Soft-deletes a pet by setting `deleted: true` and clearing `tagId`. The record r
 
 ### 4. Get Eye Analysis Logs
 
-```
+```text
 GET /pets/{petID}/eyeLog
 ```
 
 Retrieves the eye analysis records for a pet, sorted by most recent first. Returns up to 100 records.
 
-**Path Parameters**
+#### Eye Log Path Parameters
 
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
+| --------- | ---- | -------- | ----------- |
 | `petID` | string (ObjectId) | Yes | The pet's MongoDB ID |
 
 **Success Response** — `200 OK`
@@ -270,12 +276,13 @@ Retrieves the eye analysis records for a pet, sorted by most recent first. Retur
 }
 ```
 
-**Error Responses**
+#### Eye Log Error Responses
 
 | Status | Condition |
-|--------|-----------|
+| ------ | --------- |
 | `400` | Invalid pet ID format |
 | `401` | Authentication required |
+| `403` | Caller does not own the pet and is not authorized through the pet NGO |
 | `404` | Pet not found |
 | `410` | Pet has been deleted |
 | `500` | Error retrieving eye log |
@@ -291,7 +298,7 @@ Retrieves the eye analysis records for a pet, sorted by most recent first. Retur
 ## Global Error Codes
 
 | Status | Meaning |
-|--------|---------|
+| ------ | ------- |
 | `400` | Bad request (validation, format, missing data) |
 | `401` | Authentication required |
 | `404` | Resource not found |

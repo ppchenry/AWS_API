@@ -1,18 +1,18 @@
 const mongoose = require("mongoose");
 const { parseDDMMYYYY } = require("../utils/dateParser");
 const { createErrorResponse, createSuccessResponse } = require("../utils/response");
+const { logError } = require("../utils/logger");
 const { petBasicInfoUpdateSchema } = require("../zodSchema/petBasicInfoSchema");
 
 /**
  * Retrieve pet basic info and return a formatted response.
- * @param {Object} routeConext - Context object containing pet, event, and translations.
- * @param {Object} routeConext.pet - The pet Mongoose document.
- * @param {Object} routeConext.event - The Lambda event object.
- * @param {Object} routeConext.translations - Translations for i18n.
+ * @param {Object} routeContext - Context object containing pet and event.
+ * @param {Object} routeContext.pet - The pet Mongoose document.
+ * @param {Object} routeContext.event - The Lambda event object.
  * @returns {Promise<Object>} Lambda response with pet info or error.
  */
-async function getPetBasicInfo(routeConext) {
-  const { pet, event, translations } = routeConext;
+async function getPetBasicInfo(routeContext) {
+  const { pet, event } = routeContext;
 
   const petObj = pet.toObject ? pet.toObject() : pet;
 
@@ -48,34 +48,32 @@ async function getPetBasicInfo(routeConext) {
     position: petObj.position,
   };
   
-  return createSuccessResponse(
-    "petBasicInfo.success.retrievedSuccessfully",
-    { form, id: pet._id },
-    translations,
-    event
-  );
+  return createSuccessResponse(200, event, {
+    message: "petBasicInfo.success.retrievedSuccessfully",
+    form,
+    id: pet._id,
+  });
 }
 
 /**
  * Update pet basic info fields (excluding tagId, ngoPetId) after Zod validation.
  * Strips tagId and ngoPetId to prevent updates. Transforms date and location fields.
- * @param {Object} routeConext - Context object containing body, translations, event.
- * @param {Object} routeConext.body - The parsed request body.
- * @param {Object} routeConext.translations - Translations for i18n.
- * @param {Object} routeConext.event - The Lambda event object.
+ * @param {Object} routeContext - Context object containing body, pet, event, and petID.
+ * @param {Object} routeContext.body - The parsed request body.
+ * @param {Object} routeContext.event - The Lambda event object.
  * @returns {Promise<Object>} Lambda response with update result or error.
  */
-async function updatePetBasicInfo(routeConext) {
-  const { body, translations, event, petID, pet } = routeConext;
+async function updatePetBasicInfo(routeContext) {
+  const { body, event, pet } = routeContext;
+  const petID = event.pathParameters?.petID;
 
   const validatedBody = petBasicInfoUpdateSchema.safeParse(body);
   
   if (!validatedBody.success) {
-    const errorMessage = validatedBody.error.issues[0]?.message || "Validation error";
+    const errorMessage = validatedBody.error.issues[0]?.message || "petBasicInfo.errors.validationError";
     return createErrorResponse(
       400,
       errorMessage,
-      translations,
       event
     );
   }
@@ -99,26 +97,38 @@ async function updatePetBasicInfo(routeConext) {
     return createErrorResponse(
       400, 
       "petBasicInfo.errors.noValidFieldsToUpdate", 
-      translations, 
       event
     );
   }
 
   try {
     const PetModel = mongoose.model("Pet");
-    await PetModel.findByIdAndUpdate(petID, { $set: setFields }, { runValidators: true });
+    const updatedPet = await PetModel.findByIdAndUpdate(
+      petID,
+      { $set: setFields },
+      { runValidators: true, new: true }
+    ).lean();
+
+    if (!updatedPet) {
+      return createErrorResponse(404, "petBasicInfo.errors.petNotFound", event);
+    }
     
-    return createSuccessResponse(
-      "petBasicInfo.success.updatedSuccessfully",
-      { id: pet._id },
-      translations,
-      event
-    );
+    return createSuccessResponse(200, event, {
+      message: "petBasicInfo.success.updatedSuccessfully",
+      id: pet._id,
+    });
   } catch (error) {
+    logError("Failed to update pet basic info", {
+      scope: "services.basicInfo.updatePetBasicInfo",
+      event,
+      error,
+      extra: {
+        petID,
+      },
+    });
     return createErrorResponse(
       500, 
-      "petBasicInfo.errors.databaseError", 
-      translations, 
+      "petBasicInfo.errors.errorUpdatingPet", 
       event
     );
   }
@@ -126,39 +136,49 @@ async function updatePetBasicInfo(routeConext) {
 
 /**
  * Soft-delete a pet by setting deleted: true and tagId: null.
- * @param {Object} routeContext - Context object containing petID, translations, event.
+ * @param {Object} routeContext - Context object containing petID and event.
  * @param {string} routeContext.petID - The pet's MongoDB ObjectId.
- * @param {Object} routeContext.translations - Translations for i18n.
  * @param {Object} routeContext.event - The Lambda event object.
  * @returns {Promise<Object>} Lambda response with delete result or error.
  */
 async function deletePetBasicInfo(routeContext) {
-  const { petID, translations, event } = routeContext;
+  const { event } = routeContext;
+  const petID = event.pathParameters?.petID;
 
   try {
     const PetModel = mongoose.model("Pet");
 
-    await PetModel.findByIdAndUpdate(
+    const deletedPet = await PetModel.findByIdAndUpdate(
       petID,
       { 
         $set: { 
           deleted: true, 
           tagId: null 
         } 
-      }
+      },
+      { new: true }
     );
 
-    return createSuccessResponse(
-      "petBasicInfo.success.deletedSuccessfully",
-      { petId: petID },
-      translations,
-      event
-    );
+    if (!deletedPet) {
+      return createErrorResponse(404, "petBasicInfo.errors.petNotFound", event);
+    }
+
+    return createSuccessResponse(200, event, {
+      message: "petBasicInfo.success.deletedSuccessfully",
+      petId: petID,
+    });
   } catch (error) {    
+    logError("Failed to delete pet", {
+      scope: "services.basicInfo.deletePetBasicInfo",
+      event,
+      error,
+      extra: {
+        petID,
+      },
+    });
     return createErrorResponse(
       500,
       "petBasicInfo.errors.errorDeletingPet",
-      translations,
       event
     );
   }
