@@ -1,8 +1,7 @@
 const { z } = require("zod");
 
-// User profile schema
+// User profile schema (userId is sourced from JWT, not request body)
 const userProfileSchema = z.object({
-  userId: z.string().min(1, "userId is required"),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   email: z.string().email().optional(),

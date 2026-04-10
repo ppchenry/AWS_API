@@ -3,9 +3,9 @@ const { isValidEmail, isValidPhoneNumber, isValidDateFormat, isValidImageUrl } =
 
 // Unified Zod schema for registration (email, phone, or both)
 const registerSchema = z.object({
-  firstName: z.string().min(1, "register.errors.firstNameRequired"),
-  lastName: z.string().min(1, "register.errors.lastNameRequired"),
-  password: z.string().min(8, "register.errors.passwordRequired"),
+  firstName: z.string({ error: "register.errors.firstNameRequired" }).min(1, "register.errors.firstNameRequired"),
+  lastName: z.string({ error: "register.errors.lastNameRequired" }).min(1, "register.errors.lastNameRequired"),
+  password: z.string({ error: "register.errors.passwordRequired" }).min(8, "register.errors.passwordRequired"),
   // At least one of email or phoneNumber is required
   email: z.string().optional().or(z.literal("")).nullable().refine(
     (val) => !val || val === "" || isValidEmail(val),

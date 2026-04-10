@@ -4,19 +4,19 @@ const { isValidEmail, isValidPhoneNumber, isValidDateFormat } = require("../util
 
 // Zod schema for updatePassword
 const userUpdatePasswordSchema = z.object({
-  userId: z.string().refine(isValidObjectId, { message: "updatePassword.invalidUserId" }),
-  oldPassword: z.string().min(1, { message: "updatePassword.paramsMissing" }),
-  newPassword: z.string().min(8, { message: "updatePassword.passwordLong" }),
+  userId: z.string({ error: "updatePassword.invalidUserId" }).refine(isValidObjectId, { message: "updatePassword.invalidUserId" }),
+  oldPassword: z.string({ error: "updatePassword.paramsMissing" }).min(1, { message: "updatePassword.paramsMissing" }),
+  newPassword: z.string({ error: "updatePassword.passwordLong" }).min(8, { message: "updatePassword.passwordLong" }),
 });
 
 // Zod schema for updateUserImage
 const userUpdateImageSchema = z.object({
-  userId: z.string().refine(isValidObjectId, { message: "updateImage.invalidUserId" }),
-  image: z.string().refine(isValidImageUrl, { message: "updateImage.invalidImageUrl" }),
+  userId: z.string({ error: "updateImage.invalidUserId" }).refine(isValidObjectId, { message: "updateImage.invalidUserId" }),
+  image: z.string({ error: "updateImage.invalidImageUrl" }).refine(isValidImageUrl, { message: "updateImage.invalidImageUrl" }),
 });
 
 const userUpdateDetailsSchema = z.object({
-  userId: z.string().refine(isValidObjectId, { message: "others.invalidPUT" }),
+  userId: z.string({ error: "others.invalidPUT" }).refine(isValidObjectId, { message: "others.invalidPUT" }),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   birthday: z.string().refine(isValidDateFormat, { message: "others.invalidDateFormat" }).optional(),

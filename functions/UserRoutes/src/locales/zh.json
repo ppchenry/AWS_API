@@ -41,8 +41,7 @@
       "invalidEmailFormat": "電子郵件格式無效"
     },
     "updatePassword": {
-      "passwordLong": "新密碼必須至少包含 8 個字符",
-      "userNotFound": "未找到用戶",
+      "passwordLong": "新密碼必須至少包含 8 個字符",      "paramsMissing": "必須提供舊密碼。",      "userNotFound": "未找到用戶",
       "currentPasswordInvalid": "目前密碼不正確",
       "success": "密碼更新成功",
       "invalidUserId": "用戶 ID 格式無效",
@@ -75,7 +74,10 @@
       "methodNotAllowed": "不允許對此路徑使用該方法",
       "internalError": "發生錯誤，請稍後再試。",
       "unauthorized": "需要身份驗證，請登錄。",
-      "serviceUnavailable": "服務暫時無法使用，請稍後再試。"
+      "serviceUnavailable": "服務暫時無法使用，請稍後再試。",
+      "emailExists": "此電子郵件地址已被使用。",
+      "phoneExists": "此電話號碼已被使用。",
+      "registrationNumberExists": "此商業登記號碼已被使用。"
     },
     "deleteAccount": {
       "paramsMissing": "缺少參數",
@@ -83,7 +85,42 @@
       "success": "帳戶已成功刪除",
       "invalidEmailFormat": "電子郵件格式無效",
       "userAlreadyDeleted": "用戶已被刪除"
+    },
+    "ngo": {
+      "missingId": "必須提供 NGO ID。",
+      "invalidId": "NGO ID 格式無效。",
+      "notFound": "找不到該 NGO。",
+      "invalidBody": "請求內容格式無效。"
+    },
+    "register": {
+      "duplicate": {
+        "email": "此電子郵件已被註冊。",
+        "phone": "此電話號碼已被註冊。",
+        "phoneNumber": "此電話號碼已被註冊。"
+      },
+      "errors": {
+        "firstNameRequired": "必須提供名字。",
+        "lastNameRequired": "必須提供姓氏。",
+        "passwordRequired": "密碼必須至少 8 個字符。",
+        "invalidEmailFormat": "電子郵件格式無效。",
+        "invalidPhoneFormat": "電話號碼格式無效。",
+        "invalidImageUrl": "圖片連結格式無效。",
+        "invalidBirthdayFormat": "日期格式無效。",
+        "emailOrPhoneRequired": "必須提供電子郵件或電話號碼。"
+      }
+    },
+    "registerNgo": {
+      "duplicateBusinessReg": "此商業登記號碼已被註冊。",
+      "errors": {
+        "firstNameRequired": "必須提供名字。",
+        "lastNameRequired": "必須提供姓氏。",
+        "passwordRequired": "密碼必須至少 8 個字符。",
+        "confirmPasswordRequired": "請確認密碼。",
+        "ngoNameRequired": "必須提供 NGO 名稱。",
+        "ngoPrefixTooLong": "NGO 前置碼不能超過 5 個字符。",
+        "businessRegRequired": "必須提供商業登記號碼。",
+        "addressRequired": "必須提供地址。",
+        "passwordMismatch": "密碼與確認密碼不一致。"
+      }
     }
   }
-  
-  

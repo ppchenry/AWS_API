@@ -34,6 +34,7 @@ const PUBLIC_RESOURCES = [
  */
 async function handleRequest(event, context) {
   context.callbackWaitsForEmptyEventLoop = false;
+  event.awsRequestId = context.awsRequestId;
 
   try {
     // 1. CORS Preflight
