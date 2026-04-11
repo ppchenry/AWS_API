@@ -15,7 +15,6 @@ const registerSchema = z.object({
     (val) => !val || val === "" || isValidPhoneNumber(val),
     { message: "register.errors.invalidPhoneFormat" }
   ),
-  role: z.string().optional(),
   subscribe: z.union([z.string(), z.boolean()]).optional(),
   promotion: z.boolean().optional(),
   district: z.string().optional().nullable(),

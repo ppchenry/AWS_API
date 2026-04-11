@@ -140,11 +140,11 @@ Confirmed correct:
 
 Issues identified for follow-up:
 
-- `registerSchema` accepts `role` from request body; a caller could set `role: "ngo"` via regular registration — should hardcode to `"user"`
-- `USER_ALLOWED` in editNgo includes `"deleted"`; an NGO admin could soft-delete themselves via the edit endpoint — should remove from whitelist
+<!-- - `registerSchema` accepts `role` from request body; a caller could set `role: "ngo"` via regular registration — should hardcode to `"user"` -->
+<!-- - `USER_ALLOWED` in editNgo includes `"deleted"`; an NGO admin could soft-delete themselves via the edit endpoint — should remove from whitelist -->
 - no rate limiting on login, register, or SMS endpoints
 - no unique index on email in the User model; duplicate prevention relies on application-level checks
-- `/account/login-2` allows unauthenticated email/phone enumeration
+<!-- - `/account/login-2` allows unauthenticated email/phone enumeration -->
 
 All follow-up items are tracked in the project TODO.
 
@@ -160,14 +160,11 @@ This stage intentionally respected the following constraints:
 
 Known constraints that still remain:
 
-- overall total code volume is still substantial; the gain is modularity, not dramatic code reduction
-- `role` is still accepted from request body on register; will be hardcoded to `"user"` in the next pass
-- `deleted` is still in the editNgo user whitelist; will be removed in the next pass
+<!-- - `role` is still accepted from request body on register; will be hardcoded to `"user"` in the next pass -->
+<!-- - `deleted` is still in the editNgo user whitelist; will be removed in the next pass -->
 - rate limiting on login, register, and SMS endpoints is not yet implemented
 - uniqueness guarantees still depend partly on application logic unless database indexes are enforced externally
-- `/account/login-2` is unauthenticated and can be used for email/phone enumeration
-- local SAM timings are useful for regressions and outliers, but not for final production performance judgment
-- README documentation may still lag behind the now-active handler/router architecture and should be refreshed in a later documentation pass
+<!-- - `/account/login-2` is unauthenticated and can be used for email/phone enumeration -->
 
 ## Result Of This Stage
 

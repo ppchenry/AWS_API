@@ -7,7 +7,6 @@ const userProfileSchema = z.object({
   email: z.string().email().optional(),
   phoneNumber: z.string().optional(),
   gender: z.string().optional(),
-  deleted: z.boolean().optional(),
 });
 
 // NGO profile schema

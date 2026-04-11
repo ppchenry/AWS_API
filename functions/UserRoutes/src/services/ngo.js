@@ -172,7 +172,7 @@ async function editNgo({ event, body }) {
 
   try {
     // 1. Setup Constants & Allowed Fields
-    const USER_ALLOWED = new Set(["firstName", "lastName", "email", "phoneNumber", "gender", "deleted"]);
+    const USER_ALLOWED = new Set(["firstName", "lastName", "email", "phoneNumber", "gender"]);
     const NGO_ALLOWED = new Set([
       "name", "description", "registrationNumber", "email", "website",
       "address.street", "address.city", "address.state", "address.zipCode", "address.country",

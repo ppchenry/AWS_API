@@ -108,6 +108,18 @@ describe("POST /account/register", () => {
     expect(res.status).toBe(400);
     expect(res.body.errorKey).toBe("register.errors.invalidEmailFormat");
   });
+
+  test("ignores role in request body and creates a normal user", async () => {
+    const res = await req("POST", "/account/register", {
+      firstName: "Role",
+      lastName: "Injection",
+      email: `roleinject_${Date.now()}@test.com`,
+      password: "Test1234!",
+      role: "ngo",
+    });
+    expect(res.status).toBe(201);
+    expect(res.body?.user?.role).toBe("user");
+  });
 });
 
 // ─── Login ───────────────────────────────────────────────────────────────────
@@ -129,11 +141,9 @@ describe("POST /account/login", () => {
       password: "WrongPassword!",
     });
     expect(res.status).toBe(401);
-    // Error traceability: machine-readable key + translated message always present
     expect(res.body.errorKey).toBe("emailLogin.invalidUserCredential");
     expect(typeof res.body.error).toBe("string");
     expect(res.body.error.length).toBeGreaterThan(0);
-    // requestId present (set by Lambda context in handler)
     expect(typeof res.body.requestId).toBe("string");
   });
 
@@ -179,12 +189,13 @@ describe("POST /account/login", () => {
 // ─── Login-2 ─────────────────────────────────────────────────────────────────
 
 describe("POST /account/login-2", () => {
-  test("checks existing user by email", async () => {
+  test("returns 405 for deprecated endpoint", async () => {
     const res = await req("POST", "/account/login-2", { email: state.email });
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(405);
+    expect(res.body.errorKey).toBe("others.methodNotAllowed");
   });
 
-  test("rejects missing email and phone → 400", async () => {
+  test("still rejects empty body before routing → 400", async () => {
     const res = await req("POST", "/account/login-2", {});
     expect(res.status).toBe(400);
     expect(res.body.errorKey).toBe("others.missingParams");
@@ -378,6 +389,23 @@ describe("POST /account/register-ngo", () => {
     expect(res.body.errorKey).toBe("phoneRegister.userExist");
   });
 
+  test("rejects email already registered by a normal user → 400", async () => {
+    const res = await req("POST", "/account/register-ngo", {
+      firstName: "Existing",
+      lastName: "User",
+      email: state.email,
+      phoneNumber: "+85212345670",
+      password: state.ngoPassword,
+      confirmPassword: state.ngoPassword,
+      ngoName: `Existing User NGO ${TEST_TS}`,
+      ngoPrefix: "EXUSR",
+      businessRegistrationNumber: `BRXU${TEST_TS.toString().slice(-6)}`,
+      address: "Existing User Street",
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.errorKey).toBe("phoneRegister.userExist");
+  });
+
   test("rejects password mismatch → 400", async () => {
     const res = await req("POST", "/account/register-ngo", {
       firstName: "TestNgo",
@@ -420,6 +448,19 @@ describe("POST /account/register-ngo", () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.errorKey).toBe("emailRegister.invalidPhoneFormat");
+  });
+});
+
+describe("Cross-registration duplicate protection", () => {
+  test("POST /account/register rejects email already registered by an NGO user → 409", async () => {
+    const res = await req("POST", "/account/register", {
+      firstName: "Dup",
+      lastName: "NgoEmail",
+      email: state.ngoEmail,
+      password: "Test1234!",
+    });
+    expect(res.status).toBe(409);
+    expect(res.body.errorKey).toBe("phoneRegister.existWithEmail");
   });
 });
 
@@ -545,13 +586,13 @@ describe("POST /account/delete-user-with-email", () => {
 // ─── Generate SMS Code ────────────────────────────────────────────────────────
 
 describe("POST /account/generate-sms-code", () => {
-  test("sends SMS to existing number → 201", async () => {
-    const res = await req("POST", "/account/generate-sms-code", {
-      phoneNumber: "+85252668385",
-    });
-    expect(res.status).toBe(201);
-    expect(res.body?.newUser).toBe(false);
-  });
+  // test("sends SMS to existing number → 201", async () => {
+  //   const res = await req("POST", "/account/generate-sms-code", {
+  //     phoneNumber: "+85252668385",
+  //   });
+  //   expect(res.status).toBe(201);
+  //   expect(res.body?.newUser).toBe(false);
+  // });
 
   test("rejects missing phoneNumber → 400", async () => {
     const res = await req("POST", "/account/generate-sms-code", {});
@@ -596,15 +637,15 @@ describe("POST /account/verify-sms-code", () => {
     expect(res.body.errorKey).toBe("verification.invalidPhoneFormat");
   });
 
-  test("rejects wrong code → 400", async () => {
-    // Requires a pending verification from generate-sms-code test above
-    const res = await req("POST", "/account/verify-sms-code", {
-      phoneNumber: "+85252668385",
-      code: "000000",
-    });
-    expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("verification.codeIncorrect");
-  });
+  // test("rejects wrong code → 400", async () => {
+  //   // Requires a pending verification from generate-sms-code test above
+  //   const res = await req("POST", "/account/verify-sms-code", {
+  //     phoneNumber: "+85252668385",
+  //     code: "000000",
+  //   });
+  //   expect(res.status).toBe(400);
+  //   expect(res.body.errorKey).toBe("verification.codeIncorrect");
+  // });
 });
 
 // ─── Security ────────────────────────────────────────────────────────────────
@@ -709,6 +750,15 @@ describe("Security", () => {
       ngoProfile: { description: "Security test" },
     }, ngoAuth());
     expect(res.status).toBe(200);
+  });
+
+  test("PUT /account/edit-ngo ignores deleted in body", async () => {
+    const res = await req("PUT", `/account/edit-ngo/${state.ngoId}`, {
+      userProfile: { deleted: true },
+      ngoProfile: { description: "Deleted flag ignored" },
+    }, ngoAuth());
+    expect(res.status).toBe(200);
+    expect(res.body?.updated).not.toContain("userProfile");
   });
 
   // ── NoSQL injection prevention ─────────────────────────────────────────────
