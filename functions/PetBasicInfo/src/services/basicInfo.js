@@ -3,6 +3,9 @@ const { parseDDMMYYYY } = require("../utils/dateParser");
 const { createErrorResponse, createSuccessResponse } = require("../utils/response");
 const { logError } = require("../utils/logger");
 const { petBasicInfoUpdateSchema } = require("../zodSchema/petBasicInfoSchema");
+const { getFirstZodIssueMessage } = require("../utils/zod");
+const { sanitizePet } = require("../utils/sanitize");
+const { enforceRateLimit } = require("../utils/rateLimit");
 
 /**
  * Retrieve pet basic info and return a formatted response.
@@ -14,45 +17,20 @@ const { petBasicInfoUpdateSchema } = require("../zodSchema/petBasicInfoSchema");
 async function getPetBasicInfo(routeContext) {
   const { pet, event } = routeContext;
 
-  const petObj = pet.toObject ? pet.toObject() : pet;
-
-  const form = {
-    userId: petObj.userId,
-    name: petObj.name,
-    breedimage: petObj.breedimage,
-    animal: petObj.animal,
-    birthday: petObj.birthday,
-    weight: petObj.weight,
-    sex: petObj.sex,
-    sterilization: petObj.sterilization,
-    sterilizationDate: petObj.sterilizationDate,
-    adoptionStatus: petObj.adoptionStatus,
-    breed: petObj.breed,
-    bloodType: petObj.bloodType,
-    features: petObj.features,
-    info: petObj.info,
-    status: petObj.status,
-    owner: petObj.owner,
-    ngoId: petObj.ngoId,
-    ownerContact1: petObj.ownerContact1,
-    ownerContact2: petObj.ownerContact2,
-    contact1Show: petObj.contact1Show,
-    contact2Show: petObj.contact2Show,
-    tagId: petObj.tagId,
-    isRegistered: petObj.isRegistered,
-    receivedDate: petObj.receivedDate,
-    ngoPetId: petObj.ngoPetId,
-    createdAt: petObj.createdAt,
-    updatedAt: petObj.updatedAt,
-    location: petObj.locationName,
-    position: petObj.position,
-  };
-  
-  return createSuccessResponse(200, event, {
-    message: "petBasicInfo.success.retrievedSuccessfully",
-    form,
-    id: pet._id,
-  });
+  try {
+    return createSuccessResponse(200, event, {
+      message: "petBasicInfo.success.retrievedSuccessfully",
+      form: sanitizePet(pet),
+      id: pet._id,
+    });
+  } catch (error) {
+    logError("Failed to retrieve pet basic info", {
+      scope: "services.basicInfo.getPetBasicInfo",
+      event,
+      error,
+    });
+    return createErrorResponse(500, "others.internalError", event);
+  }
 }
 
 /**
@@ -67,41 +45,36 @@ async function updatePetBasicInfo(routeContext) {
   const { body, event, pet } = routeContext;
   const petID = event.pathParameters?.petID;
 
-  const validatedBody = petBasicInfoUpdateSchema.safeParse(body);
-  
-  if (!validatedBody.success) {
-    const errorMessage = validatedBody.error.issues[0]?.message || "petBasicInfo.errors.validationError";
-    return createErrorResponse(
-      400,
-      errorMessage,
-      event
-    );
-  }
-
-  const updates = validatedBody.data;
-  const setFields = { ...updates };
-
-  if (updates.location !== undefined) {
-    setFields.locationName = updates.location;
-    delete setFields.location; // Remove the frontend key
-  }
-
-  const dateFields = ['birthday', 'receivedDate', 'sterilizationDate'];
-  dateFields.forEach(field => {
-    if (updates[field]) {
-      setFields[field] = parseDDMMYYYY(updates[field]);
-    }
-  });
-
-  if (Object.keys(setFields).length === 0) {
-    return createErrorResponse(
-      400, 
-      "petBasicInfo.errors.noValidFieldsToUpdate", 
-      event
-    );
-  }
-
   try {
+    const validatedBody = petBasicInfoUpdateSchema.safeParse(body);
+
+    if (!validatedBody.success) {
+      return createErrorResponse(
+        400,
+        getFirstZodIssueMessage(validatedBody.error, "petBasicInfo.errors.validationError"),
+        event
+      );
+    }
+
+    const updates = validatedBody.data;
+    const setFields = { ...updates };
+
+    if (updates.location !== undefined) {
+      setFields.locationName = updates.location;
+      delete setFields.location;
+    }
+
+    const dateFields = ["birthday", "receivedDate", "sterilizationDate"];
+    dateFields.forEach((field) => {
+      if (updates[field]) {
+        setFields[field] = parseDDMMYYYY(updates[field]);
+      }
+    });
+
+    if (Object.keys(setFields).length === 0) {
+      return createErrorResponse(400, "petBasicInfo.errors.noValidFieldsToUpdate", event);
+    }
+
     const PetModel = mongoose.model("Pet");
     const updatedPet = await PetModel.findByIdAndUpdate(
       petID,
@@ -112,7 +85,7 @@ async function updatePetBasicInfo(routeContext) {
     if (!updatedPet) {
       return createErrorResponse(404, "petBasicInfo.errors.petNotFound", event);
     }
-    
+
     return createSuccessResponse(200, event, {
       message: "petBasicInfo.success.updatedSuccessfully",
       id: pet._id,
@@ -122,15 +95,9 @@ async function updatePetBasicInfo(routeContext) {
       scope: "services.basicInfo.updatePetBasicInfo",
       event,
       error,
-      extra: {
-        petID,
-      },
+      extra: { petID },
     });
-    return createErrorResponse(
-      500, 
-      "petBasicInfo.errors.errorUpdatingPet", 
-      event
-    );
+    return createErrorResponse(500, "others.internalError", event);
   }
 }
 
@@ -146,6 +113,16 @@ async function deletePetBasicInfo(routeContext) {
   const petID = event.pathParameters?.petID;
 
   try {
+    // Rate limiting is the first step of service execution for destructive operations.
+    const rl = await enforceRateLimit({
+      event,
+      action: "petDelete",
+      identifier: event.userId || "anonymous",
+      limit: 10,
+      windowSec: 60,
+    });
+    if (!rl.allowed) return createErrorResponse(429, "others.rateLimited", event);
+
     const PetModel = mongoose.model("Pet");
 
     const deletedPet = await PetModel.findByIdAndUpdate(
@@ -176,11 +153,7 @@ async function deletePetBasicInfo(routeContext) {
         petID,
       },
     });
-    return createErrorResponse(
-      500,
-      "petBasicInfo.errors.errorDeletingPet",
-      event
-    );
+    return createErrorResponse(500, "others.internalError", event);
   }
 }
 

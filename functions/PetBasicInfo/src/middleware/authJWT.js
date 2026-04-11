@@ -50,7 +50,7 @@ function authJWT({ event }) {
       return createErrorResponse(500, "others.internalError", event);
     }
 
-    const decoded = jwt.verify(token, jwtSecret);
+    const decoded = jwt.verify(token, jwtSecret, { algorithms: ["HS256"] });
 
     // 5. Attach user info to event for downstream use (Guards/Services)
     _attachUserToEvent(event, decoded);
@@ -70,15 +70,20 @@ function authJWT({ event }) {
 
 /**
  * Internal helper to map JWT payload fields to standard event properties.
- * Maps both standard 'sub' and custom 'userId' keys for flexibility.
- * * @private
+ * Attaches userId, userEmail, userRole, and ngoId directly to the event so
+ * downstream guards and services can read them without re-decoding the token.
+ *
+ * @private
+ * @param {import('aws-lambda').APIGatewayProxyEvent & Record<string, any>} event
+ * @param {{ userId?: string, sub?: string, userEmail?: string, email?: string, userRole?: string, role?: string, ngoId?: string }} payload - Decoded JWT payload.
  */
 function _attachUserToEvent(event, payload) {
   event.user = payload;
   event.userId = payload.userId || payload.sub;
   event.userEmail = payload.userEmail || payload.email;
   event.userRole = payload.userRole || payload.role;
-  
+  event.ngoId = payload.ngoId;
+
   // Also attach to requestContext to mimic AWS Authorizer behavior
   event.requestContext = event.requestContext || {};
   event.requestContext.authorizer = payload;

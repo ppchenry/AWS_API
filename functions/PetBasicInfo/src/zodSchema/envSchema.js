@@ -9,7 +9,7 @@ const envSchema = z.object({
   MONGODB_URI: z.string().url("MONGODB_URI must be a valid connection string"),
   JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),
   JWT_BYPASS: z.enum(['true', 'false']).default('false').transform(v => v === 'true'),
-  ALLOWED_ORIGINS: z.string().default('*'),
+  ALLOWED_ORIGINS: z.string().min(1, "ALLOWED_ORIGINS is required"),
 });
 
 module.exports = { envSchema };

@@ -1,7 +1,8 @@
 {
   "others": {
     "unauthorized": "Unauthorized",
-    "internalError": "Internal Server Error"
+    "internalError": "Internal Server Error",
+    "rateLimited": "Too many requests. Please try again later."
   },
   "petBasicInfo": {
     "errors": {

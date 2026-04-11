@@ -19,8 +19,6 @@ const petBasicInfoUpdateSchema = z.object({
   features: z.string().optional(),
   info: z.string().optional(),
   status: z.string().optional(),
-  owner: z.string().optional(),
-  ngoId: z.string().optional(),
   ownerContact1: z.number({ invalid_type_error: "petBasicInfo.errors.invalidOwnerContact1Type" }).optional(),
   ownerContact2: z.number({ invalid_type_error: "petBasicInfo.errors.invalidOwnerContact2Type" }).optional(),
   contact1Show: z.boolean({ invalid_type_error: "petBasicInfo.errors.invalidContact1ShowType" }).optional(),

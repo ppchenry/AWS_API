@@ -45,10 +45,12 @@ All success responses follow this format:
 ```json
 {
   "success": true,
-  "message": "Translated success message",
+  "message": "<locale dot-key — client is responsible for translation>",
   ...additional fields
 }
 ```
+
+> **Note on `message`**: The `message` field contains a locale dot-key such as `"petBasicInfo.success.retrievedSuccessfully"`, not a translated string. The client must resolve the key using the same locale files. Error responses from `createErrorResponse` are server-translated; success messages are not.
 
 ---
 
@@ -73,7 +75,7 @@ Retrieves the basic profile information for a pet.
 ```json
 {
   "success": true,
-  "message": "Pet basic info retrieved successfully",
+  "message": "petBasicInfo.success.retrievedSuccessfully",
   "form": {
     "userId": "ObjectId",
     "name": "Buddy",
@@ -184,7 +186,7 @@ All fields are optional. At least one must be provided.
 ```json
 {
   "success": true,
-  "message": "Pet basic info updated successfully",
+  "message": "petBasicInfo.success.updatedSuccessfully",
   "id": "ObjectId"
 }
 ```
@@ -224,7 +226,7 @@ Soft-deletes a pet by setting `deleted: true` and clearing `tagId`. The record r
 ```json
 {
   "success": true,
-  "message": "Pet deleted successfully",
+  "message": "petBasicInfo.success.deletedSuccessfully",
   "petId": "ObjectId"
 }
 ```
@@ -238,6 +240,7 @@ Soft-deletes a pet by setting `deleted: true` and clearing `tagId`. The record r
 | `403` | Caller does not own the pet and is not authorized through the pet NGO |
 | `404` | Pet not found |
 | `410` | Pet already deleted |
+| `429` | Rate limit exceeded (more than 10 soft-deletes per 60 s per authenticated user) |
 | `500` | Database error |
 
 ---
@@ -261,7 +264,7 @@ Retrieves the eye analysis records for a pet, sorted by most recent first. Retur
 ```json
 {
   "success": true,
-  "message": "Retrieve eye analysis log list successfully!",
+  "message": "petBasicInfo.success.eyeLogRetrievedSuccessfully",
   "result": [
     {
       "_id": "ObjectId",

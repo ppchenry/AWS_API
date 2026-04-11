@@ -4,14 +4,24 @@
 
 Refactored the PetBasicInfo Lambda from a single 600-line god function in `index.js` into a modular architecture under `src/`. Every route, middleware, utility, and schema now lives in its own file with a single responsibility.
 
+## 2026-04 Checklist Alignment (Pass 2)
+
+- **C1 alg:none fix** — `jwt.verify()` now passes `{ algorithms: ["HS256"] }` explicitly; prevents algorithm substitution attacks
+- **C2 sanitize.js** — added `src/utils/sanitize.js` with `sanitizePet()` allowlist function; `getPetBasicInfo` now calls `sanitizePet()` instead of inlining the field selection
+- **PUBLIC_RESOURCES pattern** — `handler.js` now defines `PUBLIC_RESOURCES = []` (all routes protected) and uses `if (authError && !PUBLIC_RESOURCES.includes(event.resource))` per canonical lifecycle spec
+- **`others.internalError` in all catch blocks** — handler, all service functions, and eyeLog now return `createErrorResponse(500, "others.internalError", event)` in every catch; removed lambda-specific error keys (`petBasicInfo.errors.internalServerError`, `errorUpdatingPet`, `errorDeletingPet`, `errorRetrievingEyeLog`) from catch paths
+- **Top-level try/catch in every service** — `updatePetBasicInfo` previously had a narrow try/catch only around the DB call; Zod parse and field-transform logic are now inside the top-level catch too. `getPetBasicInfo` gained a try/catch for full coverage
+- **`src/utils/zod.js`** — added `getFirstZodIssueMessage` / `getJoinedZodIssueMessages` helpers matching UserRoutes; `updatePetBasicInfo` now uses `getFirstZodIssueMessage()` instead of inline `error.issues[0]?.message`
+- **`event.ngoId` alignment** — `authJWT._attachUserToEvent` now sets `event.ngoId = payload.ngoId`; `petGuard.js` reads `event.ngoId` instead of `event.requestContext?.authorizer?.ngoId`
+
 ## 2026-04 Checklist Alignment
 
 - aligned PetBasicInfo request flow to thin entry -> handler -> guard -> router -> service
 - added explicit pet ownership and NGO access checks so valid JWTs can still receive `403`
-- restored translated success messages while keeping standardized error responses with `errorKey` and `requestId`
-- added structured logging for request boundaries, auth failures, DB failures, and unexpected service errors
+- services return locale dot-keys in the `message` field; error responses server-translate the error key via `createErrorResponse`, success responses pass the key as-is (client-side resolution)
+- added structured logging for auth failures, DB failures, and unexpected service errors
 - enabled explicit SAM events for `/pets/{petID}`, `/basic-info`, and `/eyeLog` routes including OPTIONS preflight coverage
-- added a dedicated PetBasicInfo SAM integration suite for CORS, auth, ownership denial, invalid input, missing resources, update success, eye logs, and soft delete
+- added a dedicated PetBasicInfo SAM integration suite for CORS, auth, ownership denial, invalid input, missing resources, update success, eye logs, delete auth/validation, and unsupported methods (see `__tests__/test-petbasicinfo.test.js`); the soft-delete mutation itself is not run in CI to avoid mutating UAT state
 - remaining work is now mostly operational verification and future API redesign, not structural instability
 
 ---
@@ -95,7 +105,7 @@ src/
 | # | Improvement | Detail |
 | - | ----------- | ------ |
 | 1 | **Consistent module system** | All files now use CommonJS (`require`/`module.exports`). Previously 6 files used ESM `import`/`export` while the rest used CJS — would fail without a bundler. |
-| 2 | **Standardized response helpers** | `createErrorResponse` and `createSuccessResponse` in `response.js` ensure every response has consistent shape with CORS headers, translated success messages, and error traceability through `errorKey` plus `requestId`. |
+| 2 | **Standardized response helpers** | `createErrorResponse` and `createSuccessResponse` in `response.js` ensure every response has consistent shape with CORS headers, and error traceability through `errorKey` plus `requestId`. `createErrorResponse` server-translates the error key; `createSuccessResponse` passes locale dot-keys through as-is (client resolves). |
 | 3 | **Declarative route table** | Routes are defined as a plain object in `router.js` (`'GET /basic-info': getPetBasicInfo`). Adding a new route is one line. |
 | 4 | **Zod schema validation** | Replaced 15+ inline `if` checks with a single `petBasicInfoUpdateSchema.safeParse(body)` call. All validation rules are co-located in one schema file. |
 | 5 | **Centralized pet guard** | Pet ID validation, body parsing, pet existence check, and soft-delete check all happen once in `petGuard.js` instead of being duplicated across route branches. |

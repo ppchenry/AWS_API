@@ -8,6 +8,14 @@ const { createErrorResponse } = require("./utils/response");
  * @property {Object} [body] - Parsed request body
  */
 
+/**
+ * Creates a lazy-loaded route handler that requires the service module only on
+ * first invocation, keeping the cold-start module graph smaller.
+ *
+ * @param {string} modulePath - Relative path to the service module.
+ * @param {string} exportName - Named export on the module to invoke.
+ * @returns {(ctx: RouteContext) => Promise<import('aws-lambda').APIGatewayProxyResult>}
+ */
 function lazyRoute(modulePath, exportName) {
   return async function routeHandler(ctx) {
     const service = require(modulePath);
