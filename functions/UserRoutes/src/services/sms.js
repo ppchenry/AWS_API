@@ -4,6 +4,8 @@ const { verifySmsCodeSchema, smsCodeSchema } = require("../zodSchema/smsSchema")
 const { createErrorResponse, createSuccessResponse } = require("../utils/response");
 const { getFirstZodIssueMessage } = require("../utils/zod");
 const { logError } = require("../utils/logger");
+const { normalizePhone } = require("../utils/validators");
+const { enforceRateLimit } = require("../utils/rateLimit");
 
 const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
 const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
@@ -26,27 +28,31 @@ async function generateSmsCode({ event, body }) {
       });
       return createErrorResponse(503, "others.serviceUnavailable", event);
     }
-    const User = mongoose.model("User");
     const parseResult = smsCodeSchema.safeParse(body);
     if (!parseResult.success) {
       return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error, "verification.invalidPhoneFormat"), event);
     }
-    const { phoneNumber } = parseResult.data;
+    const phoneNumber = normalizePhone(parseResult.data.phoneNumber);
 
+    const rateLimit = await enforceRateLimit({
+      event,
+      action: "sms-send",
+      identifier: phoneNumber,
+      limit: 5,
+      windowSec: 10 * 60,
+    });
+    if (!rateLimit.allowed) {
+      return createErrorResponse(429, "others.rateLimited", event);
+    }
 
-    const existingUser = await User.findOne({ phoneNumber, deleted: false }).lean();
     await client.verify.v2.services(twilioVerifyServiceSid).verifications.create({
       to: phoneNumber,
       channel: "sms",
     });
 
-    if (existingUser) {
-      return createSuccessResponse(201, event, {
-        newUser: false,
-        message: "SMS code sent successfully",
-      });
-    }
-    return createSuccessResponse(201, event, { newUser: true });
+    return createSuccessResponse(201, event, {
+      message: "SMS code sent successfully",
+    });
   } catch (e) {
     logError("Failed to generate SMS code", {
       scope: "services.sms.generateSmsCode",
@@ -81,7 +87,19 @@ async function verifySmsCode({ event, body }) {
     if (!parseResult.success) {
       return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error), event);
     }
-    const { phoneNumber, code } = parseResult.data;
+    const phoneNumber = normalizePhone(parseResult.data.phoneNumber);
+    const { code } = parseResult.data;
+
+    const rateLimit = await enforceRateLimit({
+      event,
+      action: "sms-verify",
+      identifier: phoneNumber,
+      limit: 10,
+      windowSec: 10 * 60,
+    });
+    if (!rateLimit.allowed) {
+      return createErrorResponse(429, "others.rateLimited", event);
+    }
 
     // 2. Twilio Check
     const { status } = await client.verify.v2

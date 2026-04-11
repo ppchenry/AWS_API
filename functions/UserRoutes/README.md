@@ -1,27 +1,25 @@
 # UserRoutes Lambda
 
-This Lambda handles user, authentication, SMS verification, and NGO-related routes for the application.
+This Lambda owns user registration, login, profile management, NGO account flows, and SMS verification.
 
-## Purpose
+## Current Status
 
-The function currently serves multiple API Gateway routes from a single Lambda entry point. The long-term goal is to keep the AWS entry point thin and move business logic into clearly separated modules under `src/`.
+UserRoutes is already on the modularized runtime path. The active AWS entrypoint is `index.js`, which delegates directly to `src/handler.js`.
 
-## Current State
+Current request lifecycle:
 
-- `index.js` is still the active Lambda handler and contains most route logic.
-- Shared utilities and helpers have started to move into `src/helpers/`, `src/utils/`, and `src/config/`.
-- `src/handler.js` and `src/router.js` exist as scaffolding for the next refactor stage, but are not yet wired in.
-
-## High-Level Architecture
-
-The intended architecture for this Lambda is:
-
-1. `index.js` remains the AWS Lambda entry point.
-2. `src/handler.js` becomes the thin request orchestrator.
-3. `src/router.js` maps API Gateway resource paths and HTTP methods to controllers.
-4. Controllers handle request parsing and response shaping.
-5. Services contain business logic and database workflows.
-6. Helpers and utils provide shared, reusable support functions.
+```text
+API Gateway event
+  -> index.js
+  -> src/handler.js
+  -> src/cors.js (OPTIONS handling)
+  -> src/middleware/authJWT.js
+  -> src/config/db.js
+  -> src/middleware/guard.js
+  -> src/router.js
+  -> src/services/*
+  -> src/utils/response.js
+```
 
 ## Folder Structure
 
@@ -29,217 +27,122 @@ The intended architecture for this Lambda is:
 UserRoutes/
 ├── index.js
 ├── package.json
+├── API.md
+├── CHANGELOG.md
 ├── README.md
 └── src/
     ├── handler.js
     ├── router.js
     ├── cors.js
     ├── config/
-    ├── controllers/
-    ├── helpers/
     ├── locales/
     ├── middleware/
     ├── models/
     ├── services/
-    └── utils/
+    ├── utils/
+    └── zodSchema/
 ```
 
-## Folder Responsibilities
+## Active Modules
 
 ### `src/config/`
 
-Application configuration that should be initialized once and reused.
-
-Current contents:
-
-- `db.js`: MongoDB connection setup, singleton connection reuse, and model registration.
-
-### `src/helpers/`
-
-Shared application helpers that are not business workflows.
-
-Current contents:
-
-- `i18n.js`: loads translations and resolves translation keys.
-- `response.js`: standardized HTTP response helpers.
-- `duplicateCheck.js`: duplicate detection across Mongoose models.
-- `objectUtils.js`: utilities for flattening and filtering update payloads.
-
-### `src/utils/`
-
-Small stateless utilities used across routes.
-
-Current contents:
-
-- `token.js`: refresh token hashing, refresh token generation, and access token generation.
-- `validators.js`: email, phone number, date, and image URL validation.
+- `env.js`: validates required environment variables at startup.
+- `db.js`: initializes and reuses the Mongoose connection and model registrations.
 
 ### `src/middleware/`
 
-Cross-cutting request concerns that may be reused by multiple controllers.
-
-Recommended usage:
-
-- auth token parsing and verification
-- role checks
-- common request normalization
-
-This folder should stay small. Route-specific logic does not belong here.
-
-### `src/models/`
-
-Mongoose schema definitions for the Lambda domain.
-
-Current models:
-
-- `User.js`
-- `NGO.js`
-- `NgoCounters.js`
-- `NgoUserAccess.js`
-- `RefreshToken.js`
-
-Models should contain schema definitions, defaults, validation, and indexes. They should not contain route logic.
-
-### `src/controllers/`
-
-HTTP-facing request handlers.
-
-Controllers should:
-
-- read request input from API Gateway events
-- validate required request fields
-- call services
-- return success or error responses using shared response helpers
-
-Controllers should not contain long database workflows.
+- `authJWT.js`: verifies Bearer tokens and attaches JWT identity fields to `event`.
+- `guard.js`: parses JSON, enforces non-empty POST/PUT bodies, applies self-access checks, performs NGO-only RBAC, and validates selected path params.
+- `selfAccess.js`: blocks protected requests when JWT identity does not match `userId` or `email` ownership rules.
 
 ### `src/services/`
 
-Business logic and multi-step workflows.
+- `login.js`: email login and NGO login flows.
+- `register.js`: regular and NGO registration flows.
+- `user.js`: get, update, and delete user/account flows.
+- `update.js`: password and image updates.
+- `ngo.js`: NGO details, NGO edit, pet placement options, and NGO user list.
+- `ngoUserListPipeline.js`: aggregation pipeline builder for NGO user-list queries.
+- `sms.js`: SMS code generation and verification.
 
-Services should:
+### `src/utils/`
 
-- talk to Mongoose models
-- coordinate multiple model operations
-- call external providers such as Twilio
-- apply business rules
-- return plain data to controllers
+- `response.js`: standardized success and error responses with translation lookup and CORS headers.
+- `i18n.js`: locale loading and translation-key lookup.
+- `validators.js`: email, phone, date, image URL, and ObjectId helpers.
+- `zod.js`: helpers for extracting stable error keys from Zod v4 issues.
+- `token.js`: JWT access-token issuance and refresh-token helpers.
+- `rateLimit.js`: Mongo-backed rate limiting keyed by client IP and action.
+- `duplicateCheck.js`: duplicate detection helper for model-level conflict checks.
+- `objectUtils.js`: dot-path flattening and allowlist filtering for partial updates.
+- `sanitize.js`: strips sensitive fields such as `password` from user-shaped response payloads.
+- `logger.js`: structured logging helpers for request-scope error reporting.
 
-Services should not build raw Lambda response objects.
+### `src/zodSchema/`
 
-## Request Flow
+Zod schemas for request-body validation across login, register, update, NGO edit, and SMS flows.
 
-Target request flow:
+## Routing Model
 
-```text
-API Gateway event
-  -> index.js
-  -> src/handler.js
-  -> src/router.js
-  -> controller
-  -> service
-  -> model/helper/util
-  -> standardized response
-```
+`src/router.js` dispatches on `{HTTP_METHOD} {event.resource}` and lazy-loads service modules so unrelated handlers are not loaded on every invocation.
 
-Current request flow is simpler but less maintainable:
+Current routed endpoints include:
 
-```text
-API Gateway event
-  -> index.js
-  -> large if/else route branching
-  -> inline business logic
-  -> Mongoose models / Twilio / helpers
-```
+- `POST /account/register`
+- `POST /account/login`
+- `POST /account/register-ngo`
+- `GET /account/{userId}`
+- `PUT /account`
+- `PUT /account/update-password`
+- `POST /account/update-image`
+- `POST /account/delete-user-with-email`
+- `GET /account/user-list`
+- `GET|PUT /account/edit-ngo/{ngoId}`
+- `GET /account/edit-ngo/{ngoId}/pet-placement-options`
+- `POST /account/generate-sms-code`
+- `POST /account/verify-sms-code`
 
-## Shared Patterns Already Introduced
+Deprecated routes such as `POST /account/login-2` and the older register variants are still explicitly mapped to `405` responses.
 
-### Database access
+## Current Behavior Notes
 
-- MongoDB uses a singleton Mongoose connection in `src/config/db.js`.
-- The connection is reused across warm Lambda invocations in the same runtime.
-- `maxPoolSize: 1` is set because each Lambda instance processes one request at a time.
+- Public routes are defined in `handler.js` and bypass JWT enforcement.
+- Protected routes always pass through `authJWT` before service logic.
+- NGO-only routes are enforced in `middleware/guard.js` via `NGO_ONLY_RESOURCES`.
+- JSON body parsing happens in the guard, not inside services.
+- Malformed JSON returns `400` with `others.invalidJSON` before route logic runs.
+- Response translation lookup is centralized in `utils/response.js`.
+- User detail responses are sanitized so password hashes are never returned.
+- Login, SMS, register, and NGO-register flows use Mongo-backed rate limiting.
 
-Important note:
+## Testing Baseline
 
-The singleton connection only prevents multiple connections inside one warm Lambda runtime. It does not limit total connections across concurrent Lambda instances. Reserved concurrency should be used at the infrastructure level if total connection count must be capped.
+Current integration suite: `__tests__/test-userroutes.test.js`
 
-### Response handling
+Verified baseline as of 2026-04-11:
 
-- Shared error response handling lives in `src/helpers/response.js`.
-- Shared CORS logic lives in `src/cors.js`.
-- Future success response standardization should also live in `src/helpers/response.js`.
-
-### Localization
-
-- Translation files live in `src/locales/`.
-- `src/helpers/i18n.js` handles language loading and key lookup.
-
-## Route Domains Inside This Lambda
-
-This Lambda currently mixes several domains:
-
-- authentication and registration
-- user profile management
-- SMS verification
-- NGO registration and NGO management
-
-That is why the next refactor step should group logic by domain into controllers and services rather than continuing to grow `index.js`.
-
-## Recommended Refactor Direction
-
-Refactor incrementally instead of rewriting everything at once.
-
-Recommended order:
-
-1. Move common response builders into `src/helpers/response.js`.
-2. Move Twilio integration into `src/services/sms.service.js`.
-3. Create controller files by domain.
-4. Move route workflows from `index.js` into service files.
-5. Reduce `index.js` to handler and routing only.
-6. Optionally split this monolithic Lambda into multiple Lambdas once boundaries are clear.
-
-## Suggested Domain Split
-
-Recommended controller and service grouping:
-
-- `auth.controller.js` / `auth.service.js`
-- `user.controller.js` / `user.service.js`
-- `ngo.controller.js` / `ngo.service.js`
-- `verification.controller.js` / `sms.service.js`
-- `token.service.js` for refresh-token persistence logic
-
-## Development Principles For This Lambda
-
-- Keep the Lambda entry point thin.
-- Keep business logic out of controllers.
-- Keep helpers stateless where possible.
-- Use models only for schema concerns.
-- Prefer standardized response builders over inline response objects.
-- Add unique indexes in MongoDB for fields that must be globally unique.
-- Refactor route-by-route so behavior remains stable during cleanup.
+- `102 / 102` tests passing
+- SAM local API exercised through `http://localhost:3000`
+- coverage includes auth failures, malformed JSON, rate limiting, NGO RBAC, duplicate conflicts, NoSQL-style payload rejection, and deleted-user follow-up behavior
 
 ## Environment Variables
 
-This Lambda currently depends on these environment variables:
+This Lambda depends on:
 
 - `MONGODB_URI`
 - `JWT_SECRET`
+- `REFRESH_TOKEN_MAX_AGE_SEC`
 - `ALLOWED_ORIGINS`
 - `TWILIO_ACCOUNT_SID`
 - `TWILIO_AUTH_TOKEN`
 - `TWILIO_VERIFY_SERVICE_SID`
 
-## Notes For New Contributors
+## Notes For Contributors
 
-- Do not add new route logic directly into shared helpers.
-- Do not place HTTP response formatting into services.
-- Do not place business workflows into models.
-- If a new route touches multiple models, it almost certainly belongs in a service.
-- If logic depends on `event`, headers, cookies, or status codes, it belongs in a controller or response helper.
-
-## Status
-
-This Lambda is mid-refactor.
-
-The shared support layer is being standardized first so route extraction can happen with lower risk and less duplication.
+- Keep `index.js` thin and route new behavior through `src/handler.js` and `src/router.js`.
+- Add endpoint behavior in service modules, not in the entrypoint.
+- Put request-blocking policy in middleware when it should run before service logic.
+- Keep response formatting inside `utils/response.js` instead of rebuilding response objects inline.
+- Do not return raw user records from services without sanitizing sensitive fields.
+- If a uniqueness rule matters operationally, prefer a DB index in addition to application-level checks.

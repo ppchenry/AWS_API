@@ -10,6 +10,7 @@ const NgoUserAccessSchema = require("../models/NgoUserAccess.js");
 const NGOSchema = require("../models/NGO.js");
 const NGOCounterSchema = require("../models/NgoCounters.js");
 const RefreshTokenSchema = require("../models/RefreshToken.js");
+const RateLimitSchema = require("../models/RateLimit.js");
 const { logInfo, logError } = require("../utils/logger");
 
 let conn = null;
@@ -45,6 +46,7 @@ const connectToMongoDB = async () => {
       mongoose.models.NGO || mongoose.model("NGO", NGOSchema, "ngos");
       mongoose.models.RefreshToken || mongoose.model("RefreshToken", RefreshTokenSchema, "refresh_tokens");
       mongoose.models.NgoCounters || mongoose.model("NgoCounters", NGOCounterSchema, "ngo_counters");
+      mongoose.models.RateLimit || mongoose.model("RateLimit", RateLimitSchema, "rate_limits");
     
       return conn; 
     } catch (error) {

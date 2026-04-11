@@ -1,9 +1,9 @@
 # UserRoutes API — Test Report
 
-**Date:** 2026-04-10  
+**Date:** 2026-04-11  
 **Service:** `UserRoutes` Lambda (AWS SAM)  
 **Test suite:** `__tests__/test-userroutes.test.js`  
-**Result: 73 / 73 tests passed ✅**
+**Result: 102 / 102 tests passed ✅**
 
 ---
 
@@ -15,38 +15,42 @@ Tests were run as end-to-end integration tests against a live SAM local environm
 
 | Endpoint | Method | Tests |
 |---|---|---|
-| `/account/register` | POST | 6 |
-| `/account/login` | POST | 7 |
+| `/account/register` | POST | 10 |
+| `/account/login` | POST | 10 |
 | `/account/login-2` | POST | 2 |
 | `/account/{userId}` | GET | 2 |
-| `/account` | PUT | 4 |
+| `/account` | PUT | 6 |
 | `/account/update-password` | PUT | 4 |
 | `/account/update-image` | POST | 3 |
-| `/account/user-list` | GET | 2 |
+| `/account/user-list` | GET | 4 |
 | `/account/register-by-email` etc. | POST | 3 |
-| `/account/register-ngo` | POST | 5 |
+| `/account/register-ngo` | POST | 10 |
 | `/account/login` (NGO) | POST | 1 |
-| `/account/edit-ngo/{ngoId}` | GET | 3 |
-| `/account/edit-ngo/{ngoId}` | PUT | 1 |
-| `/account/edit-ngo/{ngoId}/pet-placement-options` | GET | 3 |
+| `/account/edit-ngo/{ngoId}` | GET | 5 |
+| `/account/edit-ngo/{ngoId}` | PUT | 5 |
+| `/account/edit-ngo/{ngoId}/pet-placement-options` | GET | 5 |
 | `/account/delete-user-with-email` | POST | 6 |
-| `/account/generate-sms-code` | POST | 3 |
-| `/account/verify-sms-code` | POST | 4 |
-| `/account/{userId}` | DELETE | 3 |
-| Security (cross-cutting) | — | 12 |
-| **Total** | | **73** |
+| `/account/generate-sms-code` | POST | 2 |
+| `/account/verify-sms-code` | POST | 3 |
+| `/account/{userId}` | DELETE | 7 |
+| Cross-registration duplicate protection | — | 1 |
+| Security (cross-cutting) | — | 13 |
+| **Total** | | **102** |
 
 ### 1.2 Test Categories
 
 #### Happy-path flows
+
 - User registration (email), login, profile read, profile update, password update, image update, soft-delete
 - NGO registration, NGO login, NGO profile read and update, pet placement options read
-- SMS code generation to a real phone number (+852), SMS code verification
 - User list (paginated, with search)
 
 #### Input validation — 400 responses
+
 Every required field and every business rule is checked individually:
+
 - Missing required fields (firstName, lastName, password, email/phone, code, etc.)
+- Malformed JSON request bodies on both public and protected routes
 - Invalid email format
 - Invalid phone number format (must be E.164)
 - Password shorter than 8 characters
@@ -57,26 +61,51 @@ Every required field and every business rule is checked individually:
 - Unimplemented route methods → 405
 
 #### Business-logic errors — 4xx responses
+
 - Duplicate email on register → 409
-- Duplicate email on NGO register → 400
+- Duplicate email on register with different casing → 409
+- Register abuse throttling → 429
+- Duplicate email on NGO register → 409
+- Duplicate phone on NGO register → 409
+- Duplicate business registration number on NGO register → 409
+- NGO register abuse throttling → 429
+- Duplicate email across regular and NGO registration flows → rejected
+- Duplicate email on profile update / NGO edit → 409
+- Duplicate `registrationNumber` on NGO edit → 409
 - Wrong password on login → 401
 - Non-existent user on login → 401
 - Wrong old password on update-password → 400
 - Invalid MongoDB ObjectId format for NGO → 400
 - Non-existent NGO → 404
-- Already-deleted user → 409
+- Already-deleted user by email flow → 409
+- Repeat delete on an already deleted user → 404
 
 #### Authentication & authorisation
+
 - No `Authorization` header → 401
 - Garbage Bearer token → 401
+- Expired JWT → 401
 - Tampered JWT signature → 401
 - `alg:none` JWT attack → 401
 - Completely arbitrary Bearer string → 401
 - Valid token but accessing a different user's resource → 403 (self-access enforcement) verified on all five protected mutation routes
+- NGO-only routes return `401` without auth and `403` for valid non-NGO tokens
+- `GET /account/user-list` returns paginated list only for NGO-role tokens → 200 (moved after NGO login in suite so `ngoToken` is populated)
+- `DELETE /account/{userId}` with a non-ObjectId path param returns `403` — self-access guard fires before format validation
+- Public `POST /account/login-2` route disabled → 405
+- Deleted user token can no longer read the profile → 404
 
 #### Security hardening
+
+- **Brute-force throttling** — repeated failed login attempts are rate-limited and return `429`
+- **Registration throttling** — repeated register and NGO-register attempts are rate-limited and return `429`
 - **Mass assignment prevention** — extra fields (`role`, `password`, `credit`) in `PUT /account` are silently stripped by Zod; the request succeeds but the database row is unaffected
+- **Registration role hardening** — regular `POST /account/register` ignores a caller-supplied `role` and still creates a standard user
+- **Cross-account conflict prevention** — profile updates and NGO edit reject email conflicts against existing accounts → `409`
 - **Body `userId` injection on NGO edit** — `userId` in the request body is ignored; the server always uses the JWT identity
+- **NGO self-delete hardening** — `deleted` in the NGO edit request body is ignored and does not soft-delete the caller
+- **NGO route authorization** — NGO-only routes are denied before handler execution unless `event.userRole === "ngo"`
+- **Password redaction** — user detail and NGO detail responses do not expose password hashes
 - **NoSQL injection** — passing a MongoDB operator object (`{ "$gt": "" }`) where a string is expected is rejected by Zod validation → 400
 
 ---
@@ -129,7 +158,7 @@ if (!data.success) {
 
 When a user reports an issue, the frontend should surface `requestId` (e.g. in a support page or copied to clipboard). A developer can then look it up directly:
 
-```
+```text
 AWS Console → CloudWatch → Log Groups → /aws/lambda/UserRoutes
   → Search by requestId value
 ```
@@ -176,6 +205,7 @@ The full list of `errorKey` values used across UserRoutes, with their default (C
 | `others.unauthorized` | 需要身份驗證，請登錄 |
 | `others.methodNotAllowed` | 不允許對此路徑使用該方法 |
 | `others.internalError` | 發生錯誤，請稍後再試 |
+| `others.rateLimited` | 請稍後再試 |
 | `others.serviceUnavailable` | 服務暫時無法使用，請稍後再試 |
 | `deleteAccount.userAlreadyDeleted` | 用戶已被刪除 |
 | `deleteAccount.invalidEmailFormat` | 電子郵件格式無效 |
@@ -198,8 +228,19 @@ The full list of `errorKey` values used across UserRoutes, with their default (C
 | Expired / tampered JWT | `jsonwebtoken.verify()` rejects → 401 | ✅ |
 | `alg:none` JWT bypass | JWT library enforces HS256 algorithm → 401 | ✅ |
 | Accessing another user's data | Self-access middleware checks JWT `userId` vs path/body → 403 | ✅ |
+| Malformed JSON request bodies | Guard rejects invalid JSON before route logic → 400 | ✅ |
 | Mass assignment (`role`, `credit` injection) | Zod strips unknown fields silently | ✅ |
+| Regular register role escalation | Service hardcodes `role: "user"` regardless of request body | ✅ |
+| Repeated credential guessing | Login rate limiter throttles repeated failures → 429 | ✅ |
+| Registration abuse | Register and NGO-register rate limiters throttle repeated attempts → 429 | ✅ |
 | Body `userId` injection on NGO edit | Service uses `event.userId` from JWT, ignores body value | ✅ |
+| NGO self-delete via edit endpoint | `deleted` is excluded from edit allowlist and schema | ✅ |
+| NGO-only route privilege escalation | Guard rejects non-NGO access before route execution → 403 | ✅ |
+| Password-hash leakage in responses | User-shaped responses are sanitized before returning | ✅ |
+| Cross-account email reuse on update flows | User update and NGO edit reject duplicate emails → 409 | ✅ |
+| Duplicate NGO registration number on edit | NGO edit rejects conflicting `registrationNumber` → 409 | ✅ |
+| SMS / login abuse | Mongo-backed rate limiting throttles login and SMS send/verify flows | ✅ |
+| SMS account enumeration at send step | Implementation returns a generic SMS send response; the active suite currently validates the negative input paths | ✅ |
 | NoSQL operator injection (`{ "$gt": "" }`) | Zod type check rejects non-string values → 400 | ✅ |
 
 ---
@@ -208,9 +249,9 @@ The full list of `errorKey` values used across UserRoutes, with their default (C
 
 | Item | Value |
 |---|---|
-| Runtime | Node.js 18 (AWS SAM Local) |
+| Runtime | Node.js 22 (AWS SAM Local) |
 | Test framework | Jest 29.7 (`--runInBand`) |
 | Database | MongoDB Atlas UAT (`petpetclub_uat`) |
-| SMS | Live Twilio Verify (real code sent to +85252668385) |
+| SMS | Negative-path validation only in the active suite; no live SMS send/verify success case is exercised |
 | SAM command | `sam local start-api --env-vars env.json --warm-containers EAGER` |
 | Run command | `npm test` (root of repo) |

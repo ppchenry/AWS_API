@@ -74,6 +74,7 @@
       "methodNotAllowed": "不允許對此路徑使用該方法",
       "internalError": "發生錯誤，請稍後再試。",
       "unauthorized": "需要身份驗證，請登錄。",
+      "rateLimited": "請求過於頻繁，請稍後再試。",
       "serviceUnavailable": "服務暫時無法使用，請稍後再試。",
       "emailExists": "此電子郵件地址已被使用。",
       "phoneExists": "此電話號碼已被使用。",

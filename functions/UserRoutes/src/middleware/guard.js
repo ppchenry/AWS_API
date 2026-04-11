@@ -3,12 +3,18 @@ const { isValidObjectId } = mongoose;
 const { createErrorResponse } = require('../utils/response');
 const { validateSelfAccess } = require('./selfAccess');
 
+const NGO_ONLY_RESOURCES = new Set([
+  '/account/user-list',
+  '/account/edit-ngo/{ngoId}',
+  '/account/edit-ngo/{ngoId}/pet-placement-options',
+]);
+
 /**
- * Validates user existence for private routes and parses body for all routes.
+ * Parses request bodies, validates self-access, and performs lightweight path validation.
  * @async
  * @param {Object} request
  * @param {import('aws-lambda').APIGatewayProxyEvent} request.event
- * @returns {Promise<UserValidationResult>}
+ * @returns {Promise<{ isValid: boolean, error?: any, body?: Record<string, any> | null }>}
  */
 async function validateUserRequest({ event }) {
   const { body, pathParameters, httpMethod } = event;
@@ -52,9 +58,16 @@ async function validateUserRequest({ event }) {
     };
   }
 
+  if (NGO_ONLY_RESOURCES.has(event.resource) && event.userRole !== 'ngo') {
+    return {
+      isValid: false,
+      error: createErrorResponse(403, 'others.unauthorized', event),
+    };
+  }
+
   // Public/Collection Route Bypass (e.g., Login/Register)
   if (!userId) {
-    return { isValid: true, body: parsedBody, data: null };
+    return { isValid: true, body: parsedBody };
   }
 
   // ID Format Validation
@@ -65,19 +78,7 @@ async function validateUserRequest({ event }) {
     };
   }
 
-  // Database Fetch
-  const User = mongoose.model("User");
-  const user = await User.findOne({ _id: userId, deleted: false }).lean();
-
-  // Existence Check (Matching your 'others' keys)
-  if (!user) {
-    return { 
-      isValid: false, 
-      error: createErrorResponse(404, "others.getUserNotFound", event)
-    };
-  }
-
-  return { isValid: true, body: parsedBody, data: user };
+  return { isValid: true, body: parsedBody };
 }
 
 module.exports = { validateUserRequest };

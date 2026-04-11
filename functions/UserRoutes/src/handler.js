@@ -6,7 +6,7 @@ const { createErrorResponse } = require("./utils/response");
 const { handleOptions } = require("./cors");
 const { authJWT } = require("./middleware/authJWT");
 const { routeRequest } = require("./router");
-const { validateUserRequest } = require("./middleware/userGuard");
+const { validateUserRequest } = require("./middleware/guard");
 const { logError } = require("./utils/logger");
 
 /** * Paths that do not require a valid JWT. 
@@ -55,7 +55,6 @@ async function handleRequest(event, context) {
     // 6. Routing
     return await routeRequest({
       event,
-      user: userValidation.data,
       body: userValidation.body,
     });
 

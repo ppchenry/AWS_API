@@ -4,6 +4,8 @@ const bcrypt = require("bcrypt");
 const { createErrorResponse, createSuccessResponse } = require("../utils/response");
 const { getFirstZodIssueMessage } = require("../utils/zod");
 const { logError } = require("../utils/logger");
+const { enforceRateLimit } = require("../utils/rateLimit");
+const { normalizeEmail, normalizePhone } = require("../utils/validators");
 const { registerSchema } = require("../zodSchema/registerSchema");
 const { registerNgoSchema } = require("../zodSchema/registerNgoSchema");
 
@@ -14,6 +16,16 @@ const { registerNgoSchema } = require("../zodSchema/registerNgoSchema");
 async function register({ event, body }) {
   try {
     const User = mongoose.model("User");
+
+    const rateLimit = await enforceRateLimit({
+      event,
+      action: "register",
+      limit: 12,
+      windowSec: 10 * 60,
+    });
+    if (!rateLimit.allowed) {
+      return createErrorResponse(429, "others.rateLimited", event);
+    }
 
     // 1. Zod Validation
     // Validates that at least (email + password) OR (phone + password) exists
@@ -35,19 +47,21 @@ async function register({ event, body }) {
       birthday,
       gender
     } = parseResult.data;
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedPhoneNumber = normalizePhone(phoneNumber);
 
     // 2. Optimized Duplicate Check (One DB Trip)
     // We check if either the email OR phone is already taken by an active account
     const existingUser = await User.findOne({
       $or: [
-        ...(email ? [{ email }] : []),
-        ...(phoneNumber ? [{ phoneNumber }] : [])
+        ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+        ...(normalizedPhoneNumber ? [{ phoneNumber: normalizedPhoneNumber }] : [])
       ],
       deleted: false
     }).lean();
 
     if (existingUser) {
-      const isPhoneConflict = phoneNumber && existingUser.phoneNumber === phoneNumber;
+      const isPhoneConflict = normalizedPhoneNumber && existingUser.phoneNumber === normalizedPhoneNumber;
       const errorKey = isPhoneConflict ? 'phoneRegister.userExist' : 'phoneRegister.existWithEmail';
       return createErrorResponse(409, errorKey, event);
     }
@@ -65,10 +79,10 @@ async function register({ event, body }) {
       firstName,
       lastName,
       password: hashedPassword,
-      phoneNumber,
-      email: email || `${newId.toString()}@temp.account`,
+      phoneNumber: normalizedPhoneNumber,
+      email: normalizedEmail || `${newId.toString()}@temp.account`,
       role: "user",
-      verified: !!phoneNumber,
+      verified: !!normalizedPhoneNumber,
       subscribe: subscribe === 'true' || subscribe === true,
       promotion: promotion ?? false,
       district: district ?? null,
@@ -136,6 +150,16 @@ async function registerNgo({ event, body }) {
     const Ngo = mongoose.model("NGO");
     const NgoUserAccess = mongoose.model("NgoUserAccess");
 
+    const rateLimit = await enforceRateLimit({
+      event,
+      action: "register-ngo",
+      limit: 8,
+      windowSec: 10 * 60,
+    });
+    if (!rateLimit.allowed) {
+      return createErrorResponse(429, "others.rateLimited", event);
+    }
+
     // 1. Zod Validation (replaces manual field checks)
     const parseResult = registerNgoSchema.safeParse(body);
     if (!parseResult.success) {
@@ -156,21 +180,23 @@ async function registerNgo({ event, body }) {
       ngoPrefix,
       subscribe
     } = parseResult.data;
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedPhoneNumber = normalizePhone(phoneNumber);
 
     // 2. Duplicate checks (findOne + lean for performance)
-    const existingUser = await UserRead.findOne({ email, deleted: false }).lean();
+    const existingUser = await UserRead.findOne({ email: normalizedEmail, deleted: false }).lean();
     if (existingUser) {
-      return createErrorResponse(400, 'phoneRegister.userExist', event);
+      return createErrorResponse(409, 'phoneRegister.userExist', event);
     }
 
-    const existingUserWithPhone = await UserRead.findOne({ phoneNumber, deleted: false }).lean();
+    const existingUserWithPhone = await UserRead.findOne({ phoneNumber: normalizedPhoneNumber, deleted: false }).lean();
     if (existingUserWithPhone) {
       return createErrorResponse(409, 'emailRegister.existWithPhone', event);
     }
 
     const existingNgo = await Ngo.findOne({ registrationNumber: businessRegistrationNumber }).lean();
     if (existingNgo) {
-      return createErrorResponse(400, 'registerNgo.duplicateBusinessReg', event);
+      return createErrorResponse(409, 'registerNgo.duplicateBusinessReg', event);
     }
 
     // 3. Hash password
@@ -185,9 +211,9 @@ async function registerNgo({ event, body }) {
       const [newUser] = await UserRead.create([{
         firstName,
         lastName,
-        email,
+        email: normalizedEmail,
         password: hashedPassword,
-        phoneNumber,
+        phoneNumber: normalizedPhoneNumber,
         role: "ngo",
         verified: true,
         subscribe: subscribe === 'true' || subscribe === true,
@@ -206,8 +232,8 @@ async function registerNgo({ event, body }) {
       const [newNgo] = await Ngo.create([{
         name: ngoName,
         description,
-        email,
-        phone: phoneNumber,
+        email: normalizedEmail,
+        phone: normalizedPhoneNumber,
         website,
         address,
         registrationNumber: businessRegistrationNumber,

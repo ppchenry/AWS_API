@@ -4,8 +4,13 @@
  * Run with: npm test
  */
 
+const jwt = require("../functions/UserRoutes/node_modules/jsonwebtoken");
+const envConfig = require("../env.json");
+
 const BASE_URL = "http://localhost:3000";
 const TEST_TS = Date.now();
+const JWT_SECRET = envConfig.UserRoutesFunction.JWT_SECRET;
+const SESSION_TEST_IP = `198.51.100.${(TEST_TS % 200) + 1}`;
 
 // Shared state across ordered tests
 const state = {
@@ -25,8 +30,27 @@ const state = {
 async function req(method, path, body, headers = {}) {
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
-    headers: { "Content-Type": "application/json", ...headers },
+    headers: {
+      "Content-Type": "application/json",
+      "x-forwarded-for": SESSION_TEST_IP,
+      ...headers,
+    },
     body: body ? JSON.stringify(body) : undefined,
+  });
+  let json;
+  try { json = await res.json(); } catch { json = null; }
+  return { status: res.status, body: json };
+}
+
+async function rawReq(method, path, body, headers = {}) {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "x-forwarded-for": SESSION_TEST_IP,
+      ...headers,
+    },
+    body,
   });
   let json;
   try { json = await res.json(); } catch { json = null; }
@@ -41,6 +65,21 @@ function auth() {
 // Returns NGO Authorization header if ngoToken is available
 function ngoAuth() {
   return state.ngoToken ? { Authorization: `Bearer ${state.ngoToken}` } : {};
+}
+
+function expiredAuth(overrides = {}) {
+  const token = jwt.sign(
+    {
+      userId: state.userId,
+      userEmail: state.email,
+      userRole: "user",
+      ...overrides,
+    },
+    JWT_SECRET,
+    { expiresIn: -60 }
+  );
+
+  return { Authorization: `Bearer ${token}` };
 }
 
 // ─── Register ────────────────────────────────────────────────────────────────
@@ -63,6 +102,18 @@ describe("POST /account/register", () => {
       lastName: "User",
       email: state.email,
       password: state.password,
+    });
+    expect(res.status).toBe(409);
+    expect(res.body.errorKey).toBe("phoneRegister.existWithEmail");
+  });
+
+  test("rejects duplicate email with different casing → 409", async () => {
+    const [localPart, domain] = state.email.split("@");
+    const res = await req("POST", "/account/register", {
+      firstName: "Case",
+      lastName: "Duplicate",
+      email: `${localPart.toUpperCase()}@${domain.toUpperCase()}`,
+      password: "Test1234!",
     });
     expect(res.status).toBe(409);
     expect(res.body.errorKey).toBe("phoneRegister.existWithEmail");
@@ -120,6 +171,40 @@ describe("POST /account/register", () => {
     expect(res.status).toBe(201);
     expect(res.body?.user?.role).toBe("user");
   });
+
+  test("rejects NoSQL injection object in email field → 400", async () => {
+    const res = await req("POST", "/account/register", {
+      firstName: "Nosql",
+      lastName: "Register",
+      email: { $gt: "" },
+      password: "Test1234!",
+    });
+    expect(res.status).toBe(400);
+    expect(typeof res.body.errorKey).toBe("string");
+  });
+
+  test("rate limits repeated register attempts from the same IP → 429", async () => {
+    const headers = { "x-forwarded-for": `198.51.101.${(TEST_TS % 200) + 1}` };
+
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const res = await req("POST", "/account/register", {
+        firstName: "Burst",
+        lastName: `User${attempt}`,
+        email: `burst_register_${TEST_TS}_${attempt}@test.com`,
+        password: "Test1234!",
+      }, headers);
+      expect(res.status).toBe(201);
+    }
+
+    const blocked = await req("POST", "/account/register", {
+      firstName: "Burst",
+      lastName: "Blocked",
+      email: `burst_register_${TEST_TS}_blocked@test.com`,
+      password: "Test1234!",
+    }, headers);
+    expect(blocked.status).toBe(429);
+    expect(blocked.body.errorKey).toBe("others.rateLimited");
+  });
 });
 
 // ─── Login ───────────────────────────────────────────────────────────────────
@@ -171,6 +256,32 @@ describe("POST /account/login", () => {
     expect(res.body.errorKey).toBe("emailLogin.invalidEmailFormat");
   });
 
+  test("rejects malformed JSON body → 400", async () => {
+    const res = await rawReq("POST", "/account/login", '{"email":"broken"');
+    expect(res.status).toBe(400);
+    expect(res.body.errorKey).toBe("others.invalidJSON");
+  });
+
+  test("rate limits repeated failed login attempts → 429", async () => {
+    const rateLimitedEmail = `ratelimit_${TEST_TS}@test.com`;
+
+    for (let attempt = 1; attempt <= 10; attempt += 1) {
+      const res = await req("POST", "/account/login", {
+        email: rateLimitedEmail,
+        password: "WrongPassword!",
+      });
+      expect(res.status).toBe(401);
+      expect(res.body.errorKey).toBe("emailLogin.invalidUserCredential");
+    }
+
+    const blocked = await req("POST", "/account/login", {
+      email: rateLimitedEmail,
+      password: "WrongPassword!",
+    });
+    expect(blocked.status).toBe(429);
+    expect(blocked.body.errorKey).toBe("others.rateLimited");
+  });
+
   test("rejects missing Authorization header on protected route → 401", async () => {
     const res = await req("GET", `/account/${state.userId}`);
     expect(res.status).toBe(401);
@@ -181,6 +292,12 @@ describe("POST /account/login", () => {
     const res = await req("GET", `/account/${state.userId}`, undefined, {
       Authorization: "Bearer this.is.garbage",
     });
+    expect(res.status).toBe(401);
+    expect(res.body.errorKey).toBe("others.unauthorized");
+  });
+
+  test("rejects expired JWT on protected route → 401", async () => {
+    const res = await req("GET", `/account/${state.userId}`, undefined, expiredAuth());
     expect(res.status).toBe(401);
     expect(res.body.errorKey).toBe("others.unauthorized");
   });
@@ -208,6 +325,7 @@ describe("GET /account/{userId}", () => {
   test("gets user by id", async () => {
     const res = await req("GET", `/account/${state.userId}`, undefined, auth());
     expect(res.status).toBe(200);
+    expect(res.body?.user?.password).toBeUndefined();
   });
 
   test("returns 403 for a different userId (self-access enforced)", async () => {
@@ -247,6 +365,21 @@ describe("PUT /account", () => {
     }, auth());
     expect(res.status).toBe(400);
     expect(res.body.errorKey).toBe("others.invalidEmailFormat");
+  });
+
+  test("rejects malformed JSON body → 400", async () => {
+    const res = await rawReq("PUT", "/account", '{"userId":"broken"', auth());
+    expect(res.status).toBe(400);
+    expect(res.body.errorKey).toBe("others.invalidJSON");
+  });
+
+  test("rejects NoSQL injection object in email field → 400", async () => {
+    const res = await req("PUT", "/account", {
+      userId: state.userId,
+      email: { $gt: "" },
+    }, auth());
+    expect(res.status).toBe(400);
+    expect(typeof res.body.errorKey).toBe("string");
   });
 });
 
@@ -325,18 +458,6 @@ describe("POST /account/update-image", () => {
 
 // ─── NGO User List ────────────────────────────────────────────────────────────
 
-describe("GET /account/user-list", () => {
-  test("returns user list", async () => {
-    const res = await req("GET", "/account/user-list", undefined, auth());
-    expect(res.status).toBe(200);
-  });
-
-  test("accepts page and search query params", async () => {
-    const res = await req("GET", "/account/user-list?page=2&search=test", undefined, auth());
-    expect(res.status).toBe(200);
-  });
-});
-
 // ─── Not Implemented ─────────────────────────────────────────────────────────
 
 describe("Not implemented routes", () => {
@@ -372,7 +493,7 @@ describe("POST /account/register-ngo", () => {
     state.ngoUserId = res.body?.userId?.toString();
   });
 
-  test("rejects duplicate NGO email → 400", async () => {
+  test("rejects duplicate NGO email → 409", async () => {
     const res = await req("POST", "/account/register-ngo", {
       firstName: "TestNgo",
       lastName: "Admin",
@@ -385,11 +506,11 @@ describe("POST /account/register-ngo", () => {
       businessRegistrationNumber: `BRDUP${TEST_TS.toString().slice(-5)}`,
       address: "456 Test Street",
     });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(409);
     expect(res.body.errorKey).toBe("phoneRegister.userExist");
   });
 
-  test("rejects email already registered by a normal user → 400", async () => {
+  test("rejects email already registered by a normal user → 409", async () => {
     const res = await req("POST", "/account/register-ngo", {
       firstName: "Existing",
       lastName: "User",
@@ -402,8 +523,42 @@ describe("POST /account/register-ngo", () => {
       businessRegistrationNumber: `BRXU${TEST_TS.toString().slice(-6)}`,
       address: "Existing User Street",
     });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(409);
     expect(res.body.errorKey).toBe("phoneRegister.userExist");
+  });
+
+  test("rejects duplicate NGO phone → 409", async () => {
+    const res = await req("POST", "/account/register-ngo", {
+      firstName: "Phone",
+      lastName: "Conflict",
+      email: `dup_phone_${TEST_TS}@test.com`,
+      phoneNumber: state.ngoPhone,
+      password: state.ngoPassword,
+      confirmPassword: state.ngoPassword,
+      ngoName: `Dup Phone NGO ${TEST_TS}`,
+      ngoPrefix: "DUPPH",
+      businessRegistrationNumber: `BRDP${TEST_TS.toString().slice(-6)}`,
+      address: "Phone Conflict Street",
+    });
+    expect(res.status).toBe(409);
+    expect(res.body.errorKey).toBe("emailRegister.existWithPhone");
+  });
+
+  test("rejects duplicate business registration number → 409", async () => {
+    const res = await req("POST", "/account/register-ngo", {
+      firstName: "Dup",
+      lastName: "BusinessReg",
+      email: `dup_br_${TEST_TS}@test.com`,
+      phoneNumber: `+8529${TEST_TS.toString().slice(-7)}`,
+      password: state.ngoPassword,
+      confirmPassword: state.ngoPassword,
+      ngoName: `Dup BR NGO ${TEST_TS}`,
+      ngoPrefix: "DUPBR",
+      businessRegistrationNumber: `BR${TEST_TS.toString().slice(-8)}`,
+      address: "Business Reg Conflict Street",
+    });
+    expect(res.status).toBe(409);
+    expect(res.body.errorKey).toBe("registerNgo.duplicateBusinessReg");
   });
 
   test("rejects password mismatch → 400", async () => {
@@ -449,6 +604,58 @@ describe("POST /account/register-ngo", () => {
     expect(res.status).toBe(400);
     expect(res.body.errorKey).toBe("emailRegister.invalidPhoneFormat");
   });
+
+  test("rejects NoSQL injection object in NGO email field → 400", async () => {
+    const res = await req("POST", "/account/register-ngo", {
+      firstName: "Nosql",
+      lastName: "Ngo",
+      email: { $gt: "" },
+      phoneNumber: "+85212344321",
+      password: "Test1234!",
+      confirmPassword: "Test1234!",
+      ngoName: `Nosql NGO ${TEST_TS}`,
+      ngoPrefix: "NSQL1",
+      businessRegistrationNumber: `BRNS${TEST_TS.toString().slice(-6)}`,
+      address: "Nosql Street",
+    }, { "x-forwarded-for": `198.51.102.${(TEST_TS % 200) + 1}` });
+    expect(res.status).toBe(400);
+    expect(typeof res.body.errorKey).toBe("string");
+  });
+
+  test("rate limits repeated NGO registration attempts from the same IP → 429", async () => {
+    const headers = { "x-forwarded-for": `198.51.103.${(TEST_TS % 200) + 1}` };
+
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const res = await req("POST", "/account/register-ngo", {
+        firstName: "BurstNgo",
+        lastName: `Admin${attempt}`,
+        email: `burst_ngo_${TEST_TS}_${attempt}@test.com`,
+        phoneNumber: `+8527${String(TEST_TS + attempt).slice(-7)}`,
+        password: state.ngoPassword,
+        confirmPassword: state.ngoPassword,
+        ngoName: `Burst NGO ${TEST_TS} ${attempt}`,
+        ngoPrefix: `B${String(attempt).padStart(4, "0")}`,
+        businessRegistrationNumber: `BRNG${String(TEST_TS + attempt).slice(-6)}`,
+        address: "Burst NGO Street",
+      }, headers);
+      expect(res.status).toBe(201);
+    }
+
+    const blocked = await req("POST", "/account/register-ngo", {
+      firstName: "BurstNgo",
+      lastName: "Blocked",
+      email: `burst_ngo_${TEST_TS}_blocked@test.com`,
+      phoneNumber: `+8528${String(TEST_TS).slice(-7)}`,
+      password: state.ngoPassword,
+      confirmPassword: state.ngoPassword,
+      ngoName: `Burst NGO ${TEST_TS} blocked`,
+      ngoPrefix: "BLKED",
+      businessRegistrationNumber: `BRBL${String(TEST_TS).slice(-6)}`,
+      address: "Blocked NGO Street",
+    }, headers);
+    expect(blocked.status).toBe(429);
+    expect(blocked.body.errorKey).toBe("others.rateLimited");
+  });
 });
 
 describe("Cross-registration duplicate protection", () => {
@@ -477,12 +684,53 @@ describe("POST /account/login (NGO)", () => {
   });
 });
 
+// ─── NGO User List ────────────────────────────────────────────────────────────
+// Placed after NGO login so ngoToken is guaranteed to be populated.
+
+describe("GET /account/user-list", () => {
+  test("returns user list for NGO user → 200", async () => {
+    const res = await req("GET", "/account/user-list", undefined, ngoAuth());
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body?.userList)).toBe(true);
+  });
+
+  test("accepts page and search query params → 200", async () => {
+    const res = await req("GET", "/account/user-list?page=1&search=test", undefined, ngoAuth());
+    expect(res.status).toBe(200);
+  });
+
+  test("rejects regular user token → 403", async () => {
+    const res = await req("GET", "/account/user-list", undefined, auth());
+    expect(res.status).toBe(403);
+    expect(res.body.errorKey).toBe("others.unauthorized");
+  });
+
+  test("rejects missing Authorization header → 401", async () => {
+    const res = await req("GET", "/account/user-list");
+    expect(res.status).toBe(401);
+    expect(res.body.errorKey).toBe("others.unauthorized");
+  });
+});
+
 // ─── NGO Endpoints ────────────────────────────────────────────────────────────
 
 describe("GET /account/edit-ngo/{ngoId}", () => {
   test("fetches NGO details", async () => {
     const res = await req("GET", `/account/edit-ngo/${state.ngoId}`, undefined, ngoAuth());
     expect(res.status).toBe(200);
+    expect(res.body?.userProfile?.password).toBeUndefined();
+  });
+
+  test("rejects regular user token → 403", async () => {
+    const res = await req("GET", `/account/edit-ngo/${state.ngoId}`, undefined, auth());
+    expect(res.status).toBe(403);
+    expect(res.body.errorKey).toBe("others.unauthorized");
+  });
+
+  test("rejects missing Authorization header → 401", async () => {
+    const res = await req("GET", `/account/edit-ngo/${state.ngoId}`);
+    expect(res.status).toBe(401);
+    expect(res.body.errorKey).toBe("others.unauthorized");
   });
 
   test("rejects invalid ngoId format → 400", async () => {
@@ -505,12 +753,72 @@ describe("PUT /account/edit-ngo/{ngoId}", () => {
     }, ngoAuth());
     expect(res.status).toBe(200);
   });
+
+  test("rejects regular user token → 403", async () => {
+    const res = await req("PUT", `/account/edit-ngo/${state.ngoId}`, {
+      ngoProfile: { description: "Should fail" },
+    }, auth());
+    expect(res.status).toBe(403);
+    expect(res.body.errorKey).toBe("others.unauthorized");
+  });
+
+  test("rejects missing Authorization header → 401", async () => {
+    const res = await req("PUT", `/account/edit-ngo/${state.ngoId}`, {
+      ngoProfile: { description: "Should fail" },
+    });
+    expect(res.status).toBe(401);
+    expect(res.body.errorKey).toBe("others.unauthorized");
+  });
+
+  test("rejects duplicate user email → 409", async () => {
+    const res = await req("PUT", `/account/edit-ngo/${state.ngoId}`, {
+      userProfile: { email: state.email },
+    }, ngoAuth());
+    expect(res.status).toBe(409);
+    expect(res.body.errorKey).toBe("others.emailExists");
+  });
+
+  test("rejects duplicate registrationNumber → 409", async () => {
+    // Register a second NGO using an isolated IP to avoid rate-limit bleed from earlier burst tests
+    const secondBr = `BRDUP2_${TEST_TS.toString().slice(-6)}`;
+    const setupRes = await req("POST", "/account/register-ngo", {
+      firstName: "Second",
+      lastName: "Ngo",
+      email: `second_ngo_${TEST_TS}@test.com`,
+      phoneNumber: `+8526${TEST_TS.toString().slice(-7)}`,
+      password: state.ngoPassword,
+      confirmPassword: state.ngoPassword,
+      ngoName: `Second NGO ${TEST_TS}`,
+      ngoPrefix: "SCND2",
+      businessRegistrationNumber: secondBr,
+      address: "Second NGO Street",
+    }, { "x-forwarded-for": `198.51.105.${(TEST_TS % 200) + 1}` });
+    expect(setupRes.status).toBe(201);
+
+    const res = await req("PUT", `/account/edit-ngo/${state.ngoId}`, {
+      ngoProfile: { registrationNumber: secondBr },
+    }, ngoAuth());
+    expect(res.status).toBe(409);
+    expect(res.body.errorKey).toBe("others.registrationNumberExists");
+  });
 });
 
 describe("GET /account/edit-ngo/{ngoId}/pet-placement-options", () => {
   test("fetches pet placement options", async () => {
     const res = await req("GET", `/account/edit-ngo/${state.ngoId}/pet-placement-options`, undefined, ngoAuth());
     expect(res.status).toBe(200);
+  });
+
+  test("rejects regular user token → 403", async () => {
+    const res = await req("GET", `/account/edit-ngo/${state.ngoId}/pet-placement-options`, undefined, auth());
+    expect(res.status).toBe(403);
+    expect(res.body.errorKey).toBe("others.unauthorized");
+  });
+
+  test("rejects missing Authorization header → 401", async () => {
+    const res = await req("GET", `/account/edit-ngo/${state.ngoId}/pet-placement-options`);
+    expect(res.status).toBe(401);
+    expect(res.body.errorKey).toBe("others.unauthorized");
   });
 
   test("rejects invalid ngoId format → 400", async () => {
@@ -721,6 +1029,15 @@ describe("Security", () => {
     expect(res.body.errorKey).toBe("others.unauthorized");
   });
 
+  test("PUT /account rejects email already used by NGO account → 409", async () => {
+    const res = await req("PUT", "/account", {
+      userId: state.userId,
+      email: state.ngoEmail,
+    }, auth());
+    expect(res.status).toBe(409);
+    expect(res.body.errorKey).toBe("others.emailExists");
+  });
+
   // ── Mass assignment prevention ─────────────────────────────────────────────
 
   test("PUT /account strips unknown fields — role upgrade attempt ignored", async () => {
@@ -792,6 +1109,14 @@ describe("DELETE /account/{userId}", () => {
     expect(res.body.errorKey).toBe("others.unauthorized");
   });
 
+  test("rejects invalid userId format → 403 (self-access fires before format check)", async () => {
+    // guard.js validates self-access before ObjectId format; a mismatched path param
+    // that cannot equal the JWT userId will always fail the identity check first.
+    const res = await req("DELETE", "/account/not-a-valid-id", undefined, auth());
+    expect(res.status).toBe(403);
+    expect(res.body.errorKey).toBe("others.unauthorized");
+  });
+
   test("deletes the test user", async () => {
     const res = await req("DELETE", `/account/${state.userId}`, undefined, auth());
     expect(res.status).toBe(200);
@@ -800,5 +1125,26 @@ describe("DELETE /account/{userId}", () => {
   test("deletes the NGO test user", async () => {
     const res = await req("DELETE", `/account/${state.ngoUserId}`, undefined, ngoAuth());
     expect(res.status).toBe(200);
+  });
+
+  test("deleted user token can no longer fetch profile → 404", async () => {
+    const res = await req("GET", `/account/${state.userId}`, undefined, auth());
+    expect(res.status).toBe(404);
+    expect(res.body.errorKey).toBe("others.getUserNotFound");
+  });
+
+  test("deleted user cannot log in again → 401", async () => {
+    const res = await req("POST", "/account/login", {
+      email: state.email,
+      password: state.password,
+    });
+    expect(res.status).toBe(401);
+    expect(res.body.errorKey).toBe("emailLogin.invalidUserCredential");
+  });
+
+  test("second delete on already deleted user returns 404", async () => {
+    const res = await req("DELETE", `/account/${state.userId}`, undefined, auth());
+    expect(res.status).toBe(404);
+    expect(res.body.errorKey).toBe("others.getUserNotFound");
   });
 });
