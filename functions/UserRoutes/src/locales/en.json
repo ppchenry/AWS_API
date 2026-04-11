@@ -76,6 +76,7 @@
       "methodNotAllowed": "Method not allowed for this path",
       "internalError": "Something went wrong. Please try again later.",
       "unauthorized": "Authentication required. Please log in.",
+      "rateLimited": "Too many requests. Please try again later.",
       "serviceUnavailable": "Service temporarily unavailable. Please try again later.",
       "emailExists": "Email address is already in use.",
       "phoneExists": "Phone number is already in use.",

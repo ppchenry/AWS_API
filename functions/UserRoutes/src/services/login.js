@@ -5,6 +5,7 @@ const { createErrorResponse, createSuccessResponse } = require("../utils/respons
 const { logError } = require("../utils/logger");
 const { normalizeEmail, normalizePhone } = require("../utils/validators");
 const { getFirstZodIssueMessage } = require("../utils/zod");
+const { enforceRateLimit } = require("../utils/rateLimit");
 const { emailLoginSchema, checkUserExistsSchema } = require("../zodSchema/loginSchema");
 
 /**
@@ -13,14 +14,14 @@ const { emailLoginSchema, checkUserExistsSchema } = require("../zodSchema/loginS
  * @property {Object} body
  */
 
-// TODO: rate limit
 /**
  * Handles NGO user login logic.
- * @param {Object} user - The user object
- * @param {Object} event - The API Gateway event
+ * @param {Object} request
+ * @param {Object} request.user - The user object
+ * @param {Object} request.event - The API Gateway event
  * @returns {Promise<Object>} Response object
  */
-async function handleNGOLogin(user, event) {
+async function handleNGOLogin({ user, event }) {
   try {
     const NgoUserAccess = mongoose.model("NgoUserAccess");
     const NGO = mongoose.model("NGO");
@@ -31,12 +32,12 @@ async function handleNGOLogin(user, event) {
     });
 
     if (!ngoUserAccess) {
-      return createErrorResponse(401, "emailLogin.userNGONotFound", event);
+      return createErrorResponse(403, "emailLogin.userNGONotFound", event);
     }
 
     const ngo = await NGO.findOne({ _id: ngoUserAccess.ngoId });
     if (!ngo) {
-      return createErrorResponse(401, "emailLogin.NGONotFound", event);
+      return createErrorResponse(500, "emailLogin.NGONotFound", event);
     }
 
     const token = issueNgoAccessToken(user, ngo);
@@ -90,6 +91,17 @@ async function emailLogin({ event, body }) {
     const { password } = validationResult.data;
     const email = normalizeEmail(validationResult.data.email);
 
+    const rateLimit = await enforceRateLimit({
+      event,
+      action: "login",
+      identifier: email,
+      limit: 10,
+      windowSec: 15 * 60,
+    });
+    if (!rateLimit.allowed) {
+      return createErrorResponse(429, "others.rateLimited", event);
+    }
+
     // Find user (connection already established by handler)
     const User = mongoose.model("User");
     const user = await User.findOne({ email, deleted: false });
@@ -101,7 +113,7 @@ async function emailLogin({ event, body }) {
     // Handle NGO role
     if (user.role === "ngo") {
       const { password, ...userWithoutPassword } = user.toObject ? user.toObject() : user;
-      return handleNGOLogin(userWithoutPassword, event);
+      return handleNGOLogin({ user: userWithoutPassword, event });
     }
 
     // Handle non-NGO role

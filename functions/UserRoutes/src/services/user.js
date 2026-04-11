@@ -2,16 +2,28 @@ const mongoose = require("mongoose");
 const { createErrorResponse, createSuccessResponse } = require("../utils/response");
 const { getFirstZodIssueMessage } = require("../utils/zod");
 const { logError } = require("../utils/logger");
+const { normalizeEmail, normalizePhone } = require("../utils/validators");
+const { sanitizeUser } = require("../utils/sanitize");
 const { userUpdateDetailsSchema, deleteUserByEmailSchema } = require("../zodSchema/userUpdateSchema");
+
+async function findActiveUserById(userId) {
+  const User = mongoose.model("User");
+  return User.findOne({ _id: userId, deleted: false }).lean();
+}
 
 /**
  * Returns the authenticated user's profile.
  * @param {RouteContext} routeContext
  */
-async function getUserDetails({ event, user }) {
+async function getUserDetails({ event }) {
+  const resolvedUser = await findActiveUserById(event.pathParameters?.userId);
+  if (!resolvedUser) {
+    return createErrorResponse(404, "others.getUserNotFound", event);
+  }
+
   return createSuccessResponse(200, event, {
     message: "Success",
-    user,
+    user: sanitizeUser(resolvedUser),
   });
 }
 
@@ -29,19 +41,21 @@ async function updateUserDetails({ event, body }) {
       return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error), event);
     }
     const { userId, firstName, lastName, birthday, email, district, image, phoneNumber } = parseResult.data;
+    const normalizedEmail = normalizeEmail(email);
+    const normalizedPhoneNumber = normalizePhone(phoneNumber);
 
-    if (email || phoneNumber) {
+    if (normalizedEmail || normalizedPhoneNumber) {
       const conflict = await User.findOne({
         $or: [
-          ...(email ? [{ email }] : []),
-          ...(phoneNumber ? [{ phoneNumber }] : [])
+          ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+          ...(normalizedPhoneNumber ? [{ phoneNumber: normalizedPhoneNumber }] : [])
         ],
         _id: { $ne: userId },
         deleted: false
       }).lean();
 
       if (conflict) {
-        const key = conflict.email === email ? "others.emailExists" : "others.phoneExists";
+        const key = conflict.email === normalizedEmail ? "others.emailExists" : "others.phoneExists";
         return createErrorResponse(409, key, event);
       }
     }
@@ -51,8 +65,8 @@ async function updateUserDetails({ event, body }) {
     if (lastName !== undefined) updateFields.lastName = lastName;
     if (district !== undefined) updateFields.district = district;
     if (image !== undefined) updateFields.image = image;
-    if (email !== undefined) updateFields.email = email;
-    if (phoneNumber !== undefined) updateFields.phoneNumber = phoneNumber;
+    if (email !== undefined) updateFields.email = normalizedEmail;
+    if (phoneNumber !== undefined) updateFields.phoneNumber = normalizedPhoneNumber;
     if (birthday !== undefined)  updateFields.birthday = birthday ? new Date(birthday) : null;
 
     const updatedUser = await User.findOneAndUpdate(
@@ -67,7 +81,7 @@ async function updateUserDetails({ event, body }) {
 
     return createSuccessResponse(200, event, {
       message: "Success",
-      user: updatedUser,
+      user: sanitizeUser(updatedUser),
     });
   } catch (err) {
     logError("User update failed", {
@@ -86,17 +100,23 @@ async function updateUserDetails({ event, body }) {
  * Soft-deletes a user and revokes all their refresh tokens.
  * @param {RouteContext} routeContext
  */
-async function deleteUser({ event, user }) {
+async function deleteUser({ event }) {
   try {
     const User = mongoose.model("User");
     const RefreshToken = mongoose.model("RefreshToken");
+    const resolvedUser = await findActiveUserById(event.pathParameters?.userId);
+
+    if (!resolvedUser) {
+      return createErrorResponse(404, "others.getUserNotFound", event);
+    }
+
     await Promise.all([
-      User.updateOne({ _id: user._id }, { deleted: true }),
-      RefreshToken.deleteMany({ userId: user._id }),
+      User.updateOne({ _id: resolvedUser._id }, { deleted: true }),
+      RefreshToken.deleteMany({ userId: resolvedUser._id }),
     ]);
     return createSuccessResponse(200, event, {
       message: "User deleted successfully",
-      userId: user._id,
+      userId: resolvedUser._id,
     });
   } catch (err) {
     logError("User delete failed", {
@@ -104,7 +124,7 @@ async function deleteUser({ event, user }) {
       event,
       error: err,
       extra: {
-        userId: user?._id,
+        userId: event.pathParameters?.userId,
       },
     });
     return createErrorResponse(500, "others.internalError", event);
@@ -126,7 +146,8 @@ async function deleteUserByEmail({ event, body }) {
     }
 
     const { email } = parseResult.data;
-    const user = await User.findOne({ email }).lean();
+    const normalizedEmail = normalizeEmail(email);
+    const user = await User.findOne({ email: normalizedEmail }).lean();
 
     if (!user) {
       return createErrorResponse(404, "deleteAccount.userNotFound", event);

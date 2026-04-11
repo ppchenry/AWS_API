@@ -172,7 +172,6 @@ The repository will move toward consistent conventions for:
 |   |-- TestIPLambda/
 |   |-- UserRoutes/
 |   `-- WhatsappRoute/
-|-- shared/
 |-- .env.example
 `-- README.md
 ```
@@ -210,7 +209,9 @@ The repository will move toward consistent conventions for:
 
 ## Shared Folder Strategy
 
-`shared/` will become the home for cross-cutting code that should not be reimplemented in every Lambda.
+A top-level `shared/` package does not exist in the repo yet.
+
+When cross-Lambda code has stabilized, `shared/` should become the home for cross-cutting code that should not be reimplemented in every Lambda.
 
 Planned candidates include:
 

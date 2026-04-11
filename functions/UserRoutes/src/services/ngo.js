@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const { flattenToDot, pickAllowed, hasKeys } = require("../utils/objectUtils");
 const { createErrorResponse, createSuccessResponse } = require("../utils/response");
 const { logError } = require("../utils/logger");
+const { sanitizeUser } = require("../utils/sanitize");
 const { editNgoBodySchema } = require("../zodSchema/editNgoSchema");
 const { buildNgoUserListPipeline } = require("./ngoUserListPipeline");
 
@@ -125,7 +126,7 @@ async function getNgoDetails({ event }) {
     const errStatus = (i) => (results[i].status === "rejected" ? String(results[i].reason?.message || results[i].reason) : null);
 
     return createSuccessResponse(200, event, {
-      userProfile: pick(0),
+      userProfile: sanitizeUser(pick(0)),
       ngoProfile: ngo,
       ngoUserAccessProfile: pick(1),
       ngoCounters: pick(2),
@@ -172,7 +173,7 @@ async function editNgo({ event, body }) {
 
   try {
     // 1. Setup Constants & Allowed Fields
-    const USER_ALLOWED = new Set(["firstName", "lastName", "email", "phoneNumber", "gender", "deleted"]);
+    const USER_ALLOWED = new Set(["firstName", "lastName", "email", "phoneNumber", "gender"]);
     const NGO_ALLOWED = new Set([
       "name", "description", "registrationNumber", "email", "website",
       "address.street", "address.city", "address.state", "address.zipCode", "address.country",
@@ -243,6 +244,7 @@ async function editNgo({ event, body }) {
         { $set: userDot },
         { session, new: true, runValidators: true, lean: true }
       );
+      responseData.userProfile = sanitizeUser(responseData.userProfile);
     }
 
     if (hasKeys(ngoDot)) {

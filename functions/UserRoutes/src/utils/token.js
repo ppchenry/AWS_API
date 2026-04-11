@@ -83,6 +83,7 @@ function issueNgoAccessToken(user, ngo) {
   return issueCustomAccessToken({
     userId: user._id,
     userEmail: user.email,
+    userRole: user.role,
     ngoId: ngo._id,
     ngoName: ngo.name,
   });

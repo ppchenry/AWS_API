@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const { createErrorResponse, createSuccessResponse } = require("../utils/response");
 const { getFirstZodIssueMessage } = require("../utils/zod");
 const { logError } = require("../utils/logger");
+const { sanitizeUser } = require("../utils/sanitize");
 const { userUpdatePasswordSchema, userUpdateImageSchema } = require("../zodSchema/userUpdateSchema");
 
 /**
@@ -84,7 +85,7 @@ async function updateUserImage({ event, body }) {
     }
     return createSuccessResponse(200, event, {
       message: "Image updated successfully",
-      user: updatedUser,
+      user: sanitizeUser(updatedUser),
     });
   } catch (e) {
     logError("User image update failed", {

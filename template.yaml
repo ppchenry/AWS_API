@@ -100,6 +100,30 @@ Resources:
             Path: /account
             Method: PUT
 
+        UserList:
+          Type: Api
+          Properties:
+            Path: /account/user-list
+            Method: GET
+
+        EditNgoGet:
+          Type: Api
+          Properties:
+            Path: /account/edit-ngo/{ngoId}
+            Method: GET
+
+        EditNgoPut:
+          Type: Api
+          Properties:
+            Path: /account/edit-ngo/{ngoId}
+            Method: PUT
+
+        EditNgoPetPlacementOptionsGet:
+          Type: Api
+          Properties:
+            Path: /account/edit-ngo/{ngoId}/pet-placement-options
+            Method: GET
+
         AccountUserIdDelete:
           Type: Api
           Properties:
@@ -188,30 +212,6 @@ Resources:
           Properties:
             Path: /account/verify-sms-code
             Method: POST
-
-        UserList:
-          Type: Api
-          Properties:
-            Path: /account/user-list
-            Method: GET
-
-        EditNgoGet:
-          Type: Api
-          Properties:
-            Path: /account/edit-ngo/{ngoId}
-            Method: GET
-
-        EditNgoPut:
-          Type: Api
-          Properties:
-            Path: /account/edit-ngo/{ngoId}
-            Method: PUT
-
-        EditNgoPetPlacementOptionsGet:
-          Type: Api
-          Properties:
-            Path: /account/edit-ngo/{ngoId}/pet-placement-options
-            Method: GET
 
       Environment:
         Variables:

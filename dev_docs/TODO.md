@@ -20,11 +20,7 @@
 
 ## UserRoutes Follow-up
 
-- [ ] add rate limiting on login, register, and SMS endpoints to prevent brute-force and SMS abuse
-- [ ] hardcode `role: "user"` in register service instead of accepting `role` from request body; regular registration should never set `role` to `"ngo"` or anything else
-- [ ] remove `deleted` from `USER_ALLOWED` whitelist in editNgo service so NGO admins cannot soft-delete themselves via PUT `/account/edit-ngo/{ngoId}`
 - [ ] add unique index on `email` in the User model to prevent race-condition duplicates under concurrent registration requests
-- [ ] consider restricting `/account/login-2` to authenticated users or adding rate limiting to prevent email/phone enumeration
 
 ## PetBasicInfo Follow-up
 
