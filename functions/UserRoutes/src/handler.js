@@ -45,12 +45,12 @@ async function handleRequest(event, context) {
     const authError = authJWT({ event });
     if (authError && !PUBLIC_RESOURCES.includes(event.resource)) return authError;
 
-    // 4. Infrastructure Setup (DB)
-    await getReadConnection();
-
-    // 5. Data Guard / Validation
+    // 4. Data Guard / Validation
     const userValidation = await validateUserRequest({ event });
     if (!userValidation.isValid) return userValidation.error;
+
+    // 5. Infrastructure Setup (DB)
+    await getReadConnection();
 
     // 6. Routing
     return await routeRequest({
