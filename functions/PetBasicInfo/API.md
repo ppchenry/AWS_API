@@ -16,6 +16,7 @@ Authorization: Bearer <token>
 
 Returns `401` if the token is missing, expired, or invalid.
 Returns `403` if the token is valid but the caller does not own the pet and is not authorized through the pet's `ngoId`.
+Returns `404` for both missing and soft-deleted pets.
 
 ## Language
 
@@ -64,7 +65,7 @@ GET /pets/{petID}/basic-info
 
 Retrieves the basic profile information for a pet.
 
-#### Update Path Parameters
+#### Path Parameters
 
 | Parameter | Type | Required | Description |
 | --------- | ---- | -------- | ----------- |
@@ -119,7 +120,6 @@ Retrieves the basic profile information for a pet.
 | `401` | Authentication required |
 | `403` | Caller does not own the pet and is not authorized through the pet NGO |
 | `404` | Pet not found |
-| `410` | Pet has been deleted |
 
 ---
 
@@ -157,8 +157,6 @@ All fields are optional. At least one must be provided.
 | `features` | string | — |
 | `info` | string | — |
 | `status` | string | — |
-| `owner` | string | — |
-| `ngoId` | string | — |
 | `ownerContact1` | number | Must be a number |
 | `ownerContact2` | number | Must be a number |
 | `contact1Show` | boolean | Must be true/false |
@@ -168,7 +166,7 @@ All fields are optional. At least one must be provided.
 | `location` | string | Mapped to `locationName` in DB |
 | `position` | string | — |
 
-> **Note**: `tagId` and `ngoPetId` are **not updatable** through this endpoint. Sending them will return a validation error.
+> **Note**: `tagId`, `ngoPetId`, `owner`, and `ngoId` are **not updatable** through this endpoint. Sending them will return `petBasicInfo.errors.invalidUpdateField`.
 
 #### Update Example Request
 
@@ -201,8 +199,7 @@ All fields are optional. At least one must be provided.
 | `400` | No valid fields to update |
 | `401` | Authentication required |
 | `403` | Caller does not own the pet and is not authorized through the pet NGO |
-| `404` | Pet not found |
-| `410` | Pet has been deleted |
+| `404` | Pet not found or soft-deleted |
 | `500` | Database error |
 
 ---
@@ -238,8 +235,7 @@ Soft-deletes a pet by setting `deleted: true` and clearing `tagId`. The record r
 | `400` | Invalid pet ID format |
 | `401` | Authentication required |
 | `403` | Caller does not own the pet and is not authorized through the pet NGO |
-| `404` | Pet not found |
-| `410` | Pet already deleted |
+| `404` | Pet not found or already soft-deleted |
 | `429` | Rate limit exceeded (more than 10 soft-deletes per 60 s per authenticated user) |
 | `500` | Database error |
 
@@ -286,8 +282,7 @@ Retrieves the eye analysis records for a pet, sorted by most recent first. Retur
 | `400` | Invalid pet ID format |
 | `401` | Authentication required |
 | `403` | Caller does not own the pet and is not authorized through the pet NGO |
-| `404` | Pet not found |
-| `410` | Pet has been deleted |
+| `404` | Pet not found or soft-deleted |
 | `500` | Error retrieving eye log |
 
 ---
@@ -306,5 +301,4 @@ Retrieves the eye analysis records for a pet, sorted by most recent first. Retur
 | `401` | Authentication required |
 | `404` | Resource not found |
 | `405` | Method not allowed |
-| `410` | Resource has been deleted |
 | `500` | Internal server error |

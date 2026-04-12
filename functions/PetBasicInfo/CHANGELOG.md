@@ -1,125 +1,98 @@
 # PetBasicInfo Lambda — Refactoring Changelog
 
-## Overview
+## Scope
 
-Refactored the PetBasicInfo Lambda from a single 600-line god function in `index.js` into a modular architecture under `src/`. Every route, middleware, utility, and schema now lives in its own file with a single responsibility.
+Modernized `functions/PetBasicInfo` to the same runtime standard as `functions/UserRoutes` for request lifecycle, JWT handling, structured responses, ownership enforcement, sanitization, and integration testing.
 
-## 2026-04 Checklist Alignment (Pass 2)
+This refactor covered:
 
-- **C1 alg:none fix** — `jwt.verify()` now passes `{ algorithms: ["HS256"] }` explicitly; prevents algorithm substitution attacks
-- **C2 sanitize.js** — added `src/utils/sanitize.js` with `sanitizePet()` allowlist function; `getPetBasicInfo` now calls `sanitizePet()` instead of inlining the field selection
-- **PUBLIC_RESOURCES pattern** — `handler.js` now defines `PUBLIC_RESOURCES = []` (all routes protected) and uses `if (authError && !PUBLIC_RESOURCES.includes(event.resource))` per canonical lifecycle spec
-- **`others.internalError` in all catch blocks** — handler, all service functions, and eyeLog now return `createErrorResponse(500, "others.internalError", event)` in every catch; removed lambda-specific error keys (`petBasicInfo.errors.internalServerError`, `errorUpdatingPet`, `errorDeletingPet`, `errorRetrievingEyeLog`) from catch paths
-- **Top-level try/catch in every service** — `updatePetBasicInfo` previously had a narrow try/catch only around the DB call; Zod parse and field-transform logic are now inside the top-level catch too. `getPetBasicInfo` gained a try/catch for full coverage
-- **`src/utils/zod.js`** — added `getFirstZodIssueMessage` / `getJoinedZodIssueMessages` helpers matching UserRoutes; `updatePetBasicInfo` now uses `getFirstZodIssueMessage()` instead of inline `error.issues[0]?.message`
-- **`event.ngoId` alignment** — `authJWT._attachUserToEvent` now sets `event.ngoId = payload.ngoId`; `petGuard.js` reads `event.ngoId` instead of `event.requestContext?.authorizer?.ngoId`
+- thin `index.js` entrypoint
+- `src/handler.js` orchestration
+- explicit `src/router.js` route dispatch
+- fail-fast env validation and singleton DB bootstrap
+- centralized auth, guard, self-access, response, logging, i18n, and rate-limit utilities
+- modular services for basic info and eye log flows
+- PetBasicInfo integration coverage under `__tests__/test-petbasicinfo.test.js`
 
-## 2026-04 Checklist Alignment
+This refactor did not redesign the API contract, change persistence shape, or add new business features.
 
-- aligned PetBasicInfo request flow to thin entry -> handler -> guard -> router -> service
-- added explicit pet ownership and NGO access checks so valid JWTs can still receive `403`
-- services return locale dot-keys in the `message` field; error responses server-translate the error key via `createErrorResponse`, success responses pass the key as-is (client-side resolution)
-- added structured logging for auth failures, DB failures, and unexpected service errors
-- enabled explicit SAM events for `/pets/{petID}`, `/basic-info`, and `/eyeLog` routes including OPTIONS preflight coverage
-- added a dedicated PetBasicInfo SAM integration suite for CORS, auth, ownership denial, invalid input, missing resources, update success, eye logs, delete auth/validation, and unsupported methods (see `__tests__/test-petbasicinfo.test.js`); the soft-delete mutation itself is not run in CI to avoid mutating UAT state
-- remaining work is now mostly operational verification and future API redesign, not structural instability
+## Architecture Changes
 
----
+### Before
 
-## Architecture
+- one large `index.js` mixed routing, validation, DB access, and business logic
+- JWT auth was present in code but not consistently enforced
+- response formatting and field filtering were inline and route-specific
+- unsupported routes depended on SAM behavior rather than consistent Lambda-level `405`
 
-### Before (Legacy)
+### After
 
 ```text
-index.js  — 600+ lines, all logic in one exports.handler
+index.js
+  -> src/handler.js
+     -> src/cors.js
+     -> src/middleware/authJWT.js
+     -> src/middleware/guard.js
+     -> src/config/db.js
+     -> src/router.js
+        -> src/services/basicInfo.js
+        -> src/services/eyeLog.js
+           -> src/middleware/selfAccess.js
+           -> src/utils/rateLimit.js (DELETE only)
+           -> src/utils/response.js
+           -> src/utils/logger.js
 ```
 
-- One giant `switch/case` + `if/else` chain handling GET, PUT, DELETE, and eye log routes
-- Inline validation (15+ manual `if` checks for the PUT body)
-- No auth enforcement (authJWT existed but was commented out)
-- Hardcoded `Access-Control-Allow-Origin: "*"` on some responses
-- No separation between routing, validation, business logic, or response formatting
+Key structural changes:
 
-### After (Refactored)
+- body parsing and ObjectId validation now happen before the DB connection is opened
+- DB-backed pet existence and ownership checks moved into `selfAccess.loadAuthorizedPet()` so DELETE can rate-limit before pet lookup
+- the router now does exact `${event.httpMethod} ${event.resource}` matching
+- SAM explicitly exposes `POST /pets/{petID}/basic-info` so the Lambda can return `405 methodNotAllowed`
 
-```text
-index.js           — 5 lines, delegates to handler
-src/
-  handler.js       — Orchestration: OPTIONS, auth, DB, petGuard, router
-  router.js        — Declarative route table mapping method+path to service functions
-  cors.js          — CORS origin validation and OPTIONS preflight handler
-  config/db.js     — Singleton MongoDB connection with promise caching
-  middleware/
-    authJWT.js     — JWT verification and auth gating
-    petGuard.js    — Pet ID validation, body parsing, pet existence/deleted check
-  services/
-    basicInfo.js   — GET, PUT, DELETE handlers for /basic-info and /
-    eyeLog.js      — GET handler for /eyeLog
-  utils/
-    response.js    — createErrorResponse + createSuccessResponse helpers
-    i18n.js        — Translation loading with per-container cache
-    logger.js      — Structured JSON logging helpers
-    validators.js  — Stateless validation helpers (ObjectId, date, URL, number, boolean)
-    dateParser.js  — DD/MM/YYYY and ISO date parser
-  zodSchema/
-    petBasicInfoSchema.js — Zod schema for PUT body validation
-  locales/
-    en.json, zh.json
-  models/
-    pet.js, EyeAnalysisRecord.js
-```text
+## Functional Improvements
 
----
+- All routes are now protected by JWT except OPTIONS preflight.
+- JWT verification explicitly pins `algorithms: ["HS256"]` to block `alg:none` and algorithm-substitution attacks.
+- GET responses sanitize the pet document through an explicit allowlist before returning it.
+- Eye log responses sanitize records and limit results to 100 items.
+- DELETE applies Mongo-backed rate limiting before pet lookup.
+- Missing and soft-deleted pets now return the same `petBasicInfo.errors.petNotFound` response, preventing deletion-state enumeration.
+- PUT validation now emits locale dot-keys directly from the schema for both unknown-field and known type-mismatch cases.
+
+## Validation And Error Handling Improvements
+
+- malformed JSON returns `400 petBasicInfo.errors.invalidJSON`
+- empty PUT/POST body returns `400 petBasicInfo.errors.emptyUpdateBody`
+- invalid `petID` format returns `400 petBasicInfo.errors.invalidPetIdFormat`
+- unsupported update fields such as `tagId`, `ngoPetId`, `owner`, or `ngoId` return `400 petBasicInfo.errors.invalidUpdateField`
+- all catch blocks log via `logError` and return `createErrorResponse(500, "others.internalError", event)`
+- all success and error responses now include consistent CORS handling and response shape
 
 ## Security Improvements
 
-| # | Improvement | Detail |
-| - | ----------- | ------ |
-| 1 | **Auth enforcement** | `authJWT()` is now wired into `handler.js` and runs globally on every request (except OPTIONS preflight). Previously it was commented out — all routes were fully public. |
-| 2 | **CORS origin validation** | Replaced hardcoded `Access-Control-Allow-Origin: "*"` with env-based `ALLOWED_ORIGINS` allowlist. Credentials-aware: uses specific origin, never wildcard. |
-| 3 | **JWT_BYPASS production guard** | `JWT_BYPASS=true` now only works when `NODE_ENV !== "production"`, preventing accidental auth bypass in prod. |
-| 4 | **Removed sensitive logging** | Removed ~10 `console.log` statements from `cors.js` that were logging all request headers (including Authorization tokens) to CloudWatch. |
-| 5 | **Auth error uses standardized response** | The 401 response from `authJWT` now uses `createErrorResponse` with CORS headers, instead of a manually built response that lacked CORS headers. |
-| 6 | **Zod `.strict()` mode** | The update schema now rejects unknown fields entirely, preventing unexpected data from being written to the database. |
-| 7 | **Proper type validation** | Replaced `z.any().refine()` with `z.number()` and `z.boolean()` for weight, contacts, sterilization, and boolean fields. Eliminates the risk of nested objects being passed through `$set`. |
-| 8 | **Explicit field allowlist on GET** | `getPetBasicInfo` now returns an explicit allowlist of fields (matching the legacy response shape) instead of using spread + exclusion, which would leak any new schema fields added in the future. |
-| 9 | **tagId/ngoPetId blocked at schema level** | Removed from the Zod schema entirely so they are rejected by `.strict()`. Previously they were accepted, validated, then silently stripped — wasting error messages and adding confusion. |
+- Enforced JWT auth before protected logic.
+- Added owner-or-NGO self-access enforcement for GET, PUT, DELETE, and eyeLog routes.
+- Pinned JWT verification to HS256.
+- Centralized response sanitization to prevent leakage of `deleted`, `__v`, and future internal fields.
+- Added DELETE rate limiting via the `RateLimit` collection.
+- Added uniform `404` behavior for missing and soft-deleted pets.
+- Added exact-route `405` behavior for unsupported `POST /pets/{petID}/basic-info`.
 
----
+## Performance And Maintainability Improvements
 
-## Performance Improvements
+- Singleton MongoDB connection with `maxPoolSize: 1` and promise caching.
+- `lazyRoute()` dispatch so only the requested service module is loaded on demand.
+- `.lean()` used for read-only pet and eye log fetches.
+- locale files cached per container through `i18n.js`.
+- service responsibilities split cleanly between `basicInfo.js` and `eyeLog.js`.
 
-| # | Improvement | Detail |
-| - | ----------- | ------ |
-| 1 | **`.lean()` on pet lookup** | `petGuard.js` now uses `Pet.findById(petID).lean()`, skipping Mongoose document hydration on every request. |
-| 2 | **`.lean()` on eye log query** | `eyeLog.js` already used `.lean()` (added during refactor). |
-| 3 | **Eye log query limit** | Added `.limit(100)` to prevent unbounded result sets for pets with many eye analysis records. |
-| 4 | **Translation caching** | `loadTranslations()` now caches parsed JSON at module scope per language, so locale files are read from disk only once per Lambda container instead of every invocation. |
-| 5 | **DB connection promise caching** | `db.js` now checks `mongoose.connection.readyState === 1` for instant return on warm containers, and caches the connection promise to prevent duplicate connection attempts during concurrent cold-start requests. |
-| 6 | **OPTIONS fast-path** | `handleOptions()` runs before auth, DB connection, and all validation — preflight requests return instantly. |
+## Constraints And Deferred Work
 
----
+- `infra-owned`: no DB unique index work was added in this refactor; any uniqueness race safety would require Atlas index changes.
+- `code-owned`: `README.md`, `API.md`, and shared test reporting must stay aligned with future route or validation changes.
+- `code-owned`: the delete lifecycle test still requires a separate disposable pet fixture if full 37/37 mutation coverage is needed in local runs.
 
-## Code Quality Improvements
+## Result Of This Stage
 
-| # | Improvement | Detail |
-| - | ----------- | ------ |
-| 1 | **Consistent module system** | All files now use CommonJS (`require`/`module.exports`). Previously 6 files used ESM `import`/`export` while the rest used CJS — would fail without a bundler. |
-| 2 | **Standardized response helpers** | `createErrorResponse` and `createSuccessResponse` in `response.js` ensure every response has consistent shape with CORS headers, and error traceability through `errorKey` plus `requestId`. `createErrorResponse` server-translates the error key; `createSuccessResponse` passes locale dot-keys through as-is (client resolves). |
-| 3 | **Declarative route table** | Routes are defined as a plain object in `router.js` (`'GET /basic-info': getPetBasicInfo`). Adding a new route is one line. |
-| 4 | **Zod schema validation** | Replaced 15+ inline `if` checks with a single `petBasicInfoUpdateSchema.safeParse(body)` call. All validation rules are co-located in one schema file. |
-| 5 | **Centralized pet guard** | Pet ID validation, body parsing, pet existence check, and soft-delete check all happen once in `petGuard.js` instead of being duplicated across route branches. |
-| 6 | **Thin handler** | `handler.js` only does: OPTIONS → auth → DB → petGuard → router → global catch. No business logic. |
-| 8 | **Structured logs** | Request start/completion, DB failures, auth failures, and service exceptions now emit JSON logs with request context and serialized errors. |
-| 7 | **i18n support** | Bilingual error/success messages (en/zh) loaded from locale JSON files with dotted-key resolution. |
-
----
-
-## Legacy Code Removed (from original index.js)
-
-- ~600 lines of commented-out god function (still present in `index.js` — safe to delete, it's in git history)
-- Duplicate error handling (outer catch re-checked `ValidationError` and `CastError` that was already caught per-route)
-- Unreachable code (`break` after `return` in switch cases)
-- Dead null check (`if (!form)` — `form` was a just-created object literal, always truthy)
-- Commented-out `ngoPetId` duplicate check logic
-- Commented-out hard delete (`deleteOne`) logic
+PetBasicInfo now matches the UserRoutes security baseline for the surfaces it owns: JWT auth, ownership enforcement, structured responses, sanitization, fail-fast env validation, exact route dispatch, and integration-test coverage. Remaining work is documentation upkeep and optional fixture management, not runtime hardening.

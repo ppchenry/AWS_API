@@ -1,19 +1,16 @@
 const mongoose = require('mongoose');
 const { isValidObjectId } = mongoose;
 const { createErrorResponse } = require('../utils/response');
-const { checkPetOwnership } = require('./selfAccess');
 
 /**
- * Validates the incoming request: parses the body, checks the petID format, opens
- * the DB connection (provided by the caller), then fetches the pet and enforces
- * ownership. Single unified entry point — the handler calls this once after the DB
- * is ready.
+ * Validates the incoming request without touching the database. Parses the body,
+ * enforces basic mutation rules, and validates the petID format.
  *
  * @async
  * @param {Object} params
  * @param {import('aws-lambda').APIGatewayProxyEvent} params.event
  * @returns {Promise<
- *   { isValid: true, petID: string, body: Object|null, data: Object } |
+ *   { isValid: true, body: Object|null } |
  *   { isValid: false, error: import('aws-lambda').APIGatewayProxyResult }
  * >}
  */
@@ -51,27 +48,7 @@ async function validateRequest({ event }) {
     };
   }
 
-  // 4. Fetch pet from DB
-  const Pet = mongoose.model("Pet");
-  const pet = await Pet.findById(petID).lean();
-
-  // 5. Existence check — return 404 for both missing and soft-deleted pets
-  //    (uniform response: callers must not be able to distinguish deleted from never-existed)
-  if (!pet || pet.deleted) {
-    return {
-      isValid: false,
-      error: createErrorResponse(404, "petBasicInfo.errors.petNotFound", event),
-    };
-  }
-
-  // 6. Ownership check (policy-driven via SELF_ACCESS_POLICIES)
-  const routeKey = `${event.httpMethod?.toUpperCase()} ${event.resource}`;
-  const ownershipResult = checkPetOwnership({ event, pet, routeKey });
-  if (!ownershipResult.isValid) {
-    return ownershipResult;
-  }
-
-  return { isValid: true, petID, body: parsedBody, data: pet };
+  return { isValid: true, body: parsedBody };
 }
 
 module.exports = { validateRequest };
