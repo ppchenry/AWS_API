@@ -13,7 +13,7 @@
   * `functions/UserRoutes`
   * `functions/PetBasicInfo`
 
-此項工作隸屬於 [README.md](README.md) 中定義的 Monorepo 清理計畫，嚴格遵循 [dev\_docs/REFACTOR\_CHECKLIST.md](https://www.google.com/search?q=dev_docs/REFACTOR_CHECKLIST.md) 的現代化基準，並依據 [dev\_docs/LAMBDA\_REFACTOR\_INVENTORY.md](https://www.google.com/search?q=dev_docs/LAMBDA_REFACTOR_INVENTORY.md) 的優先順序執行。
+此項工作隸屬於 [README.md](README.md) 中定義的 Monorepo 清理計畫，嚴格遵循 [dev\_docs/REFACTOR\_CHECKLIST.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/REFACTOR_CHECKLIST.md) 的現代化基準，並依據 [dev\_docs/LAMBDA\_REFACTOR\_INVENTORY.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/LAMBDA_REFACTOR_INVENTORY.md) 的優先順序執行。
 
 **目前已驗證的成果：**
 
