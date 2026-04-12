@@ -11,15 +11,16 @@ Request lifecycle:
 ```text
 API Gateway event
   -> index.js
-  -> src/handler.js          (OPTIONS, auth, input validation, DB, rate limit, petGuard, router, catch-all)
+  -> src/handler.js          (OPTIONS, auth, cheap guard, DB, router, catch-all)
   -> src/cors.js             (OPTIONS preflight)
   -> src/middleware/authJWT.js
-  -> src/middleware/petGuard.js  (petID format + body parse — no DB)
+  -> src/middleware/guard.js      (petID format + body parse — no DB)
   -> src/config/db.js
-  -> src/utils/rateLimit.js      (DELETE: 429 before pet lookup)
-  -> src/middleware/petGuard.js  (pet existence + ownership check — requires DB)
   -> src/router.js
-  -> src/services/*
+  -> src/services/basicInfo.js    (GET/PUT/DELETE)
+  -> src/services/eyeLog.js       (GET eyeLog)
+  -> src/middleware/selfAccess.js (DB-backed pet existence + ownership check inside services)
+  -> src/utils/rateLimit.js       (DELETE only: 429 before pet lookup)
   -> src/utils/response.js
 ```
 
@@ -39,26 +40,30 @@ PetBasicInfo/
     ├── config/
     │   ├── db.js
     │   └── env.js
+    ├── cors.js
     ├── locales/
     │   ├── en.json
     │   └── zh.json
     ├── middleware/
     │   ├── authJWT.js
-    │   └── petGuard.js
+    │   ├── guard.js
+    │   └── selfAccess.js
     ├── models/
     │   ├── pet.js
-    │   └── EyeAnalysisRecord.js
+    │   ├── EyeAnalysisRecord.js
+    │   └── RateLimit.js
     ├── services/
     │   ├── basicInfo.js
     │   └── eyeLog.js
     ├── utils/
-    │   ├── response.js
-    │   ├── logger.js
     │   ├── i18n.js
+    │   ├── dateParser.js
+    │   ├── logger.js
+    │   ├── rateLimit.js
+    │   ├── response.js
     │   ├── sanitize.js
     │   ├── validators.js
-    │   ├── zod.js
-    │   └── dateParser.js
+    │   └── zod.js
     └── zodSchema/
         ├── envSchema.js
         └── petBasicInfoSchema.js
@@ -74,11 +79,12 @@ PetBasicInfo/
 ### `src/middleware/`
 
 - `authJWT.js`: verifies Bearer tokens with `algorithms: ["HS256"]` and attaches `userId`, `userEmail`, `userRole`, and `ngoId` to `event`.
-- `petGuard.js`: two-stage guard exported as `validatePetInput` and `validatePetRequest`. `validatePetInput` runs before the DB: parses JSON body, rejects empty PUT/POST bodies, and validates `petID` ObjectId format. `validatePetRequest` runs after the DB connection: fetches the pet (`.lean()`), checks soft-delete status, and enforces ownership (JWT `userId` matches `pet.userId`, or JWT `ngoId` matches `pet.ngoId`).
+- `guard.js`: parses JSON body, rejects empty PUT/POST bodies, and validates `petID` ObjectId format before the DB connection is opened.
+- `selfAccess.js`: `loadAuthorizedPet({ event })` loads the pet from MongoDB, returns a uniform `404` for missing or soft-deleted pets, and enforces owner-or-NGO access.
 
 ### `src/services/`
 
-- `basicInfo.js`: GET, PUT, and DELETE handlers for `/pets/{petID}/basic-info` and `/pets/{petID}`. Zod validation on PUT; `sanitizePet()` on GET; soft-delete on DELETE.
+- `basicInfo.js`: GET, PUT, and DELETE handlers for `/pets/{petID}/basic-info` and `/pets/{petID}`. Zod validation on PUT; `sanitizePet()` on GET; soft-delete on DELETE; rate limit only on DELETE.
 - `eyeLog.js`: GET handler for `/pets/{petID}/eyeLog`. Reads `petID` from `event.pathParameters.petID` and returns up to 100 records sorted by `createdAt` descending.
 
 ### `src/utils/`
@@ -86,7 +92,7 @@ PetBasicInfo/
 - `response.js`: `createErrorResponse` (server-translates error key) and `createSuccessResponse` (passes locale dot-keys to client as-is). Both merge CORS headers.
 - `i18n.js`: locale loading with per-container cache; falls back to `en`.
 - `sanitize.js`: `sanitizePet()` — explicit allowlist that prevents `deleted`, `__v`, and any future schema additions from leaking into responses.
-- `rateLimit.js`: `enforceRateLimit({ event, action, identifier, limit, windowSec })` — sliding-window counter backed by the `RateLimit` MongoDB collection; uses `findOneAndUpdate` upsert with `$inc`.
+- `rateLimit.js`: `enforceRateLimit({ event, action, identifier, limit, windowSec })` — fixed-window counter backed by the `RateLimit` MongoDB collection; uses `findOneAndUpdate` upsert with `$inc`.
 - `validators.js`: `isValidObjectId`, `isValidDateFormat`, `isValidImageUrl`, `isValidNumber`, `isValidBoolean`.
 - `zod.js`: `getFirstZodIssueMessage` / `getJoinedZodIssueMessages` — safe against Zod v4 `error.issues` shape.
 - `logger.js`: structured JSON logging (`logInfo`, `logWarn`, `logError`).
@@ -102,20 +108,22 @@ Routed endpoints:
 | -------- | -------------------------------- | ----------------------------- |
 | `GET`    | `/pets/{petID}/basic-info`       | `basicInfo.getPetBasicInfo`   |
 | `PUT`    | `/pets/{petID}/basic-info`       | `basicInfo.updatePetBasicInfo`|
+| `POST`   | `/pets/{petID}/basic-info`       | routed to `405 methodNotAllowed` |
 | `DELETE` | `/pets/{petID}`                  | `basicInfo.deletePetBasicInfo`|
 | `GET`    | `/pets/{petID}/eyeLog`           | `eyeLog.getPetEyeAnalysisLogs`|
 
-No deprecated routes are currently present. Any new unsupported route returns `405`.
+The POST basic-info route is exposed in SAM only so the Lambda can return a consistent `405` response instead of SAM returning `403` before the handler runs.
 
 ## Current Behavior Notes
 
 - All routes are JWT-protected. `PUBLIC_RESOURCES` is an explicit empty array.
-- Ownership enforcement is in `petGuard.js` (`validatePetRequest`), not in services. Services receive a pre-validated pet document.
-- Input validation (body parse, petID format) runs in `handler.js` **before** the DB connection is opened, so malformed requests are rejected without touching the database.
+- Input validation (body parse, empty body, petID format) runs in `guard.js` **before** the DB connection is opened, so malformed requests are rejected without touching the database.
+- Ownership enforcement and pet existence checks happen in `selfAccess.loadAuthorizedPet()` from inside services, after the DB connection is available.
 - For DELETE requests, a rate limit check (10 requests per 60 s per authenticated user) runs after the DB connection but **before** the pet existence lookup. This means rate-limited requests never trigger a DB pet query.
-- PUT body validation uses Zod with `.strict()` — unknown fields return `400`.
-- `tagId` and `ngoPetId` are excluded from the update schema; sending them returns `400`.
+- PUT body validation uses a Zod allowlist schema with `.passthrough() + superRefine() + transform()` so unknown fields still return the locale key `petBasicInfo.errors.invalidUpdateField` without relying on raw Zod `unrecognized_keys` text.
+- `tagId`, `ngoPetId`, `owner`, and `ngoId` are not updatable through the schema; sending them returns `400`.
 - Soft-delete sets `deleted: true` and clears `tagId`. The record remains in the database.
+- Missing and soft-deleted pets both return `petBasicInfo.errors.petNotFound`; callers cannot distinguish those states.
 - Success `message` fields contain locale dot-keys (e.g. `"petBasicInfo.success.retrievedSuccessfully"`). Clients resolve these using the locale files in `src/locales/`.
 - Error responses are server-translated via `createErrorResponse`.
 
@@ -137,10 +145,11 @@ Coverage:
 - PUT success — requires `TEST_PET_ID`
 - GET eyeLog (auth rejection, success + petId scoping assertion)
 - DELETE (auth rejection, invalid ID, nonexistent pet, stranger ownership denial, rate limit 429)
+- DELETE lifecycle (owner soft-delete + subsequent uniform 404) when `TEST_DISPOSABLE_PET_ID` is configured to a separate live pet
 - Coverage gate: logs a warning when pet-fixture tests are skipped
 - 405 for unsupported methods
 
-Pet-specific tests are skipped if `TEST_PET_ID` and `TEST_OWNER_USER_ID` are not set in `env.json`.
+Pet-specific tests are skipped if `TEST_PET_ID` and `TEST_OWNER_USER_ID` are not set in `env.json`. The delete lifecycle test is skipped unless `TEST_DISPOSABLE_PET_ID` is also set to a different live pet owned by the same user.
 
 To run:
 
@@ -158,4 +167,4 @@ npm test -- --testPathPattern=test-petbasicinfo
 | `JWT_BYPASS`      | No       | Set to `"true"` to skip JWT in non-production    |
 | `NODE_ENV`        | No       | Defaults to `"development"`                      |
 
-`env.json` also accepts `TEST_PET_ID` and `TEST_OWNER_USER_ID` for the integration suite; these are not read by the Lambda at runtime.
+`env.json` also accepts `TEST_PET_ID`, `TEST_OWNER_USER_ID`, and `TEST_DISPOSABLE_PET_ID` for the integration suite; these are not read by the Lambda at runtime.

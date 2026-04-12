@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const { createErrorResponse } = require('../utils/response');
 
 /**
@@ -48,4 +49,40 @@ function checkPetOwnership({ event, pet, routeKey }) {
   };
 }
 
-module.exports = { checkPetOwnership, SELF_ACCESS_POLICIES };
+/**
+ * Loads the requested pet from MongoDB and enforces the route's ownership policy.
+ * Returns a uniform 404 for missing or soft-deleted pets so callers do not learn
+ * whether a record ever existed.
+ *
+ * @async
+ * @param {Object} params
+ * @param {import('aws-lambda').APIGatewayProxyEvent} params.event
+ * @returns {Promise<
+ *   { isValid: true, pet: Object } |
+ *   { isValid: false, error: import('aws-lambda').APIGatewayProxyResult }
+ * >}
+ */
+async function loadAuthorizedPet({ event }) {
+  const Pet = mongoose.model("Pet");
+  const pet = await Pet.findById(event.pathParameters?.petID).lean();
+
+  if (!pet || pet.deleted) {
+    return {
+      isValid: false,
+      error: createErrorResponse(404, "petBasicInfo.errors.petNotFound", event),
+    };
+  }
+
+  const routeKey = `${event.httpMethod?.toUpperCase()} ${event.resource}`;
+  const ownershipResult = checkPetOwnership({ event, pet, routeKey });
+  if (!ownershipResult.isValid) {
+    return ownershipResult;
+  }
+
+  return {
+    isValid: true,
+    pet,
+  };
+}
+
+module.exports = { checkPetOwnership, loadAuthorizedPet, SELF_ACCESS_POLICIES };

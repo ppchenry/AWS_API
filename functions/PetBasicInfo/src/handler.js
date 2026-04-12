@@ -36,17 +36,16 @@ async function handleRequest(event, context) {
     const authError = authJWT({ event });
     if (authError && !PUBLIC_RESOURCES.includes(event.resource)) return authError;
 
-    // 3. Infrastructure Setup (DB)
-    await getReadConnection();
-
-    // 4. Guard — body parse, ID format, pet existence, ownership (spec: DB → Guard)
+    // 3. Guard — body parse and ID format only
     const guardResult = await validateRequest({ event });
     if (!guardResult.isValid) return guardResult.error;
 
-    // 5. Routing (services handle rate limiting internally)
+    // 4. Infrastructure Setup (DB)
+    await getReadConnection();
+
+    // 5. Routing (services handle rate limiting and pet access checks)
     return await routeRequest({
       event,
-      pet: guardResult.data,
       body: guardResult.body,
     });
   } catch (error) {

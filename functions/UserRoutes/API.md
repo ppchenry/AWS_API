@@ -204,6 +204,8 @@ Returns the authenticated user's profile.
 
 Returned user payloads are sanitized and do not include `password`.
 
+For authenticated requests, self-access is enforced before any user lookup. A path `userId` that does not match the JWT identity returns `403`, even if the target user does not exist.
+
 **Auth:** Bearer token. Self-access enforced (JWT userId must match path userId).
 
 **Success (200):**
@@ -297,6 +299,8 @@ Partially updates the authenticated user's profile. Only provided fields are upd
 #### DELETE /account/{userId}
 
 Soft-deletes the user account and revokes all refresh tokens.
+
+For authenticated requests, self-access is enforced before ObjectId format or existence checks. Any path `userId` that does not exactly match the JWT identity returns `403`, including malformed IDs.
 
 **Auth:** Bearer token. Self-access enforced (JWT userId must match path userId).
 
@@ -803,12 +807,15 @@ Verifies a 6-digit code with Twilio. For existing users, returns JWT + refresh t
 | 400 | `verification.codeIncorrect` | Wrong code |
 | 400 | `verification.codeExpired` | Code expired |
 | 429 | `others.rateLimited` | Too many SMS verification attempts in the current rate-limit window |
+| 503 | `others.serviceUnavailable` | Twilio not configured |
 
 ---
 
 ### Deprecated
 
 These endpoints return `405` and exist only for backward compatibility.
+
+For these POST routes, an empty body is rejected earlier by the request guard with `400` and `others.missingParams`. Integration tests send a non-empty body when asserting the deprecated `405` response.
 
 | Method | Path | errorKey |
 |---|---|---|

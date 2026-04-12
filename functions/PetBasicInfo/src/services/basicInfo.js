@@ -6,18 +6,25 @@ const { petBasicInfoUpdateSchema } = require("../zodSchema/petBasicInfoSchema");
 const { getFirstZodIssueMessage } = require("../utils/zod");
 const { sanitizePet } = require("../utils/sanitize");
 const { enforceRateLimit } = require("../utils/rateLimit");
+const { loadAuthorizedPet } = require("../middleware/selfAccess");
 
 /**
  * Retrieve pet basic info and return a formatted response.
- * @param {Object} routeContext - Context object containing pet and event.
- * @param {Object} routeContext.pet - The pet Mongoose document.
+ * @param {Object} routeContext - Context object containing event.
  * @param {Object} routeContext.event - The Lambda event object.
  * @returns {Promise<Object>} Lambda response with pet info or error.
  */
 async function getPetBasicInfo(routeContext) {
-  const { pet, event } = routeContext;
+  const { event } = routeContext;
 
   try {
+    const petResult = await loadAuthorizedPet({ event });
+    if (!petResult.isValid) {
+      return petResult.error;
+    }
+
+    const { pet } = petResult;
+
     return createSuccessResponse(200, event, {
       message: "petBasicInfo.success.retrievedSuccessfully",
       form: sanitizePet(pet),
@@ -36,13 +43,13 @@ async function getPetBasicInfo(routeContext) {
 /**
  * Update pet basic info fields (excluding tagId, ngoPetId) after Zod validation.
  * Strips tagId and ngoPetId to prevent updates. Transforms date and location fields.
- * @param {Object} routeContext - Context object containing body, pet, event, and petID.
+ * @param {Object} routeContext - Context object containing body and event.
  * @param {Object} routeContext.body - The parsed request body.
  * @param {Object} routeContext.event - The Lambda event object.
  * @returns {Promise<Object>} Lambda response with update result or error.
  */
 async function updatePetBasicInfo(routeContext) {
-  const { body, event, pet } = routeContext;
+  const { body, event } = routeContext;
   const petID = event.pathParameters?.petID;
 
   try {
@@ -75,6 +82,11 @@ async function updatePetBasicInfo(routeContext) {
       return createErrorResponse(400, "petBasicInfo.errors.noValidFieldsToUpdate", event);
     }
 
+    const petResult = await loadAuthorizedPet({ event });
+    if (!petResult.isValid) {
+      return petResult.error;
+    }
+
     const PetModel = mongoose.model("Pet");
     const updatedPet = await PetModel.findByIdAndUpdate(
       petID,
@@ -88,7 +100,7 @@ async function updatePetBasicInfo(routeContext) {
 
     return createSuccessResponse(200, event, {
       message: "petBasicInfo.success.updatedSuccessfully",
-      id: pet._id,
+      id: petResult.pet._id,
     });
   } catch (error) {
     logError("Failed to update pet basic info", {
@@ -103,8 +115,7 @@ async function updatePetBasicInfo(routeContext) {
 
 /**
  * Soft-delete a pet by setting deleted: true and tagId: null.
- * @param {Object} routeContext - Context object containing petID and event.
- * @param {string} routeContext.petID - The pet's MongoDB ObjectId.
+ * @param {Object} routeContext - Context object containing event.
  * @param {Object} routeContext.event - The Lambda event object.
  * @returns {Promise<Object>} Lambda response with delete result or error.
  */
@@ -123,10 +134,15 @@ async function deletePetBasicInfo(routeContext) {
     });
     if (!rl.allowed) return createErrorResponse(429, "others.rateLimited", event);
 
+    const petResult = await loadAuthorizedPet({ event });
+    if (!petResult.isValid) {
+      return petResult.error;
+    }
+
     const PetModel = mongoose.model("Pet");
 
-    const deletedPet = await PetModel.findByIdAndUpdate(
-      petID,
+    const deletedPet = await PetModel.findOneAndUpdate(
+      { _id: petID, deleted: false },
       { 
         $set: { 
           deleted: true, 

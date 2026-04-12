@@ -35,6 +35,12 @@ Resources:
             Path: /pets/{petID}/basic-info
             Method: PUT
 
+        PetBasicInfoPost:
+          Type: Api
+          Properties:
+            Path: /pets/{petID}/basic-info
+            Method: POST
+
         PetBasicInfoOptions:
           Type: Api
           Properties:

@@ -779,17 +779,19 @@ describe("PUT /account/edit-ngo/{ngoId}", () => {
   });
 
   test("rejects duplicate registrationNumber → 409", async () => {
-    // Register a second NGO using an isolated IP to avoid rate-limit bleed from earlier burst tests
-    const secondBr = `BRDUP2_${TEST_TS.toString().slice(-6)}`;
+    // Register a second NGO using isolated, per-test identifiers to avoid collisions
+    // with persistent integration-test data from earlier runs.
+    const uniqueSuffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    const secondBr = `BRDUP2_${uniqueSuffix}`;
     const setupRes = await req("POST", "/account/register-ngo", {
       firstName: "Second",
       lastName: "Ngo",
-      email: `second_ngo_${TEST_TS}@test.com`,
-      phoneNumber: `+8526${TEST_TS.toString().slice(-7)}`,
+      email: `second_ngo_${uniqueSuffix}@test.com`,
+      phoneNumber: `+8529${uniqueSuffix.slice(-7)}`,
       password: state.ngoPassword,
       confirmPassword: state.ngoPassword,
-      ngoName: `Second NGO ${TEST_TS}`,
-      ngoPrefix: "SCND2",
+      ngoName: `Second NGO ${uniqueSuffix}`,
+      ngoPrefix: `S${uniqueSuffix.slice(-4)}`,
       businessRegistrationNumber: secondBr,
       address: "Second NGO Street",
     }, { "x-forwarded-for": `198.51.105.${(TEST_TS % 200) + 1}` });

@@ -3,8 +3,6 @@ const { createErrorResponse } = require("./utils/response");
 /**
  * @typedef {Object} RouteContext
  * @property {import('aws-lambda').APIGatewayProxyEvent} event
- * @property {string} [petID] - Pet id from the route path
- * @property {Object} [pet] - The pet document (if validated)
  * @property {Object} [body] - Parsed request body
  */
 

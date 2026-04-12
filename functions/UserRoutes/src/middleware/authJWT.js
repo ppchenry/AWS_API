@@ -50,7 +50,7 @@ function authJWT({ event }) {
       return createErrorResponse(500, "others.internalError", event);
     }
 
-    const decoded = jwt.verify(token, jwtSecret);
+    const decoded = jwt.verify(token, jwtSecret, { algorithms: ["HS256"] });
 
     // 5. Attach user info to event for downstream use (Guards/Services)
     _attachUserToEvent(event, decoded);
