@@ -74,7 +74,7 @@ Do not restructure, but still enforce all the behavioral standards:
 
 ## Canonical Request Lifecycle
 
-Every Lambda must implement the lifecycle stages in this exact order. This order is non-negotiable and matches UserRoutes `src/handler.js`.
+Every Lambda must implement the same lifecycle stages, but there is one allowed placement variation learned from the first completed refactors: **cheap, DB-free request validation should run before the DB connection**, while **DB-backed ownership checks may run only after the DB is available**. Do not force a DB-backed ownership lookup into the pre-DB guard layer.
 
 ```
 1. context.callbackWaitsForEmptyEventLoop = false
@@ -92,18 +92,18 @@ Every Lambda must implement the lifecycle stages in this exact order. This order
    → PUBLIC_RESOURCES is an explicit allowlist, not a pattern match
    → if all routes are protected, PUBLIC_RESOURCES is an empty array
 
-4. DB Connection
-   → await getReadConnection()
-   → maxPoolSize: 1 for Lambda
-   → register models on first connection only
-
-5. Guard Layer
+4. Guard Layer (cheap, no DB)
    → validateUserRequest({ event })
    → parse JSON body, return 400 on malformed JSON
    → reject empty body on POST/PUT routes that require one, return 400
-   → [if Lambda has ownership-based routes] run ownership check, return 403 on mismatch
-   → [if Lambda has role-restricted routes] run RBAC check, return 403 on role mismatch
+  → [if ownership check only compares JWT identity to path/body fields] run it here, return 403 on mismatch
+  → [if Lambda has role-restricted routes] run RBAC check, return 403 on role mismatch
    → [if Lambda has ObjectId path params] validate format, return 400 on invalid
+
+5. DB Connection
+  → await getReadConnection()
+  → maxPoolSize: 1 for Lambda
+  → register models on first connection only
 
 6. Route Dispatch
    → routeRequest({ event, body })
@@ -114,6 +114,7 @@ Every Lambda must implement the lifecycle stages in this exact order. This order
 
 7. Service Execution
    → enforceRateLimit() first on public/sensitive workflows
+  → [if ownership requires loading a DB resource] do that ownership check now, before mutation or expensive reads
    → Zod safeParse() before business logic
    → normalizeEmail()/normalizePhone() before DB lookups
    → checkDuplicates() before write operations
@@ -146,6 +147,8 @@ Must not contain any business logic, routing, or imports beyond the handler dele
 - Call `require("./config/env")` at the top to trigger env validation at cold start.
 - Define `PUBLIC_RESOURCES` as a plain array of exact `event.resource` strings. Do not use path prefix matching or regex.
 - Never put JWT bypass logic here. It belongs in `authJWT.js`.
+- If the Lambda's guard only performs JSON parse, empty-body validation, cheap RBAC, and ObjectId format checks, run the guard before opening the DB connection so malformed requests fail without touching MongoDB.
+- If ownership validation requires fetching a DB document first, do not force that lookup into the handler-level guard just to satisfy a rigid stage order.
 - The `try/catch` at the outer level must log with `logError` and return `createErrorResponse(500, "others.internalError", event)`.
 - Always set `context.callbackWaitsForEmptyEventLoop = false`.
 - Always copy `context.awsRequestId` onto `event.awsRequestId` before any middleware runs.
@@ -231,9 +234,11 @@ Implement in this order:
 
 1. **JSON body parse**: if body is a non-empty string, `JSON.parse()`. On `SyntaxError`, return `createErrorResponse(400, "others.invalidJSON", event)`.
 2. **Empty body check**: if `PUT` or `POST` and `parsedBody` is null or has no keys, return `createErrorResponse(400, "others.missingParams", event)`. Apply only to routes that actually require a body.
-3. **Ownership/self-access check** _(include only if Lambda has ownership-based routes)_: invoke the ownership check for route keys in the policy map. Return 403 on mismatch. Omit this step entirely if no route requires caller identity to match a resource owner.
+3. **Ownership/self-access check** _(include only if Lambda has ownership-based routes and the check is DB-free)_: invoke the ownership check here only when it compares JWT identity against path/body fields already present on the event. Return 403 on mismatch. If the check requires loading a DB resource first, perform it later through `selfAccess.js` or a service-start helper after the DB connection is ready.
 4. **RBAC check** _(include only if Lambda has role-restricted routes)_: define a `Set` of exact `event.resource` strings per role tier. Return 403 when the caller's role is insufficient. Omit this step if all authenticated routes are accessible to any valid caller.
 5. **Path parameter validation** _(include only if Lambda uses ObjectId path params)_: validate that path ObjectId params are well-formed before the service is reached. Return 400 on invalid format. Use `mongoose.isValidObjectId()`.
+
+Preserve the Lambda's existing `errorKey` contract when applying these checks. If the Lambda already exposes domain-scoped keys such as `petBasicInfo.errors.invalidJSON`, do not force-migrate them to shared `others.*` keys in the same refactor pass unless contract change is explicitly approved.
 
 ---
 
@@ -243,6 +248,7 @@ Implement in this order:
 - For each policy type, compare the caller identity from the JWT (`event.userId` or equivalent) against the target identity from the path param or body field. Return 403 on mismatch. Skip silently if the relevant field is absent.
 - Normalize identifiers (e.g. email: `.trim().toLowerCase()`) before comparing.
 - Routes not in the policy map always return `{ isValid: true }` — self-access is opt-in.
+- If ownership depends on a fetched resource rather than a path/body field already present on the event, `selfAccess.js` may expose a DB-backed helper such as `loadAuthorizedEntity()` and that helper should be called at the start of the service after DB bootstrap.
 
 ---
 
@@ -280,6 +286,7 @@ async function routeRequest(routeContext) {
 - `null` entries are intentional: they represent known-but-unsupported routes that should return 405 rather than fall through to a generic 405.
 - Never use `includes()`, `startsWith()`, or regex for route matching.
 - `lazyRoute` avoids loading every service module on every invocation, which keeps cold-start overhead proportional to the requested route.
+- If local SAM or API Gateway would otherwise reject a known-but-frozen method before the Lambda runs, add the corresponding event in `template.yaml` so the handler can return the intended `405` response. Do not assume infra-level `403` is an acceptable substitute when the contract or tests expect Lambda-level `405`.
 
 ---
 
@@ -433,6 +440,7 @@ Never call `error.errors` anywhere in the codebase.
   ```js
   z.string({ error: "register.errors.firstNameRequired" }).min(1, "register.errors.firstNameRequired")
   ```
+- Preserve the Lambda's existing error-key taxonomy unless a cross-Lambda standardization change is explicitly approved. Refactoring is not the time to rename public `errorKey` values casually.
 - Strip unknown fields with `.strict()` or explicit `.omit()` or simply by only reading from `parseResult.data`. Never read from the original `body` after a successful parse.
 - Role, deleted, and other internal fields must never appear in any schema that clients can submit. Drop them at the schema boundary.
 - `envSchema.js` lives here, not in `config/`. It is a schema definition, not config.
@@ -676,7 +684,7 @@ Hard requirements:
 Before any edits:
 1. Map the current request path from entrypoint to business logic.
 2. Identify public routes, protected routes, role-restricted routes, and deprecated routes.
-3. Identify where auth, validation, body parsing, DB connection, and response formatting currently happen.
+3. Identify where auth, validation, body parsing, DB connection, ownership checks, route freezing, and response formatting currently happen.
 4. State one falsifiable hypothesis about the highest-risk slice before making the first edit.
 
 Required final response format:
@@ -745,9 +753,9 @@ For quick reference when attaching to a smaller context window:
 ```text
 Refactor the target Lambda to the UserRoutes standard defined in dev_docs/REFACTOR_CHECKLIST.md.
 
-Implement the Canonical Request Lifecycle in exact order: OPTIONS → authJWT → DB → guard → router → service.
+Implement the Canonical Request Lifecycle with the correct stage separation: OPTIONS → authJWT → cheap guard → DB → router → service, with DB-backed ownership checks allowed at service start when they require a fetched resource.
 
-Apply the module patterns from REFACTOR_CHECKLIST.md at the right scope: thin index.js, handler orchestration, explicit router (if multi-route), lazyRoute dispatch, Zod validation with locale dot-key error messages, structured JSON logging, createErrorResponse/createSuccessResponse for all responses, singleton DB connection with maxPoolSize:1, env Zod validation at startup. Include enforceRateLimit only if the Lambda has public or sensitive write flows. Include sanitize{Entity}() on any endpoint returning DB documents. Include selfAccess.js, token.js, and duplicateCheck.js only if the Lambda actually needs them.
+Apply the module patterns from REFACTOR_CHECKLIST.md at the right scope: thin index.js, handler orchestration, explicit router (if multi-route), lazyRoute dispatch, Zod validation with locale dot-key error messages, structured JSON logging, createErrorResponse/createSuccessResponse for all responses, singleton DB connection with maxPoolSize:1, env Zod validation at startup. Preserve existing public `errorKey` values unless a contract change is explicitly approved. Include enforceRateLimit only if the Lambda has public or sensitive write flows. Include sanitize{Entity}() on any endpoint returning DB documents. Include selfAccess.js, token.js, and duplicateCheck.js only if the Lambda actually needs them.
 
 Address all 20 security checklist items. Classify each as FIXED, NOT APPLICABLE, or DEFERRED(code-owned|infra-owned).
 
