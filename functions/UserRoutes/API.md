@@ -1,12 +1,26 @@
 # UserRoutes API
 
-**Base URL (Dev):** `https://udnh87tari.execute-api.ap-southeast-1.amazonaws.com/Dev`
+**Base URL (Dev / AWS API Gateway):** `https://udnh87tari.execute-api.ap-southeast-1.amazonaws.com/Dev`
 
 ---
 
 ## Overview
 
 User account management API for the PetPetClub platform. Handles registration, authentication, profile management, NGO operations, and SMS verification.
+
+### API Gateway Requirements
+
+For the deployed API Gateway endpoint, every request must include a valid `x-api-key` header.
+
+```http
+x-api-key: <api-gateway-api-key>
+```
+
+This requirement applies to both public and protected endpoints. Requests that omit the header are rejected by API Gateway before Lambda route logic runs, typically with `403 Forbidden`.
+
+This document's Base URL points to the deployed AWS Dev API Gateway. If a local app or local web frontend calls that URL directly, it is still a deployed API Gateway request and must include `x-api-key`.
+
+Local SAM testing does not enforce this gateway-level requirement unless you explicitly simulate it. The integration tests in `__tests__/test-userroutes.test.js` exercise Lambda behavior through `sam local start-api`, not API Gateway usage-plan enforcement.
 
 ### Authentication
 
@@ -25,6 +39,54 @@ Protected endpoints enforce **self-access** — a user can only read/modify thei
 NGO management endpoints are additionally **role-protected**. They require a valid Bearer token whose `userRole` is `ngo`; missing or invalid auth returns `401`, and valid non-NGO tokens return `403`.
 
 JSON body endpoints also reject malformed JSON before route logic runs and return `400` with `others.invalidJSON`.
+
+### Required Headers By Scenario
+
+#### Deployed API Gateway, public endpoints
+
+```http
+Content-Type: application/json
+x-api-key: <api-gateway-api-key>
+```
+
+Examples: `POST /account/login`, `POST /account/register`, `POST /account/generate-sms-code`
+
+#### Deployed API Gateway, protected endpoints
+
+```http
+Content-Type: application/json
+x-api-key: <api-gateway-api-key>
+Authorization: Bearer <jwt-access-token>
+```
+
+Examples: `GET /account/{userId}`, `PUT /account`, `GET /account/user-list`
+
+#### Local frontend or web app calling the AWS Dev API
+
+```http
+Content-Type: application/json
+x-api-key: <api-gateway-api-key>
+Authorization: Bearer <jwt-access-token>
+```
+
+Use `Authorization` only for protected routes. Even if the frontend is running on `localhost`, requests to the AWS Dev Base URL still require `x-api-key` because API Gateway enforces it.
+
+#### Local SAM integration testing
+
+```http
+Content-Type: application/json
+Authorization: Bearer <jwt-access-token>
+```
+
+Use `Authorization` only for protected routes. `x-api-key` is not required for the local SAM flow used by the current integration suite.
+
+### Integration Notes For Frontends And LLM Clients
+
+- Always send `x-api-key` when calling the deployed API Gateway URL, including from local app or local web frontend builds.
+- Add `Authorization: Bearer <token>` only after obtaining a token from a public auth flow.
+- Treat `errorKey` as the stable machine-readable field for automation and test assertions.
+- Log both `requestId` and the target service name on failures so API Gateway and Lambda errors can be correlated quickly.
+- If a request fails with `403` before any documented Lambda `errorKey` is returned, check missing or invalid `x-api-key` first.
 
 ### Error Response Shape
 
