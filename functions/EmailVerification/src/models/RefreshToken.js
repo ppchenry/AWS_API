@@ -7,36 +7,35 @@ const RefreshTokenSchema = new Schema(
       type: Schema.Types.ObjectId,
       required: true,
       ref: "User",
-      index: true
+      index: true,
     },
     tokenHash: {
       type: String,
       required: true,
       unique: true,
-      index: true
+      index: true,
     },
     createdAt: {
       type: Date,
       default: Date.now,
-      required: true
+      required: true,
     },
     lastUsedAt: {
       type: Date,
       default: Date.now,
-      required: true
+      required: true,
     },
     expiresAt: {
       type: Date,
       required: true,
-      index: { expireAfterSeconds: 0 } // TTL index to auto-delete expired tokens
-    }
+      index: { expireAfterSeconds: 0 },
+    },
   },
   {
-    timestamps: false // We're managing createdAt manually
+    timestamps: false,
   }
 );
 
-// Index for faster queries
 RefreshTokenSchema.index({ userId: 1, expiresAt: 1 });
 
 module.exports = RefreshTokenSchema;

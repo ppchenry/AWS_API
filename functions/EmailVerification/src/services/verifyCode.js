@@ -1,0 +1,196 @@
+/**
+ * @fileoverview Service for verifying email codes and issuing auth tokens.
+ *
+ * Anti-enumeration (C7/C8): all verification failures (no record, expired,
+ * wrong code, already-consumed) return a single generic "verificationFailed"
+ * error. Only malformed input returns 400 with a specific Zod key.
+ *
+ * Replay prevention: uses findOneAndUpdate on the EmailVerificationCode
+ * collection with codeHash + consumedAt:null in the filter. On success the
+ * update atomically sets consumedAt, so a concurrent second request with the
+ * same code finds zero matching documents.
+ *
+ * C6 compliance: User records are created only AFTER successful code
+ * verification. No placeholder users exist before this point.
+ */
+
+const crypto = require("crypto");
+const mongoose = require("mongoose");
+const { createErrorResponse, createSuccessResponse } = require("../utils/response");
+const { logInfo, logError } = require("../utils/logger");
+const { normalizeEmail } = require("../utils/validators");
+const { getFirstZodIssueMessage } = require("../utils/zod");
+const { verifyCodeSchema } = require("../zodSchema/emailSchema");
+const { enforceRateLimit } = require("../utils/rateLimit");
+const { issueCustomAccessToken, createRefreshToken, buildRefreshCookie } = require("../utils/token");
+const { loadTranslations, getTranslation } = require("../utils/i18n");
+
+/**
+ * Verifies the email code and issues JWT + refresh token on success.
+ *
+ * @param {{ event: import("aws-lambda").APIGatewayProxyEvent, body: Record<string, any> }} ctx
+ * @returns {Promise<import("aws-lambda").APIGatewayProxyResult>}
+ */
+async function verifyEmailCode({ event, body }) {
+  const SCOPE = "services.verifyCode.verifyEmailCode";
+
+  try {
+    // 1. Rate limiting — sensitive verification flow (M14)
+    const rateLimit = await enforceRateLimit({
+      event,
+      action: "verify-email-code",
+      identifier: body?.email || "anonymous",
+      limit: 10,
+      windowSec: 300,
+    });
+    if (!rateLimit.allowed) {
+      return createErrorResponse(429, "others.rateLimited", event);
+    }
+
+    // 2. Zod validation — malformed input still returns specific 400
+    const parseResult = verifyCodeSchema.safeParse(body);
+    if (!parseResult.success) {
+      return createErrorResponse(
+        400,
+        getFirstZodIssueMessage(parseResult.error),
+        event
+      );
+    }
+
+    // 3. Normalization
+    const email = normalizeEmail(parseResult.data.email);
+    const resetCode = parseResult.data.resetCode.trim();
+    const lang = parseResult.data.lang || "zh";
+    const t = loadTranslations(lang);
+
+    // C7/C8: uniform failure for all non-success states
+    const genericFail = () =>
+      createErrorResponse(400, "verificationFailed", event);
+
+    // 4. Hash the submitted code for comparison
+    const codeHash = crypto.createHash("sha256").update(resetCode).digest("hex");
+
+    // 5. Atomically consume the verification record.
+    //    _id = normalized email, so lookup is by primary key — no custom index
+    //    needed. Filter: matching _id + codeHash + not consumed + not expired.
+    //    Update: set consumedAt to now.
+    //    If no document matches, either the code is wrong, expired, already
+    //    consumed, or no record exists. All return the same generic failure.
+    const EmailVerificationCode = mongoose.model("EmailVerificationCode");
+    const consumed = await EmailVerificationCode.findOneAndUpdate(
+      {
+        _id: email,
+        codeHash,
+        consumedAt: null,
+        expiresAt: { $gt: new Date() },
+      },
+      { $set: { consumedAt: new Date() } },
+      { new: true }
+    );
+
+    if (!consumed) return genericFail();
+
+    // 6. Code verified — now handle user lookup/creation.
+    //    User is created only here, after proof of email ownership (C6).
+    const User = mongoose.model("User");
+    let user = await User.findOne({ email })
+      .select("_id email role newUser deleted verified")
+      .lean();
+
+    let isNewUser = false;
+
+    if (user) {
+      // Existing user — check if account is soft-deleted
+      if (user.deleted === true) return genericFail();
+
+      // Mark as verified if not already
+      if (!user.verified) {
+        await User.findOneAndUpdate(
+          { _id: user._id },
+          { $set: { verified: true } }
+        );
+      }
+    } else {
+      // No user exists — create one now with server-controlled defaults only
+      isNewUser = true;
+      try {
+        const newUserDoc = await new User({
+          email,
+          role: "user",
+          verified: true,
+          deleted: false,
+          newUser: true,
+          credit: 300,
+          vetCredit: 300,
+          eyeAnalysisCredit: 300,
+          bloodAnalysisCredit: 300,
+        }).save();
+        user = {
+          _id: newUserDoc._id,
+          email: newUserDoc.email,
+          role: newUserDoc.role,
+        };
+      } catch (createErr) {
+        // E11000: race — another request created the user between our findOne
+        // and save. Find the now-existing user and proceed.
+        if (createErr.code === 11000) {
+          user = await User.findOne({ email })
+            .select("_id email role newUser deleted verified")
+            .lean();
+          if (!user || user.deleted === true) return genericFail();
+          if (!user.verified) {
+            await User.findOneAndUpdate(
+              { _id: user._id },
+              { $set: { verified: true } }
+            );
+          }
+        } else {
+          throw createErr;
+        }
+      }
+    }
+
+    // 7. Issue JWT access token (15m expiry)
+    const token = issueCustomAccessToken(
+      {
+        userId: user._id,
+        userEmail: user.email || email,
+        userRole: user.role || "user",
+      },
+      { expiresIn: "15m" }
+    );
+
+    // 8. Issue refresh token
+    const { token: refreshToken } = await createRefreshToken(user._id);
+    const cookieHeader = buildRefreshCookie(refreshToken, event);
+
+    logInfo("Email verification successful", {
+      scope: SCOPE,
+      event,
+      extra: { email, userId: user._id, isNewUser },
+    });
+
+    // 9. Success response — returned only after proof of email ownership,
+    //     so uid and newUser are not enumeration vectors here.
+    return createSuccessResponse(
+      200,
+      event,
+      {
+        message: getTranslation(t, "verifySuccessful"),
+        uid: user._id,
+        newUser: isNewUser,
+        token,
+      },
+      { "Set-Cookie": cookieHeader }
+    );
+  } catch (error) {
+    logError("Failed to verify email code", {
+      scope: SCOPE,
+      event,
+      error,
+    });
+    return createErrorResponse(500, "others.internalError", event);
+  }
+}
+
+module.exports = { verifyEmailCode };

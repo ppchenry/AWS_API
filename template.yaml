@@ -85,6 +85,56 @@ Resources:
   #       Variables:
   #         MONGODB_URI: ""
 
+  EmailVerificationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 60
+      MemorySize: 512
+      CodeUri: functions/EmailVerification/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Events:
+        GenerateEmailCode:
+          Type: Api
+          Properties:
+            Path: /account/generate-email-code
+            Method: POST
+
+        GenerateEmailCodeOptions:
+          Type: Api
+          Properties:
+            Path: /account/generate-email-code
+            Method: OPTIONS
+
+        VerifyEmailCode:
+          Type: Api
+          Properties:
+            Path: /account/verify-email-code
+            Method: POST
+
+        VerifyEmailCodeOptions:
+          Type: Api
+          Properties:
+            Path: /account/verify-email-code
+            Method: OPTIONS
+
+        GenerateEmailCode2:
+          Type: Api
+          Properties:
+            Path: /account/generate-email-code-2
+            Method: POST
+      Environment:
+        Variables:
+          ALLOWED_ORIGINS: ""
+          JWT_SECRET: ""
+          JWT_BYPASS: ""
+          MONGODB_URI: ""
+          SMTP_HOST: ""
+          SMTP_PASS: ""
+          SMTP_USER: ""
+          REFRESH_TOKEN_MAX_AGE_SEC: "1209600"
+          NODE_ENV: "development"
+
   UserRoutesFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -231,3 +281,4 @@ Resources:
           ALLOWED_ORIGINS: ""
           NODE_ENV: "development"
             
+  

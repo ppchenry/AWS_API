@@ -79,14 +79,14 @@ const UserSchema = new Schema(
       type: Number,
     },
     phoneNumber: {
-      type: String
+      type: String,
     },
     newUser: {
-      type: Boolean
+      type: Boolean,
     },
     gender: {
-      type: String
-    }
+      type: String,
+    },
   },
   {
     timestamps: true,
