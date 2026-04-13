@@ -1,0 +1,23 @@
+{
+  "codeNotMatch": "Verification code does not match, please try again",
+  "codeExpired": "Verification code has expired.",
+  "notExist": "Email or verification code does not exist",
+  "missingParams": "Email and reset code are required",
+  "missingEmailParams": "Email is missing",
+  "generateSuccessful": "Verification code generated successfully",
+  "verifySuccessful": "Email verification successful",
+  "invalidEmailFormat": "Invalid email format",
+  "invalidResetCodeFormat": "Invalid reset code format, must be 6 digits",
+  "emailServiceUnavailable": "Email service is temporarily unavailable",
+  "verificationFailed": "Verification failed. Please check your email and code and try again.",
+  "accountDeleted": "Account has been deleted",
+  "noCodeFound": "No verification code found, please generate a code first",
+  "others": {
+    "internalError": "An internal error occurred",
+    "invalidJSON": "Invalid JSON format",
+    "missingParams": "Required parameters are missing",
+    "methodNotAllowed": "Method not allowed",
+    "unauthorized": "Unauthorized",
+    "rateLimited": "Too many requests, please try again later"
+  }
+}

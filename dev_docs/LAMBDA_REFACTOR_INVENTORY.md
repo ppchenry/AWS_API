@@ -7,9 +7,9 @@ It is not a perfect measure. Final priority should still consider route count, a
 ## Summary
 
 - Total Lambda entry files checked: 25
-- Already modularized with `src/handler.js`: 2
-- Remaining Lambdas needing review: 23
-- Clear full-separation candidates: 9
+- Already modularized with `src/handler.js`: 3
+- Remaining Lambdas needing review: 22
+- Clear full-separation candidates: 8
 - Medium-size Lambdas that likely need partial separation: 6
 - Smaller Lambdas that should usually stay simple: 8
 
@@ -21,6 +21,7 @@ These already match the stronger handler-based pattern.
 | --- | --- | ---: | --- |
 | `UserRoutes` | `index.js` | 4 | already modularized |
 | `PetBasicInfo` | `index.js` | 4 | already modularized |
+| `EmailVerification` | `index.js` | 4 | already modularized |
 
 ## Full Separation Recommended
 
@@ -42,8 +43,7 @@ Suggested target shape:
 | 5 | `PetMedicalRecord` | `index.js` | 784 | strong candidate for full modular split |
 | 6 | `SFExpressRoutes` | `index.js` | 603 | strong candidate for full modular split |
 | 7 | `OrderVerification` | `index.js` | 582 | strong candidate for full modular split |
-| 8 | `EmailVerification` | `index.js` | 535 | strong candidate for full modular split |
-| 9 | `PetBiometricRoutes` | `index.js` | 511 | strong candidate for full modular split |
+| 8 | `PetBiometricRoutes` | `index.js` | 511 | strong candidate for full modular split |
 
 ## Partial Separation Recommended
 
@@ -91,7 +91,7 @@ These are smaller Lambdas. They should still meet the refactor checklist for val
 | `PetMedicalRecord` | `index.js` | 784 | no | full separation |
 | `SFExpressRoutes` | `index.js` | 603 | no | full separation |
 | `OrderVerification` | `index.js` | 582 | no | full separation |
-| `EmailVerification` | `index.js` | 535 | no | full separation |
+| `EmailVerification` | `index.js` | 4 | yes | already modularized |
 | `PetBiometricRoutes` | `index.js` | 511 | no | full separation |
 | `GetAllPets` | `index.js` | 416 | no | partial separation |
 | `AIChatBot` | `index.js` | 359 | no | partial separation |
@@ -118,7 +118,7 @@ If the goal is to reduce structural risk quickly, the best next candidates are:
 2. `EyeUpload`
 3. `PetDetailInfo`
 4. `PetMedicalRecord`
-5. `PetBiometricRoutes`
+5. `OrderVerification`
 
 These appear to have the highest structural payoff by size alone.
 
