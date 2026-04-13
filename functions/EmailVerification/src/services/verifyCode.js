@@ -22,7 +22,7 @@ const { normalizeEmail } = require("../utils/validators");
 const { getFirstZodIssueMessage } = require("../utils/zod");
 const { verifyCodeSchema } = require("../zodSchema/emailSchema");
 const { enforceRateLimit } = require("../utils/rateLimit");
-const { issueCustomAccessToken, createRefreshToken, buildRefreshCookie } = require("../utils/token");
+const { issueUserAccessToken, createRefreshToken, buildRefreshCookie } = require("../utils/token");
 const { loadTranslations, getTranslation } = require("../utils/i18n");
 
 /**
@@ -151,14 +151,7 @@ async function verifyEmailCode({ event, body }) {
     }
 
     // 7. Issue JWT access token (15m expiry)
-    const token = issueCustomAccessToken(
-      {
-        userId: user._id,
-        userEmail: user.email || email,
-        userRole: user.role || "user",
-      },
-      { expiresIn: "15m" }
-    );
+    const token = issueUserAccessToken(user);
 
     // 8. Issue refresh token
     const { token: refreshToken } = await createRefreshToken(user._id);
