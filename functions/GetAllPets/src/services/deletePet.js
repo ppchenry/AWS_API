@@ -5,6 +5,7 @@ const { getTranslation, loadTranslations } = require("../utils/i18n");
 const { isValidObjectId } = require("../utils/validators");
 const { deletePetSchema } = require("../zodSchema/petSchema");
 const { getFirstZodIssueMessage } = require("../utils/zod");
+const { enforceRateLimit } = require("../utils/rateLimit");
 
 /**
  * Soft-deletes a pet via atomic ownership-guarded updateOne.
@@ -16,6 +17,17 @@ const { getFirstZodIssueMessage } = require("../utils/zod");
  */
 async function deletePet({ event, body }) {
   try {
+    const rateLimit = await enforceRateLimit({
+      event,
+      action: "petDelete",
+      identifier: event.userId || "anonymous",
+      limit: 10,
+      windowSec: 60,
+    });
+    if (!rateLimit.allowed) {
+      return createErrorResponse(429, "others.rateLimited", event);
+    }
+
     // Zod validation
     const parseResult = deletePetSchema.safeParse(body);
     if (!parseResult.success) {

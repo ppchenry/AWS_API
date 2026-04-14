@@ -88,7 +88,10 @@ functions/GetAllPets/
 - **C4 — Unauthenticated hard delete**: Fixed. Soft-delete was already in place, now JWT-protected with ownership enforcement.
 - **H10 — Body identity trusted for ownership**: Fixed. Mutation routes extract caller identity from JWT (`event.userId`), compare against `pet.userId` from DB, never from request body.
 - **H12 — Password hash in responses**: Not applicable (Pet model has no password field).
-- **M14 — Rate limiting**: Not applicable — no public write flows. NGO list is read-only.
+- **M14 — Rate limiting**: Fixed. Sensitive authenticated write flows are now rate-limited before mutation logic:
+  - `POST /pets/deletePet`: 10 requests per 60 seconds per client IP + authenticated user
+  - `PUT /pets/updatePetEye`: 10 requests per 60 seconds per client IP + authenticated user
+  - Both routes return `429 others.rateLimited` when the window is exceeded.
 - **M15 — Raw error messages**: Fixed. Catch blocks now use `logError()` + `createErrorResponse(500, "others.internalError")`.
 - **M16 — Inconsistent status codes**: Fixed. All responses use centralized builders.
 - **S18 — Fuzzy route matching**: Fixed. Replaced `includes()`/`startsWith()` with exact key matching.
@@ -134,10 +137,11 @@ functions/GetAllPets/
 
 ### Result Of This Stage
 
-GetAllPets is structurally aligned with the UserRoutes baseline and all identified security defects are addressed. Unauthenticated mutations are JWT-protected, ownership is enforced via atomic query filters (mutations) and pre-DB path identity checks (reads), HTTP methods and route paths match the SAM contract, and the Environment block is declared in `template.yaml`. The Lambda follows the canonical request lifecycle, uses standardized response shapes with `errorKey`/`requestId`, structured logging, Zod v4 validation, and modular architecture.
+GetAllPets is structurally aligned with the UserRoutes baseline and all identified security defects are addressed. Unauthenticated mutations are JWT-protected, sensitive write routes are rate-limited, ownership is enforced via atomic query filters (mutations) and pre-DB path identity checks (reads), HTTP methods and route paths match the SAM contract, and the Environment block is declared in `template.yaml`. The Lambda follows the canonical request lifecycle, uses standardized response shapes with `errorKey`/`requestId`, structured logging, Zod v4 validation, and modular architecture.
 
 Latest verification status:
 
-- `49` integration tests passed
-- `2` lifecycle tests skipped due to missing disposable production-safe fixture (`TEST_DISPOSABLE_PET_ID`)
+- baseline suite: `49` integration tests passed
+- focused write-path rate-limit rerun: `2` integration tests passed
+- `2` lifecycle tests remain skipped due to missing disposable production-safe fixture (`TEST_DISPOSABLE_PET_ID`)
 - Full details are documented in `dev_docs/test_reports/GETALLPETS_TEST_REPORT.md`

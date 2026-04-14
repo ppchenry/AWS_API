@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const PetSchema = require("../models/pet");
+const RateLimitSchema = require("../models/RateLimit");
 const { logInfo, logError } = require("../utils/logger");
 
 let conn = null;
@@ -27,6 +28,7 @@ const connectToMongoDB = async () => {
       });
 
       mongoose.models.Pet || mongoose.model("Pet", PetSchema, "pets");
+      mongoose.models.RateLimit || mongoose.model("RateLimit", RateLimitSchema, "rate_limits");
 
       return conn;
     } catch (error) {

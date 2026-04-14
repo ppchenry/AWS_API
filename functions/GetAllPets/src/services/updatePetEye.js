@@ -6,6 +6,7 @@ const { isValidObjectId, isValidDateFormat, isValidImageUrl } = require("../util
 const { updatePetEyeSchema } = require("../zodSchema/petSchema");
 const { getFirstZodIssueMessage } = require("../utils/zod");
 const { sanitizePet } = require("../utils/sanitize");
+const { enforceRateLimit } = require("../utils/rateLimit");
 
 /**
  * Appends eye images to a pet via atomic ownership-guarded findOneAndUpdate.
@@ -17,6 +18,17 @@ const { sanitizePet } = require("../utils/sanitize");
  */
 async function updatePetEye({ event, body }) {
   try {
+    const rateLimit = await enforceRateLimit({
+      event,
+      action: "petEyeUpdate",
+      identifier: event.userId || "anonymous",
+      limit: 10,
+      windowSec: 60,
+    });
+    if (!rateLimit.allowed) {
+      return createErrorResponse(429, "others.rateLimited", event);
+    }
+
     // Zod validation
     const parseResult = updatePetEyeSchema.safeParse(body);
     if (!parseResult.success) {

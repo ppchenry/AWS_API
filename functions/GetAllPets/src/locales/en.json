@@ -4,7 +4,8 @@
         "internalError": "Internal server error",
         "methodNotAllowed": "Method not allowed",
         "missingParams": "Missing required parameters",
-        "invalidJSON": "Invalid JSON format"
+        "invalidJSON": "Invalid JSON format",
+        "rateLimited": "Too many requests, please try again later"
     },
     "common": {
         "invalidJSON": "Invalid JSON format"

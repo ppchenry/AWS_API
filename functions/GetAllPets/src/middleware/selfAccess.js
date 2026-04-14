@@ -12,7 +12,12 @@ const SELF_ACCESS_POLICIES = {
   "GET /pets/pet-list/{userId}": "pathUserId",
 };
 
-/**\n * Returns a 403 unauthorized error response.\n * @param {object} event - API Gateway event\n * @returns {object} API Gateway error response\n */\nfunction createForbiddenResponse(event) {
+/**
+ * Returns a 403 unauthorized error response.
+ * @param {object} event - API Gateway event
+ * @returns {object} API Gateway error response
+ */
+function createForbiddenResponse(event) {
   return createErrorResponse(403, "others.unauthorized", event);
 }
 

@@ -76,6 +76,23 @@ function expiredAuth() {
   return { Authorization: `Bearer ${token}` };
 }
 
+function uniqueForwardedFor(prefix = "198.51.100") {
+  return `${prefix}.${Math.floor(Math.random() * 200) + 1}`;
+}
+
+async function waitForRateLimitWindow({ windowSec = 60, minRemainingMs = 45000 } = {}) {
+  const windowMs = windowSec * 1000;
+  const now = Date.now();
+  const elapsedInWindow = now % windowMs;
+  const remainingMs = windowMs - elapsedInWindow;
+
+  if (remainingMs >= minRemainingMs) {
+    return;
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, remainingMs + 250));
+}
+
 // ─── Request helpers ─────────────────────────────────────────────────────────
 
 async function req(method, path, body, headers = {}) {
@@ -406,6 +423,78 @@ describe("PUT /pets/updatePetEye — validation", () => {
     expect(res.status).toBe(404);
     expect(res.body.errorKey).toBe("updatePetEye.petNotFound");
   });
+});
+
+// ─── Rate limiting on sensitive write paths ─────────────────────────────────
+
+describe("Write-path rate limiting", () => {
+  test("POST /pets/deletePet returns 429 after exceeding the fixed window", async () => {
+    await waitForRateLimitWindow();
+    const forwardedFor = uniqueForwardedFor();
+
+    for (let attempt = 1; attempt <= 10; attempt += 1) {
+      const res = await req(
+        "POST",
+        "/pets/deletePet",
+        { petId: NONEXISTENT_ID },
+        {
+          ...strangerAuth(),
+          "x-forwarded-for": forwardedFor,
+        }
+      );
+      expect(res.status).toBe(404);
+      expect(res.body.errorKey).toBe("deleteStatus.petNotFound");
+    }
+
+    const limited = await req(
+      "POST",
+      "/pets/deletePet",
+      { petId: NONEXISTENT_ID },
+      {
+        ...strangerAuth(),
+        "x-forwarded-for": forwardedFor,
+      }
+    );
+    expect(limited.status).toBe(429);
+    expect(limited.body.errorKey).toBe("others.rateLimited");
+  }, 90000);
+
+  test("PUT /pets/updatePetEye returns 429 after exceeding the fixed window", async () => {
+    await waitForRateLimitWindow();
+    const forwardedFor = uniqueForwardedFor("198.51.101");
+    const validBody = {
+      petId: NONEXISTENT_ID,
+      date: "2025-01-15",
+      leftEyeImage1PublicAccessUrl: "https://example.com/left.jpg",
+      rightEyeImage1PublicAccessUrl: "https://example.com/right.jpg",
+    };
+
+    for (let attempt = 1; attempt <= 10; attempt += 1) {
+      const res = await req(
+        "PUT",
+        "/pets/updatePetEye",
+        validBody,
+        {
+          ...strangerAuth(),
+          "x-forwarded-for": forwardedFor,
+        }
+      );
+      expect(res.status).toBe(404);
+      expect(res.body.errorKey).toBe("updatePetEye.petNotFound");
+    }
+
+    const limited = await req(
+      "PUT",
+      "/pets/updatePetEye",
+      validBody,
+      {
+        ...strangerAuth(),
+        "x-forwarded-for": forwardedFor,
+      }
+    );
+    expect(limited.status).toBe(429);
+    expect(limited.body.errorKey).toBe("others.rateLimited");
+  }, 90000);
 });
 
 // ─── NGO Pet List (public, Tier 1 core) ─────────────────────────────────────

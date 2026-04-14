@@ -3,9 +3,14 @@
 **Date:** 2026-04-14
 **Service:** `GetAllPets` Lambda (AWS SAM)
 **Test suite:** `__tests__/test-getallpets.test.js`
-**Result:** `49 passed, 2 skipped` in the latest local run with `TEST_NGO_ID`, `TEST_OWNER_USER_ID`, and `TEST_PET_ID` configured.
+**Result:** Latest verification now spans two local runs:
 
-> **Fixture dependency:** 18 of the 51 tests are gated behind `TEST_NGO_ID`, `TEST_OWNER_USER_ID`, and/or `TEST_PET_ID` in `env.json GetAllPetsFunction`. Two additional lifecycle tests require `TEST_DISPOSABLE_PET_ID`.
+- Baseline suite run: `49 passed, 2 skipped` with `TEST_NGO_ID`, `TEST_OWNER_USER_ID`, and `TEST_PET_ID` configured
+- Focused rate-limit rerun: `2 passed` for the new write-path throttling tests
+
+This means all `51` non-lifecycle tests in the current `53`-test file have passing evidence, while the `2` lifecycle tests remain env-gated on `TEST_DISPOSABLE_PET_ID`.
+
+> **Fixture dependency:** 15 of the 53 tests are gated behind `TEST_NGO_ID`, `TEST_OWNER_USER_ID`, and/or `TEST_PET_ID` in `env.json GetAllPetsFunction`. Two additional lifecycle tests require `TEST_DISPOSABLE_PET_ID`.
 
 ---
 
@@ -25,6 +30,7 @@ Tests were run as end-to-end integration tests against a live SAM local environm
 | Self-access enforcement | GET | 2 |
 | `/pets/deletePet` — validation | POST | 5 |
 | `/pets/updatePetEye` — validation | PUT | 6 |
+| Write-path rate limiting | POST / PUT | 2 |
 | `/pets/pet-list-ngo/{ngoId}` — Tier 1 | GET | 2 |
 | `/pets/pet-list-ngo/{ngoId}` — Tier 2 (data, search, sort, page) | GET | 9 |
 | `/pets/pet-list/{userId}` — Tier 2 (data) | GET | 4 |
@@ -33,7 +39,7 @@ Tests were run as end-to-end integration tests against a live SAM local environm
 | `/pets/deletePet` — lifecycle (env-gated) | POST | 1 |
 | `/pets/updatePetEye` — deleted pet (env-gated) | PUT | 1 |
 | Coverage gate | — | 1 |
-| **Total** | | **51** |
+| **Total** | | **53** |
 
 ### 1.2 Test Categories
 
@@ -77,6 +83,12 @@ Tests were run as end-to-end integration tests against a live SAM local environm
 - Invalid date format on PUT updatePetEye → 400 (`updatePetEye.invalidDateFormat`)
 - Invalid image URL on PUT updatePetEye → 400 (`updatePetEye.invalidImageUrlFormat`)
 - Extra fields via `.strict()` on PUT updatePetEye → 400
+
+#### Write-path rate limiting (verified)
+
+- POST deletePet: first 10 requests within the same fixed 60-second window return the normal downstream result, and the 11th request returns 429 (`others.rateLimited`)
+- PUT updatePetEye: first 10 requests within the same fixed 60-second window return the normal downstream result, and the 11th request returns 429 (`others.rateLimited`)
+- The integration tests now wait for a fresh limiter window before sending the request burst so the assertions are deterministic for the Mongo-backed fixed-window counter
 
 #### Authentication & authorisation (verified)
 
@@ -143,6 +155,7 @@ AWS Console → CloudWatch → Log Groups → /aws/lambda/GetAllPetsFunction
 | `others.methodNotAllowed` | 不允許的方法 |
 | `others.missingParams` | 缺少必要參數 |
 | `others.invalidJSON` | 無效的 JSON 格式 |
+| `others.rateLimited` | 請求過於頻繁，請稍後再試 |
 | `ngoPath.missingNgoId` | 需要非政府組織 ID |
 | `ngoPath.invalidNgoIdFormat` | 無效的非政府組織 ID 格式 |
 | `ngoPath.noPetsFound` | 沒有找到寵物 |
@@ -174,6 +187,7 @@ AWS Console → CloudWatch → Log Groups → /aws/lambda/GetAllPetsFunction
 | CORS origin not in allowlist | CORS middleware rejects unknown / absent Origin → 403 | ✅ Asserted |
 | Zod `.strict()` mass-assignment | Extra fields in body rejected before reaching DB → 400 | ✅ Asserted |
 | Malformed JSON body | Guard parses body before routing; invalid JSON → 400 | ✅ Asserted |
+| Mutation burst abuse | Mongo-backed fixed-window limiter returns 429 on the 11th write request per IP + user + action in 60 seconds | ✅ Asserted for deletePet and updatePetEye |
 | Response sanitization | `sanitizePets` strips `__v` and `deleted` from all pet responses | ✅ Asserted (per-record loop) |
 | Re-delete already-deleted pet | Atomic write returns 409 instead of double-delete | ⏭️ Skipped (no disposable fixture) |
 | Update on deleted pet | Returns 410 with diagnostic resource-state error key | ⏭️ Skipped (no disposable fixture) |
@@ -193,4 +207,4 @@ AWS Console → CloudWatch → Log Groups → /aws/lambda/GetAllPetsFunction
 | SAM command | `sam local start-api --template template.yaml --env-vars env.json --warm-containers EAGER` |
 | Run command | `npm test -- --testPathPattern=test-getallpets` |
 | Fixture config | `env.json GetAllPetsFunction`: `TEST_NGO_ID`, `TEST_OWNER_USER_ID`, `TEST_PET_ID`, `TEST_DISPOSABLE_PET_ID` |
-| Latest verified run | `49 passed, 2 skipped` — lifecycle tests skipped (no disposable fixture on production DB; environment limitation, not code gap) |
+| Latest verified runs | Baseline suite: `49 passed, 2 skipped`; focused write-path rate-limit rerun: `2 passed` |

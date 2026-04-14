@@ -7,7 +7,7 @@ Manages pet listing, soft-deletion, and eye image updates. Serves both user-spec
 ### Refactor Status
 
 - Current status: completed Tier 2 modularized reference implementation
-- Latest verification status: `49 passed, 2 skipped` in the focused GetAllPets integration suite
+- Latest verification status: baseline suite `49 passed, 2 skipped`, plus focused write-path rate-limit rerun `2 passed`
 - Detailed test evidence: `dev_docs/test_reports/GETALLPETS_TEST_REPORT.md`
 
 ### Security Posture Summary
@@ -84,7 +84,7 @@ All routes require JWT Bearer token unless marked as **Public**.
 }
 ```
 
-**Error Responses**: 400 (missing/invalid petId), 403 (not pet owner), 404 (pet not found), 409 (already deleted)
+**Error Responses**: 400 (missing/invalid petId), 403 (not pet owner), 404 (pet not found), 409 (already deleted), 429 (rate limited)
 
 ---
 
@@ -112,7 +112,7 @@ All routes require JWT Bearer token unless marked as **Public**.
 }
 ```
 
-**Error Responses**: 400 (missing/invalid fields), 403 (not pet owner), 404 (pet not found), 410 (pet deleted)
+**Error Responses**: 400 (missing/invalid fields), 403 (not pet owner), 404 (pet not found), 410 (pet deleted), 429 (rate limited)
 
 ---
 
@@ -160,4 +160,6 @@ All errors follow the standardized format:
 ## Known Constraints
 
 - **I20 — Race-condition duplicate creation**: Not applicable (no creation flows).
-- No rate limiting applied — this Lambda has no public write flows or sensitive authenticated write flows beyond soft-delete.
+- Sensitive authenticated write routes are rate-limited and return `429` with `others.rateLimited` when abused.
+- `POST /pets/deletePet`: 10 requests per 60 seconds per client IP + authenticated user.
+- `PUT /pets/updatePetEye`: 10 requests per 60 seconds per client IP + authenticated user.
