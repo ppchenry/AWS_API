@@ -114,7 +114,7 @@ describe("AuthRoute handler", () => {
     expect(response.headers["Access-Control-Allow-Origin"]).toBe("http://localhost:3000");
   });
 
-  test("returns 405 for frozen refresh methods", async () => {
+  test("returns 405 for unmapped methods (Lambda safety net, not deployed in API Gateway)", async () => {
     const getReadConnection = jest.fn().mockResolvedValue({});
     jest.doMock("../functions/AuthRoute/src/config/db", () => ({
       getReadConnection,
@@ -132,6 +132,218 @@ describe("AuthRoute handler", () => {
     expect(response.statusCode).toBe(405);
     expect(body.success).toBe(false);
     expect(body.errorKey).toBe("others.methodNotAllowed");
+  });
+
+  test("POST /auth/refresh reaches the service through the full handler lifecycle", async () => {
+    const getReadConnection = jest.fn().mockResolvedValue({});
+    jest.doMock("../functions/AuthRoute/src/config/db", () => ({
+      getReadConnection,
+    }));
+
+    jest.doMock("../functions/AuthRoute/src/utils/rateLimit", () => ({
+      enforceRateLimit: jest.fn().mockResolvedValue({ allowed: true, count: 1 }),
+    }));
+
+    const { handleRequest } = require("../functions/AuthRoute/src/handler");
+
+    const response = await handleRequest(
+      makeEvent({
+        headers: { origin: "http://localhost:3000" },
+      }),
+      makeContext()
+    );
+
+    const body = JSON.parse(response.body);
+    expect(getReadConnection).toHaveBeenCalledTimes(1);
+    expect(response.statusCode).toBe(401);
+    expect(body.errorKey).toBe("authRefresh.missingRefreshToken");
+  });
+
+  test("POST /auth/refresh bypasses authJWT because it is in PUBLIC_RESOURCES", async () => {
+    const getReadConnection = jest.fn().mockResolvedValue({});
+    jest.doMock("../functions/AuthRoute/src/config/db", () => ({
+      getReadConnection,
+    }));
+
+    jest.doMock("../functions/AuthRoute/src/utils/rateLimit", () => ({
+      enforceRateLimit: jest.fn().mockResolvedValue({ allowed: true, count: 1 }),
+    }));
+
+    const { handleRequest } = require("../functions/AuthRoute/src/handler");
+
+    // No Authorization header — authJWT would return 401, but PUBLIC_RESOURCES skips it
+    const response = await handleRequest(
+      makeEvent({
+        headers: { origin: "http://localhost:3000" },
+      }),
+      makeContext()
+    );
+
+    const body = JSON.parse(response.body);
+    // Should reach the refresh service (401 from missing cookie), NOT 401 from authJWT
+    expect(response.statusCode).toBe(401);
+    expect(body.errorKey).toBe("authRefresh.missingRefreshToken");
+    expect(body.errorKey).not.toBe("others.unauthorized");
+  });
+
+  test("non-public resource returns 401 when Authorization header is missing", async () => {
+    // Hypothetical: if a protected route were added, authJWT would block it.
+    // We test this by sending a request to a resource NOT in PUBLIC_RESOURCES.
+    const getReadConnection = jest.fn().mockResolvedValue({});
+    jest.doMock("../functions/AuthRoute/src/config/db", () => ({
+      getReadConnection,
+    }));
+
+    const { handleRequest } = require("../functions/AuthRoute/src/handler");
+
+    const response = await handleRequest(
+      makeEvent({
+        resource: "/auth/some-protected-route",
+        headers: { origin: "http://localhost:3000" },
+      }),
+      makeContext()
+    );
+
+    const body = JSON.parse(response.body);
+    expect(getReadConnection).not.toHaveBeenCalled();
+    expect(response.statusCode).toBe(401);
+    expect(body.errorKey).toBe("others.unauthorized");
+  });
+});
+
+describe("AuthRoute authJWT middleware", () => {
+  beforeEach(() => {
+    jest.resetModules();
+    jest.restoreAllMocks();
+    setAuthRouteEnv();
+  });
+
+  test("returns null for OPTIONS requests without inspecting headers", () => {
+    const { authJWT } = require("../functions/AuthRoute/src/middleware/authJWT");
+
+    const result = authJWT({ event: makeEvent({ httpMethod: "OPTIONS" }) });
+    expect(result).toBeNull();
+  });
+
+  test("returns null and attaches identity for a valid Bearer token", () => {
+    const { authJWT } = require("../functions/AuthRoute/src/middleware/authJWT");
+
+    const token = authJwt.sign(
+      { userId: "user-456", userEmail: "test@example.com", userRole: "user" },
+      process.env.JWT_SECRET,
+      { algorithm: "HS256", expiresIn: "15m" }
+    );
+
+    const event = makeEvent({
+      headers: {
+        origin: "http://localhost:3000",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const result = authJWT({ event });
+    expect(result).toBeNull();
+    expect(event.userId).toBe("user-456");
+    expect(event.userEmail).toBe("test@example.com");
+    expect(event.userRole).toBe("user");
+    expect(event.user).toBeDefined();
+    expect(event.requestContext.authorizer).toBeDefined();
+  });
+
+  test("returns 401 for a malformed Bearer header", () => {
+    const { authJWT } = require("../functions/AuthRoute/src/middleware/authJWT");
+
+    const result = authJWT({
+      event: makeEvent({
+        headers: {
+          origin: "http://localhost:3000",
+          Authorization: "NotBearer some-token",
+        },
+      }),
+    });
+
+    const body = JSON.parse(result.body);
+    expect(result.statusCode).toBe(401);
+    expect(body.errorKey).toBe("others.unauthorized");
+  });
+
+  test("returns 401 for an expired or tampered token", () => {
+    const { authJWT } = require("../functions/AuthRoute/src/middleware/authJWT");
+
+    const expiredToken = authJwt.sign(
+      { userId: "user-789" },
+      process.env.JWT_SECRET,
+      { algorithm: "HS256", expiresIn: "-1s" }
+    );
+
+    const result = authJWT({
+      event: makeEvent({
+        headers: {
+          origin: "http://localhost:3000",
+          Authorization: `Bearer ${expiredToken}`,
+        },
+      }),
+    });
+
+    const body = JSON.parse(result.body);
+    expect(result.statusCode).toBe(401);
+    expect(body.errorKey).toBe("others.unauthorized");
+  });
+
+  test("returns 500 when JWT_SECRET is not available at request time", () => {
+    // JWT_SECRET is present at module load (env validation passes),
+    // but cleared before the request to simulate a missing-secret branch.
+    const { authJWT } = require("../functions/AuthRoute/src/middleware/authJWT");
+
+    const savedSecret = process.env.JWT_SECRET;
+    delete process.env.JWT_SECRET;
+
+    try {
+      const result = authJWT({
+        event: makeEvent({
+          headers: {
+            origin: "http://localhost:3000",
+            Authorization: "Bearer some-token",
+          },
+        }),
+      });
+
+      const body = JSON.parse(result.body);
+      expect(result.statusCode).toBe(500);
+      expect(body.errorKey).toBe("others.internalError");
+    } finally {
+      process.env.JWT_SECRET = savedSecret;
+    }
+  });
+
+  test("JWT_BYPASS attaches dev identity in non-production", () => {
+    setAuthRouteEnv({ JWT_BYPASS: "true", NODE_ENV: "test" });
+    const { authJWT } = require("../functions/AuthRoute/src/middleware/authJWT");
+
+    const event = makeEvent({
+      headers: { origin: "http://localhost:3000" },
+    });
+
+    const result = authJWT({ event });
+    expect(result).toBeNull();
+    expect(event.userId).toBe("dev-user-id");
+    expect(event.userEmail).toBe("dev@test.com");
+    expect(event.userRole).toBe("developer");
+  });
+
+  test("JWT_BYPASS is ignored when NODE_ENV is production", () => {
+    setAuthRouteEnv({ JWT_BYPASS: "true", NODE_ENV: "production" });
+    const { authJWT } = require("../functions/AuthRoute/src/middleware/authJWT");
+
+    const result = authJWT({
+      event: makeEvent({
+        headers: { origin: "http://localhost:3000" },
+      }),
+    });
+
+    const body = JSON.parse(result.body);
+    expect(result.statusCode).toBe(401);
+    expect(body.errorKey).toBe("others.unauthorized");
   });
 });
 

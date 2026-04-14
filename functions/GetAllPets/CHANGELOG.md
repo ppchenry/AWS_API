@@ -134,4 +134,10 @@ functions/GetAllPets/
 
 ### Result Of This Stage
 
-GetAllPets is structurally aligned with the UserRoutes baseline and all identified security defects are addressed. Unauthenticated mutations are JWT-protected, ownership is enforced via atomic query filters (mutations) and pre-DB path identity checks (reads), HTTP methods and route paths match the SAM contract, and the Environment block is declared in `template.yaml`. The Lambda follows the canonical request lifecycle, uses standardized response shapes with `errorKey`/`requestId`, structured logging, Zod v4 validation, and modular architecture. Full behavioural equivalence with the UserRoutes baseline should be confirmed with integration tests before the sign-off is considered final.
+GetAllPets is structurally aligned with the UserRoutes baseline and all identified security defects are addressed. Unauthenticated mutations are JWT-protected, ownership is enforced via atomic query filters (mutations) and pre-DB path identity checks (reads), HTTP methods and route paths match the SAM contract, and the Environment block is declared in `template.yaml`. The Lambda follows the canonical request lifecycle, uses standardized response shapes with `errorKey`/`requestId`, structured logging, Zod v4 validation, and modular architecture.
+
+Latest verification status:
+
+- `49` integration tests passed
+- `2` lifecycle tests skipped due to missing disposable production-safe fixture (`TEST_DISPOSABLE_PET_ID`)
+- Full details are documented in `dev_docs/test_reports/GETALLPETS_TEST_REPORT.md`

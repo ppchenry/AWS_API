@@ -4,6 +4,19 @@
 
 Manages pet listing, soft-deletion, and eye image updates. Serves both user-specific and NGO-scoped pet queries.
 
+### Refactor Status
+
+- Current status: completed Tier 2 modularized reference implementation
+- Latest verification status: `49 passed, 2 skipped` in the focused GetAllPets integration suite
+- Detailed test evidence: `dev_docs/test_reports/GETALLPETS_TEST_REPORT.md`
+
+### Security Posture Summary
+
+- NGO pet listing is public, read-only, and guarded by exact route matching plus query validation
+- User pet listing requires JWT and self-access enforcement
+- Delete and eye-update mutations require JWT and ownership enforcement
+- Error responses follow the standardized `success/errorKey/error/requestId` contract
+
 ## Base Path
 
 `/pets`

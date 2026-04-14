@@ -7,6 +7,7 @@
   "others": {
     "internalError": "發生內部錯誤",
     "methodNotAllowed": "不支援此 HTTP 方法",
-    "rateLimited": "請求過於頻繁，請稍後再試"
+    "rateLimited": "請求過於頻繁，請稍後再試",
+    "unauthorized": "需要登入驗證"
   }
 }

@@ -1,16 +1,30 @@
-## AuthRoute Follow-up
+# Today's Refactoring — 2026-04-14
 
-- [ ] refactor `AuthRoute` into thin entrypoint plus `src/handler.js` and focused refresh-token service flow
-- [ ] move refresh-token cookie parsing, token rotation, and access-token issuance into centralized helpers with standardized responses
-- [ ] validate env at startup for `MONGODB_URI`, `JWT_SECRET`, `REFRESH_TOKEN_MAX_AGE_SEC`, `ALLOWED_ORIGINS`, and dual-write settings
-- [ ] replace ad hoc CORS/error handling in `AuthRoute` with the same response and logging pattern used by refactored Lambdas
-- [ ] preserve current refresh contract while cleaning up DB reuse and secondary dual-write behavior
+## Completed Today
 
-## PetLostandFound Follow-up
+- Synced top-level refactor documentation to include `AuthRoute` and `GetAllPets` as completed modernized Lambdas.
+- Updated the bilingual refactor reports with the current completed-Lambda count, latest aggregate test totals, and the refactored auth-cycle overview.
+- Updated the Lambda refactor inventory so `AuthRoute` and `GetAllPets` are no longer listed as pending partial-separation targets.
+- Synced `functions/AuthRoute` docs with its dedicated role in the session lifecycle and latest 19/19 passing test status.
+- Synced `functions/GetAllPets` docs with its current verification status (`49 passed, 2 env-gated skips`) and reference-implementation status.
 
-- [ ] refactor `PetLostandFound` into a thin entrypoint plus full `src/handler.js` and `src/router.js` split
-- [ ] separate `PetLostandFound` business workflows into focused services while preserving existing route contracts
-- [ ] standardize `PetLostandFound` CORS, auth, validation, response handling, and DB reuse to match the refactor checklist
-- [ ] add targeted post-refactor invalid-input and route-level testing for `PetLostandFound`
+## Current Completed Reference Lambdas
 
-<!-- End of checklist -->
+- `UserRoutes`
+- `PetBasicInfo`
+- `EmailVerification`
+- `AuthRoute`
+- `GetAllPets`
+
+## Current Aggregate Verification Snapshot
+
+- `UserRoutes`: 102 / 102 tests passed
+- `PetBasicInfo`: 36 passed, 1 skipped
+- `EmailVerification`: 30 / 30 tests passed
+- `AuthRoute`: 19 / 19 tests passed
+- `GetAllPets`: 49 passed, 2 skipped
+- Combined: 236 passed + 3 optional/env-gated skips
+
+## Next Candidate
+
+- Continue with the next inventory target after `GetAllPets` and `AuthRoute` documentation sync.

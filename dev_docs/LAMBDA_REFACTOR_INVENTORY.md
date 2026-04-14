@@ -7,10 +7,10 @@ It is not a perfect measure. Final priority should still consider route count, a
 ## Summary
 
 - Total Lambda entry files checked: 22
-- Already modularized with `src/handler.js`: 3
-- Remaining Lambdas needing review: 19
+- Already modularized with `src/handler.js`: 5
+- Remaining Lambdas needing review: 17
 - Clear full-separation candidates: 8
-- Medium-size Lambdas that likely need partial separation: 6
+- Medium-size Lambdas that likely need partial separation: 4
 - Smaller Lambdas that should usually stay simple: 5
 
 ## Already Refactored
@@ -22,6 +22,8 @@ These already match the stronger handler-based pattern.
 | `UserRoutes` | `index.js` | 4 | already modularized |
 | `PetBasicInfo` | `index.js` | 4 | already modularized |
 | `EmailVerification` | `index.js` | 4 | already modularized |
+| `AuthRoute` | `index.js` | 4 | already modularized |
+| `GetAllPets` | `index.js` | 5 | already modularized |
 
 ## Full Separation Recommended
 
@@ -58,10 +60,8 @@ Suggested target shape:
 
 | Priority Tier | Lambda | Entry file | Lines | Recommendation |
 | --- | --- | --- | ---: | --- |
-| medium | `GetAllPets` | `index.js` | 416 | use pragmatic split, not necessarily full UserRoutes pattern |
 | medium | `AIChatBot` | `index.js` | 359 | partial separation likely enough unless logic is more coupled than size suggests |
 | medium | `PetVaccineRecords` | `index.js` | 326 | partial separation likely enough |
-| medium | `AuthRoute` | `index.js` | 323 | partial separation likely enough |
 | medium | `CreatePetBasicInfo` | `index.js` | 282 | partial separation likely enough |
 | medium | `GetBreed` | `index.js` | 272 | partial separation likely enough |
 
@@ -90,10 +90,10 @@ These are smaller Lambdas. They should still meet the refactor checklist for val
 | `OrderVerification` | `index.js` | 582 | no | full separation |
 | `EmailVerification` | `index.js` | 4 | yes | already modularized |
 | `PetBiometricRoutes` | `index.js` | 511 | no | full separation |
-| `GetAllPets` | `index.js` | 416 | no | partial separation |
+| `GetAllPets` | `index.js` | 5 | yes | already modularized |
 | `AIChatBot` | `index.js` | 359 | no | partial separation |
 | `PetVaccineRecords` | `index.js` | 326 | no | partial separation |
-| `AuthRoute` | `index.js` | 323 | no | partial separation |
+| `AuthRoute` | `index.js` | 4 | yes | already modularized |
 | `CreatePetBasicInfo` | `index.js` | 282 | no | partial separation |
 | `GetBreed` | `index.js` | 272 | no | partial separation |
 | `LambdaProxyRoute` | `index.js` | 210 | no | keep simple unless risk says otherwise |

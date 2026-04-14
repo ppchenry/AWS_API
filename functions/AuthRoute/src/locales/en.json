@@ -7,6 +7,7 @@
   "others": {
     "internalError": "An internal error occurred",
     "methodNotAllowed": "Method not allowed",
-    "rateLimited": "Too many requests, please try again later"
+    "rateLimited": "Too many requests, please try again later",
+    "unauthorized": "Authentication required"
   }
 }
