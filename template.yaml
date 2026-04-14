@@ -2,283 +2,356 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31 
 
 Resources:
-  PetBasicInfoFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 60
-      MemorySize: 512
-      CodeUri: functions/PetBasicInfo/
-      Handler: index.handler
-      Runtime: nodejs22.x
-      Events:
-        PetDelete:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}
-            Method: DELETE
-
-        PetDeleteOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}
-            Method: OPTIONS
-
-        PetBasicInfoGet:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/basic-info
-            Method: GET
-
-        PetBasicInfoPut:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/basic-info
-            Method: PUT
-
-        PetBasicInfoPost:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/basic-info
-            Method: POST
-
-        PetBasicInfoOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/basic-info
-            Method: OPTIONS
-
-        PetEyeLogGet:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/eyeLog
-            Method: GET
-
-        PetEyeLogOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/eyeLog
-            Method: OPTIONS
-      Environment:
-        Variables:
-          JWT_SECRET: ""
-          JWT_BYPASS: ""
-          MONGODB_URI: ""
-          ALLOWED_ORIGINS: ""
-          NODE_ENV: "development"
-
-
-  # GetAllPetsFunction:
+  # PetBasicInfoFunction:
   #   Type: AWS::Serverless::Function
   #   Properties:
   #     Timeout: 60
   #     MemorySize: 512
-  #     CodeUri: functions/GetAllPets/
+  #     CodeUri: functions/PetBasicInfo/
   #     Handler: index.handler
   #     Runtime: nodejs22.x
   #     Events:
-  #       PetListNGO:
+  #       PetDelete:
   #         Type: Api
   #         Properties:
-  #           Path: /pets/pet-list-ngo/{ngoId}
-  #           Method: get
+  #           Path: /pets/{petID}
+  #           Method: DELETE
+
+  #       PetDeleteOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}
+  #           Method: OPTIONS
+
+  #       PetBasicInfoGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/basic-info
+  #           Method: GET
+
+  #       PetBasicInfoPut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/basic-info
+  #           Method: PUT
+
+  #       PetBasicInfoPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/basic-info
+  #           Method: POST
+
+  #       PetBasicInfoOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/basic-info
+  #           Method: OPTIONS
+
+  #       PetEyeLogGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/eyeLog
+  #           Method: GET
+
+  #       PetEyeLogOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/eyeLog
+  #           Method: OPTIONS
   #     Environment:
   #       Variables:
+  #         JWT_SECRET: ""
+  #         JWT_BYPASS: ""
   #         MONGODB_URI: ""
+  #         ALLOWED_ORIGINS: ""
+  #         NODE_ENV: "development"
 
-  EmailVerificationFunction:
+  AuthRouteFunction:
     Type: AWS::Serverless::Function
     Properties:
       Timeout: 60
       MemorySize: 512
-      CodeUri: functions/EmailVerification/
+      CodeUri: functions/AuthRoute/
       Handler: index.handler
       Runtime: nodejs22.x
       Events:
-        GenerateEmailCode:
+        RefreshOptions:
           Type: Api
           Properties:
-            Path: /account/generate-email-code
-            Method: POST
-
-        GenerateEmailCodeOptions:
-          Type: Api
-          Properties:
-            Path: /account/generate-email-code
+            Path: /auth/refresh
             Method: OPTIONS
 
-        VerifyEmailCode:
+        Refresh:
           Type: Api
           Properties:
-            Path: /account/verify-email-code
-            Method: POST
-
-        VerifyEmailCodeOptions:
-          Type: Api
-          Properties:
-            Path: /account/verify-email-code
-            Method: OPTIONS
-
-        GenerateEmailCode2:
-          Type: Api
-          Properties:
-            Path: /account/generate-email-code-2
+            Path: /auth/refresh
             Method: POST
       Environment:
         Variables:
-          ALLOWED_ORIGINS: ""
-          JWT_SECRET: ""
-          JWT_BYPASS: ""
-          MONGODB_URI: ""
-          SMTP_HOST: ""
-          SMTP_PASS: ""
-          SMTP_USER: ""
-          REFRESH_TOKEN_MAX_AGE_SEC: "1209600"
-          NODE_ENV: "development"
-
-  UserRoutesFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 60
-      MemorySize: 512
-      CodeUri: functions/UserRoutes/
-      Handler: index.handler
-      Runtime: nodejs22.x
-      Events:
-        AccountRootOptions:
-          Type: Api
-          Properties:
-            Path: /account
-            Method: OPTIONS
-
-        AccountRootPut:
-          Type: Api
-          Properties:
-            Path: /account
-            Method: PUT
-
-        UserList:
-          Type: Api
-          Properties:
-            Path: /account/user-list
-            Method: GET
-
-        EditNgoGet:
-          Type: Api
-          Properties:
-            Path: /account/edit-ngo/{ngoId}
-            Method: GET
-
-        EditNgoPut:
-          Type: Api
-          Properties:
-            Path: /account/edit-ngo/{ngoId}
-            Method: PUT
-
-        EditNgoPetPlacementOptionsGet:
-          Type: Api
-          Properties:
-            Path: /account/edit-ngo/{ngoId}/pet-placement-options
-            Method: GET
-
-        AccountUserIdDelete:
-          Type: Api
-          Properties:
-            Path: /account/{userId}
-            Method: DELETE
-        AccountUserIdGet:
-          Type: Api
-          Properties:
-            Path: /account/{userId}
-            Method: GET
-
-        AccountUserIdOptions:
-          Type: Api
-          Properties:
-            Path: /account/{userId}
-            Method: OPTIONS
-
-        DeleteUserWithEmail:
-          Type: Api
-          Properties:
-            Path: /account/delete-user-with-email
-            Method: POST
-
-        GenerateSmsCode:
-          Type: Api
-          Properties:
-            Path: /account/generate-sms-code
-            Method: POST
-
-        Login:
-          Type: Api
-          Properties:
-            Path: /account/login
-            Method: POST
-
-        Login2:
-          Type: Api
-          Properties:
-            Path: /account/login-2
-            Method: POST
-
-        Register:
-          Type: Api
-          Properties:
-            Path: /account/register
-            Method: POST
-
-        RegisterNgo:
-          Type: Api
-          Properties:
-            Path: /account/register-ngo
-            Method: POST
-
-        RegisterByEmail:
-          Type: Api
-          Properties:
-            Path: /account/register-by-email
-            Method: POST
-
-        RegisterByPhoneNumber:
-          Type: Api
-          Properties:
-            Path: /account/register-by-phoneNumber
-            Method: POST
-
-        RegisterEmail2:
-          Type: Api
-          Properties:
-            Path: /account/register-email-2
-            Method: POST
-
-        UpdateImage:
-          Type: Api
-          Properties:
-            Path: /account/update-image
-            Method: POST
-
-        UpdatePassword:
-          Type: Api
-          Properties:
-            Path: /account/update-password
-            Method: PUT
-
-        VerifySmsCode:
-          Type: Api
-          Properties:
-            Path: /account/verify-sms-code
-            Method: POST
-
-      Environment:
-        Variables:
-          TWILIO_ACCOUNT_SID: ""
-          TWILIO_AUTH_TOKEN: ""
-          TWILIO_VERIFY_SERVICE_SID: ""
-          REFRESH_TOKEN_MAX_AGE_SEC: ""
           JWT_SECRET: ""
           JWT_BYPASS: ""
           MONGODB_URI: ""
           ALLOWED_ORIGINS: ""
           NODE_ENV: "development"
+
+  GetAllPetsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 60
+      MemorySize: 512
+      CodeUri: functions/GetAllPets/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Events:
+        PetListNGOOptions:
+          Type: Api
+          Properties:
+            Path: /pets/pet-list-ngo/{ngoId}
+            Method: OPTIONS
+        
+        DeletePetOptions:
+          Type: Api
+          Properties:
+            Path: /pets/deletePet
+            Method: OPTIONS
+          
+        UpdatePetEyeOptions:
+          Type: Api
+          Properties:
+            Path: /pets/updatePetEye
+            Method: OPTIONS
+        
+        PetListOptions:
+          Type: Api
+          Properties:
+            Path: /pets/pet-list/{userId}
+            Method: OPTIONS
+
+        PetListNGO:
+          Type: Api
+          Properties:
+            Path: /pets/pet-list-ngo/{ngoId}
+            Method: GET
+        
+        DeletePet:
+          Type: Api
+          Properties:
+            Path: /pets/deletePet
+            Method: POST
+          
+        UpdatePetEye:
+          Type: Api
+          Properties:
+            Path: /pets/updatePetEye
+            Method: PUT
+        
+        PetList:
+          Type: Api
+          Properties:
+            Path: /pets/pet-list/{userId}
+            Method: GET
+      Environment:
+        Variables:
+          JWT_SECRET: ""
+          JWT_BYPASS: ""
+          MONGODB_URI: ""
+          ALLOWED_ORIGINS: ""
+          NODE_ENV: "development"
+
+  # EmailVerificationFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Timeout: 60
+  #     MemorySize: 512
+  #     CodeUri: functions/EmailVerification/
+  #     Handler: index.handler
+  #     Runtime: nodejs22.x
+  #     Events:
+  #       GenerateEmailCode:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/generate-email-code
+  #           Method: POST
+
+  #       GenerateEmailCodeOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/generate-email-code
+  #           Method: OPTIONS
+
+  #       VerifyEmailCode:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/verify-email-code
+  #           Method: POST
+
+  #       VerifyEmailCodeOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/verify-email-code
+  #           Method: OPTIONS
+
+  #       GenerateEmailCode2:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/generate-email-code-2
+  #           Method: POST
+  #     Environment:
+  #       Variables:
+  #         ALLOWED_ORIGINS: ""
+  #         JWT_SECRET: ""
+  #         JWT_BYPASS: ""
+  #         MONGODB_URI: ""
+  #         SMTP_HOST: ""
+  #         SMTP_PASS: ""
+  #         SMTP_USER: ""
+  #         REFRESH_TOKEN_MAX_AGE_SEC: "1209600"
+  #         NODE_ENV: "development"
+
+  # UserRoutesFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Timeout: 60
+  #     MemorySize: 512
+  #     CodeUri: functions/UserRoutes/
+  #     Handler: index.handler
+  #     Runtime: nodejs22.x
+  #     Events:
+  #       AccountRootOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account
+  #           Method: OPTIONS
+
+  #       AccountRootPut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account
+  #           Method: PUT
+
+  #       UserList:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/user-list
+  #           Method: GET
+
+  #       EditNgoGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/edit-ngo/{ngoId}
+  #           Method: GET
+
+  #       EditNgoPut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/edit-ngo/{ngoId}
+  #           Method: PUT
+
+  #       EditNgoPetPlacementOptionsGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/edit-ngo/{ngoId}/pet-placement-options
+  #           Method: GET
+
+  #       AccountUserIdDelete:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/{userId}
+  #           Method: DELETE
+  #       AccountUserIdGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/{userId}
+  #           Method: GET
+
+  #       AccountUserIdOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/{userId}
+  #           Method: OPTIONS
+
+  #       DeleteUserWithEmail:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/delete-user-with-email
+  #           Method: POST
+
+  #       GenerateSmsCode:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/generate-sms-code
+  #           Method: POST
+
+  #       Login:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/login
+  #           Method: POST
+
+  #       Login2:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/login-2
+  #           Method: POST
+
+  #       Register:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/register
+  #           Method: POST
+
+  #       RegisterNgo:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/register-ngo
+  #           Method: POST
+
+  #       RegisterByEmail:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/register-by-email
+  #           Method: POST
+
+  #       RegisterByPhoneNumber:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/register-by-phoneNumber
+  #           Method: POST
+
+  #       RegisterEmail2:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/register-email-2
+  #           Method: POST
+
+  #       UpdateImage:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/update-image
+  #           Method: POST
+
+  #       UpdatePassword:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/update-password
+  #           Method: PUT
+
+  #       VerifySmsCode:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/verify-sms-code
+  #           Method: POST
+
+  #     Environment:
+  #       Variables:
+  #         TWILIO_ACCOUNT_SID: ""
+  #         TWILIO_AUTH_TOKEN: ""
+  #         TWILIO_VERIFY_SERVICE_SID: ""
+  #         REFRESH_TOKEN_MAX_AGE_SEC: ""
+  #         JWT_SECRET: ""
+  #         JWT_BYPASS: ""
+  #         MONGODB_URI: ""
+  #         ALLOWED_ORIGINS: ""
+  #         NODE_ENV: "development"
             
   

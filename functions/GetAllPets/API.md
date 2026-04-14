@@ -1,91 +1,165 @@
-### API Documentation: Get NGO Pet List (Paginated)
+# GetAllPets API Reference
 
-This endpoint retrieves a list of pets associated with a specific NGO. It includes soft-delete filtering and built-in pagination to ensure high performance.
+## Overview
 
----
+Manages pet listing, soft-deletion, and eye image updates. Serves both user-specific and NGO-scoped pet queries.
 
+### Refactor Status
 
-#### **Endpoint Overview**
-* **URL:** `https://udnh87tari.execute-api.ap-southeast-1.amazonaws.com/Dev/pets/pet-list-ngo/{ngoId}`
-* **Method:** `GET`
-* **Authentication:** Not Required (Public)
-* **Content-Type:** `application/json`
-* **x-api-key header:** **Required** (Requests without this header will be rejected with 403 Forbidden by API Gateway)
+- Current status: completed Tier 2 modularized reference implementation
+- Latest verification status: baseline suite `49 passed, 2 skipped`, plus focused write-path rate-limit rerun `2 passed`
+- Detailed test evidence: `dev_docs/test_reports/GETALLPETS_TEST_REPORT.md`
 
----
+### Security Posture Summary
 
+- NGO pet listing is public, read-only, and guarded by exact route matching plus query validation
+- User pet listing requires JWT and self-access enforcement
+- Delete and eye-update mutations require JWT and ownership enforcement
+- Error responses follow the standardized `success/errorKey/error/requestId` contract
 
-#### **Request Parameters**
+## Base Path
 
+`/pets`
 
-**1. Path Parameters**
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `ngoId` | `string` | **Yes** | The unique identifier of the NGO. |
+## Authentication
 
-**2. Headers**
-| Header | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `x-api-key` | `string` | **Yes** | API Gateway key required for authentication. |
-
-**3. Query Parameters**
-| Parameter | Type | Required | Default | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `page` | `number` | No | `1` | The page number to retrieve. |
-| `search` | `string` | No | `""` | Case-insensitive search across `name`, `animal`, `breed`, `ngoPetId`, and `owner`. |
-| `sortBy` | `string` | No | `updatedAt` | Sort field. Supported values: `updatedAt`, `createdAt`, `name`, `animal`, `breed`, `birthday`, `receivedDate`, `ngoPetId`. |
-| `sortOrder` | `string` | No | `desc` | Sort direction. Supported values: `asc`, `desc`. |
+All routes require JWT Bearer token unless marked as **Public**.
 
 ---
 
-#### **Success Response**
+## Routes
 
-**Code:** `200 OK`
+### GET /pets/pet-list-ngo/{ngoId}
 
-**Body Structure:**
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `message` | `string` | Status message (localized). |
-| `pets` | `array` | Array of Pet objects. |
-| `total` | `number` | Total number of non-deleted pets available for this NGO. |
-| `currentPage` | `number` | The page currently being returned. |
-| `perPage` | `number` | Number of items returned per page (Fixed at 30). |
+**Auth**: Public  
+**Description**: Paginated, searchable, sortable pet list for an NGO.
 
-**Sample Body:**
+**Path Parameters**:
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| ngoId | string (ObjectId) | Yes | The NGO identifier |
+
+**Query Parameters**:
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| page | number | 1 | Page number (1-indexed) |
+| search | string | "" | Case-insensitive search across name, animal, breed, ngoPetId, owner |
+| sortBy | string | "updatedAt" | Sort field. Allowed: updatedAt, createdAt, name, animal, breed, birthday, receivedDate, ngoPetId |
+| sortOrder | string | "desc" | Sort direction: "asc" or "desc" |
+
+**Success Response (200)**:
 ```json
 {
-  "message": "Success",
-  "pets": [
-    {
-      "_id": "65f1a...",
-      "ngoId": "ngo_123",
-      "name": "Buddy",
-      "species": "Dog",
-      "deleted": false,
-      "updatedAt": "2026-04-08T10:00:00Z"
-    }
-  ],
-  "total": 125,
+  "success": true,
+  "message": "Pets retrieved successfully",
+  "pets": [ ... ],
+  "total": 42,
   "currentPage": 1,
   "perPage": 30
 }
 ```
 
----
-
-#### **Error Responses**
-
-| Code | Key | Description |
-| :--- | :--- | :--- |
-| **400** | `ngoPath.missingNgoId` | The `ngoId` parameter was not provided in the URL. |
-| **404** | `ngoPath.noPetsFound` | No active pets were found for the provided NGO ID. |
-| **500** | `Internal Server Error` | Unexpected server-side failure. |
+**Error Responses**: 400 (missing/invalid ngoId), 404 (no pets found)
 
 ---
 
-#### **Technical Constraints & Logic**
-* **Pagination:** Results are limited to **30 items per page**.
-* **Filtering:** Automatically filters out documents where `deleted: true`.
-* **Search:** When `search` is provided, results are filtered case-insensitively across `name`, `animal`, `breed`, `ngoPetId`, and `owner`.
-* **Sorting:** Results default to `updatedAt desc`, and can be customized with `sortBy` and `sortOrder`.
-* **Performance:** Uses `.lean()` execution to reduce Lambda memory overhead and database latency.
+### POST /pets/deletePet
+
+**Auth**: JWT Required (owner only)  
+**Description**: Soft-deletes a pet by setting `deleted: true`. Caller must own the pet (pet.userId === JWT userId).
+
+**Request Body**:
+```json
+{
+  "petId": "string (ObjectId)"
+}
+```
+
+**Success Response (200)**:
+```json
+{
+  "success": true,
+  "message": "Pet deleted successfully",
+  "petId": "..."
+}
+```
+
+**Error Responses**: 400 (missing/invalid petId), 403 (not pet owner), 404 (pet not found), 409 (already deleted), 429 (rate limited)
+
+---
+
+### PUT /pets/updatePetEye
+
+**Auth**: JWT Required (owner only)  
+**Description**: Adds an eye image record to a pet. Caller must own the pet (pet.userId === JWT userId).
+
+**Request Body**:
+```json
+{
+  "petId": "string (ObjectId)",
+  "date": "string (date)",
+  "leftEyeImage1PublicAccessUrl": "string (URL)",
+  "rightEyeImage1PublicAccessUrl": "string (URL)"
+}
+```
+
+**Success Response (201)**:
+```json
+{
+  "success": true,
+  "message": "Successfully updated pet eye image",
+  "result": { ... }
+}
+```
+
+**Error Responses**: 400 (missing/invalid fields), 403 (not pet owner), 404 (pet not found), 410 (pet deleted), 429 (rate limited)
+
+---
+
+### GET /pets/pet-list/{userId}
+
+**Auth**: JWT Required (self-access only)  
+**Description**: Paginated list of pets owned by a user. Caller's JWT userId must match the path userId.
+
+**Path Parameters**:
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| userId | string (ObjectId) | Yes | The user identifier |
+
+**Query Parameters**:
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| page | number | 1 | Page number (1-indexed) |
+
+**Success Response (200)**:
+```json
+{
+  "success": true,
+  "message": "Pets retrieved successfully",
+  "form": [ ... ],
+  "total": 5
+}
+```
+
+**Error Responses**: 400 (missing/invalid userId), 403 (not self-access)
+
+---
+
+## Error Response Shape
+
+All errors follow the standardized format:
+```json
+{
+  "success": false,
+  "errorKey": "domain.errorType",
+  "error": "Translated error message",
+  "requestId": "aws-request-id"
+}
+```
+
+## Known Constraints
+
+- **I20 — Race-condition duplicate creation**: Not applicable (no creation flows).
+- Sensitive authenticated write routes are rate-limited and return `429` with `others.rateLimited` when abused.
+- `POST /pets/deletePet`: 10 requests per 60 seconds per client IP + authenticated user.
+- `PUT /pets/updatePetEye`: 10 requests per 60 seconds per client IP + authenticated user.

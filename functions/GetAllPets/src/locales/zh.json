@@ -1,4 +1,12 @@
 {
+    "others": {
+        "unauthorized": "需要身份驗證",
+        "internalError": "內部伺服器錯誤",
+        "methodNotAllowed": "不允許的方法",
+        "missingParams": "缺少必要參數",
+        "invalidJSON": "無效的 JSON 格式",
+        "rateLimited": "請求過於頻繁，請稍後再試"
+    },
     "common": {
         "invalidJSON": "無效的 JSON 格式"
     },

@@ -1,42 +1,40 @@
 const mongoose = require("mongoose");
-const Schema = mongoose.Schema;
 
-const RefreshTokenSchema = new Schema(
+const RefreshTokenSchema = new mongoose.Schema(
   {
     userId: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       required: true,
       ref: "User",
-      index: true
+      index: true,
     },
     tokenHash: {
       type: String,
       required: true,
       unique: true,
-      index: true
+      index: true,
     },
     createdAt: {
       type: Date,
+      required: true,
       default: Date.now,
-      required: true
     },
     lastUsedAt: {
       type: Date,
+      required: true,
       default: Date.now,
-      required: true
     },
     expiresAt: {
       type: Date,
       required: true,
-      index: { expireAfterSeconds: 0 } // TTL index to auto-delete expired tokens
-    }
+      index: { expireAfterSeconds: 0 },
+    },
   },
   {
-    timestamps: false // We're managing createdAt manually
+    timestamps: false,
   }
 );
 
-// Index for faster queries
 RefreshTokenSchema.index({ userId: 1, expiresAt: 1 });
 
 module.exports = RefreshTokenSchema;
