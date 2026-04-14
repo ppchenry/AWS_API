@@ -11,6 +11,7 @@
   "description": "",
   "dependencies": {
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^8.17.0"
+    "mongoose": "^8.17.0",
+    "zod": "^4.3.6"
   }
 }

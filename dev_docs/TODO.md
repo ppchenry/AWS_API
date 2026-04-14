@@ -1,26 +1,16 @@
-# Refactor Checklist For Other Lambdas
+## AuthRoute Follow-up
 
-- [ ] keep the AWS entry file thin and move request orchestration into handler and router layers
-- [ ] keep endpoint contracts stable unless the frontend and consumers are updated together
-- [ ] align `template.yaml` or SAM events with the real router paths before local testing
-- [ ] validate env vars at startup so bad config fails early and predictably
-- [ ] centralize DB connection reuse instead of reconnecting inside each route
-- [ ] standardize success and error responses before moving route logic around
-- [ ] if using Zod v4, always read validation details from `error.issues`, not `error.errors`
-- [ ] add schema validation before business logic and ensure invalid input returns `400`, not `500`
-- [ ] audit CORS preflight explicitly with allowed and disallowed origins
-- [ ] verify auth checks happen before private route logic, but after OPTIONS handling
-- [ ] add self-access or ownership checks for routes that accept userId, email, or similar identity fields
-- [ ] normalize identifiers like email and phone before lookups to avoid inconsistent behavior
-- [ ] prefer focused query projections and smaller aggregation payloads when refactoring list endpoints
-- [ ] treat local SAM latency as a regression signal, not a production benchmark
-- [ ] test invalid-input cases after refactor, not just happy-path requests
-- [ ] confirm all runtime dependencies are declared in `package.json` before relying on SAM build output
-- [ ] document what was improved and what was intentionally left constrained after each refactor stage
-- [ ] standardize cross-Lambda locale keys and error-key taxonomy only after the major Lambda refactors settle; keep service name separate from `errorKey` and avoid baking Lambda names into shared keys
+- [ ] refactor `AuthRoute` into thin entrypoint plus `src/handler.js` and focused refresh-token service flow
+- [ ] move refresh-token cookie parsing, token rotation, and access-token issuance into centralized helpers with standardized responses
+- [ ] validate env at startup for `MONGODB_URI`, `JWT_SECRET`, `REFRESH_TOKEN_MAX_AGE_SEC`, `ALLOWED_ORIGINS`, and dual-write settings
+- [ ] replace ad hoc CORS/error handling in `AuthRoute` with the same response and logging pattern used by refactored Lambdas
+- [ ] preserve current refresh contract while cleaning up DB reuse and secondary dual-write behavior
 
-## UserRoutes Follow-up
+## PetLostandFound Follow-up
 
-- [ ] add unique index on `email` in the User model to prevent race-condition duplicates under concurrent registration requests
+- [ ] refactor `PetLostandFound` into a thin entrypoint plus full `src/handler.js` and `src/router.js` split
+- [ ] separate `PetLostandFound` business workflows into focused services while preserving existing route contracts
+- [ ] standardize `PetLostandFound` CORS, auth, validation, response handling, and DB reuse to match the refactor checklist
+- [ ] add targeted post-refactor invalid-input and route-level testing for `PetLostandFound`
 
 <!-- End of checklist -->

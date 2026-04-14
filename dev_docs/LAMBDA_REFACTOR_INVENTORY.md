@@ -6,12 +6,12 @@ It is not a perfect measure. Final priority should still consider route count, a
 
 ## Summary
 
-- Total Lambda entry files checked: 25
+- Total Lambda entry files checked: 22
 - Already modularized with `src/handler.js`: 3
-- Remaining Lambdas needing review: 22
+- Remaining Lambdas needing review: 19
 - Clear full-separation candidates: 8
 - Medium-size Lambdas that likely need partial separation: 6
-- Smaller Lambdas that should usually stay simple: 8
+- Smaller Lambdas that should usually stay simple: 5
 
 ## Already Refactored
 
@@ -76,9 +76,6 @@ These are smaller Lambdas. They should still meet the refactor checklist for val
 | small | `PetInfoByPetNumber` | `index.js` | 134 | keep simple |
 | small | `PublicRoutes` | `index.js` | 117 | keep simple |
 | small | `CreateFeedback` | `index.js` | 106 | keep simple |
-| small | `TestIPLambda` | `index.js` | 50 | keep simple |
-| small | `AuthorizerRoute` | `index.js` | 31 | keep simple |
-| small | `WhatsappRoute` | `index.mjs` | 8 | keep simple |
 
 ## Full Inventory
 
@@ -104,9 +101,6 @@ These are smaller Lambdas. They should still meet the refactor checklist for val
 | `PetInfoByPetNumber` | `index.js` | 134 | no | keep simple |
 | `PublicRoutes` | `index.js` | 117 | no | keep simple |
 | `CreateFeedback` | `index.js` | 106 | no | keep simple |
-| `TestIPLambda` | `index.js` | 50 | no | keep simple |
-| `AuthorizerRoute` | `index.js` | 31 | no | keep simple |
-| `WhatsappRoute` | `index.mjs` | 8 | no | keep simple |
 | `PetBasicInfo` | `index.js` | 4 | yes | already modularized |
 | `UserRoutes` | `index.js` | 4 | yes | already modularized |
 

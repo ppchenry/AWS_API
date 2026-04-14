@@ -1,0 +1,12 @@
+{
+  "authRefresh": {
+    "missingRefreshToken": "Missing refresh token cookie",
+    "invalidRefreshTokenCookie": "Invalid refresh token cookie format",
+    "invalidSession": "Refresh token expired or invalid"
+  },
+  "others": {
+    "internalError": "An internal error occurred",
+    "methodNotAllowed": "Method not allowed",
+    "rateLimited": "Too many requests, please try again later"
+  }
+}
