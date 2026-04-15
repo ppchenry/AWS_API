@@ -1,5 +1,6 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
+
 const ImageCollectionSchema = new Schema(
   {
     fileName: {
@@ -27,9 +28,7 @@ const ImageCollectionSchema = new Schema(
       default: false,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-export default ImageCollectionSchema
+module.exports = ImageCollectionSchema;

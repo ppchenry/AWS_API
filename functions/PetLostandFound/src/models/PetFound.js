@@ -1,7 +1,10 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const PetFoundSchema = new mongoose.Schema(
   {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+    },
     serial_number: {
       type: String,
       default: null,
@@ -49,9 +52,12 @@ const PetFoundSchema = new mongoose.Schema(
       type: Number,
       default: null,
     },
+    breed: {
+      type: String,
+      default: null,
+    },
   },
-  { timestamps: true,
-  }
-); // Automatically manages createdAt and updatedAt
+  { timestamps: true }
+);
 
-export default PetFoundSchema;
+module.exports = PetFoundSchema;

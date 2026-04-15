@@ -1,0 +1,66 @@
+{
+  "others": {
+    "internalError": "伺服器內部錯誤",
+    "invalidJSON": "請求正文中的 JSON 無效",
+    "missingParams": "缺少必要參數",
+    "unauthorized": "未經授權",
+    "methodNotAllowed": "不允許的方法",
+    "invalidPathParam": "路徑參數格式無效",
+    "selfAccessDenied": "拒絕訪問：您只能訪問自己的資源",
+    "rateLimited": "請求過於頻繁，請稍後再試。"
+  },
+  "petLost": {
+    "errors": {
+      "nameRequired": "寵物名稱為必填",
+      "sexRequired": "寵物性別為必填",
+      "animalRequired": "動物類型為必填",
+      "lostDateRequired": "走失日期為必填",
+      "lostLocationRequired": "走失地點為必填",
+      "lostDistrictRequired": "走失地區為必填",
+      "notFound": "未找到走失寵物",
+      "idRequired": "走失寵物 ID 為必填",
+      "invalidPetId": "寵物 ID 格式無效",
+      "petNotFound": "找不到指定的寵物",
+      "createFailed": "建立走失寵物記錄失敗"
+    },
+    "success": {
+      "listRetrieved": "成功獲取所有走失寵物",
+      "created": "成功新增走失寵物",
+      "deleted": "走失寵物記錄已成功刪除",
+      "noRecord": "沒有指定 ID 的記錄"
+    }
+  },
+  "petFound": {
+    "errors": {
+      "animalRequired": "動物類型為必填",
+      "foundDateRequired": "發現日期為必填",
+      "foundLocationRequired": "發現地點為必填",
+      "foundDistrictRequired": "發現地區為必填",
+      "notFound": "未找到發現的寵物",
+      "idRequired": "發現寵物 ID 為必填",
+      "createFailed": "建立發現寵物記錄失敗"
+    },
+    "success": {
+      "listRetrieved": "成功獲取所有發現的寵物",
+      "created": "成功新增發現的寵物",
+      "deleted": "發現寵物記錄已成功刪除"
+    }
+  },
+  "notifications": {
+    "errors": {
+      "typeRequired": "通知類型為必填",
+      "userIdRequired": "用戶 ID 為必填",
+      "notificationIdRequired": "通知 ID 為必填",
+      "notFound": "未找到通知或通知不屬於此用戶",
+      "invalidPetId": "寵物 ID 格式無效",
+      "createFailed": "建立通知失敗",
+      "archiveFailed": "封存通知失敗"
+    },
+    "success": {
+      "listRetrieved": "成功獲取通知",
+      "emptyList": "未找到此用戶的通知",
+      "created": "通知已成功建立",
+      "archived": "通知已成功封存"
+    }
+  }
+}

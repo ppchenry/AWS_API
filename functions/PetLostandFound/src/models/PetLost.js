@@ -1,12 +1,11 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const PetLostSchema = new mongoose.Schema(
   {
-    // Pet Basic Info
     userId: {
-      type: mongoose.Schema.Types.ObjectId, // reference to another collection (user)
+      type: mongoose.Schema.Types.ObjectId,
     },
-    petId : {
+    petId: {
       type: String,
       default: null,
     },
@@ -39,7 +38,6 @@ const PetLostSchema = new mongoose.Schema(
     },
     birthday: {
       type: Date,
-      required: true,
       default: null,
     },
     weight: {
@@ -85,9 +83,7 @@ const PetLostSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: true,
-    strict: 'throw'
-  }
-); // Automatically manages createdAt and updatedAt
+  { timestamps: true, strict: "throw" }
+);
 
-export default PetLostSchema;
+module.exports = PetLostSchema;
