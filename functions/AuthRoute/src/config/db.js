@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 const UserSchema = require("../models/User");
+const NgoUserAccessSchema = require("../models/NgoUserAccess");
+const NGOSchema = require("../models/NGO");
 const RefreshTokenSchema = require("../models/RefreshToken");
 const RateLimitSchema = require("../models/RateLimit");
 const env = require("./env");
@@ -27,6 +29,8 @@ const connectToMongoDB = async () => {
       });
 
       mongoose.models.User || mongoose.model("User", UserSchema, "users");
+      mongoose.models.NgoUserAccess || mongoose.model("NgoUserAccess", NgoUserAccessSchema, "ngo_user_access");
+      mongoose.models.NGO || mongoose.model("NGO", NGOSchema, "ngos");
       mongoose.models.RefreshToken || mongoose.model("RefreshToken", RefreshTokenSchema, "refresh_tokens");
       mongoose.models.RateLimit || mongoose.model("RateLimit", RateLimitSchema, "rate_limits");
 

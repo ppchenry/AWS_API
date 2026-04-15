@@ -7,9 +7,43 @@ const {
   hashToken,
   createRefreshToken,
   issueUserAccessToken,
+  issueNgoAccessToken,
   buildRefreshCookie,
   readRefreshTokenFromEvent,
 } = require("../utils/token");
+
+async function buildAccessTokenForUser(user) {
+  if (user.role !== "ngo") {
+    return { token: issueUserAccessToken(user), errorKey: null };
+  }
+
+  const NgoUserAccess = mongoose.model("NgoUserAccess");
+  const ngoUserAccess = await NgoUserAccess.findOne({
+    userId: user._id,
+    isActive: true,
+  })
+    .select("ngoId")
+    .lean();
+
+  if (!ngoUserAccess?.ngoId) {
+    return { token: null, errorKey: "authRefresh.invalidSession" };
+  }
+
+  const NGO = mongoose.model("NGO");
+  const ngo = await NGO.findOne({ _id: ngoUserAccess.ngoId })
+    .select("_id name isActive isVerified")
+    .lean();
+
+  if (!ngo) {
+    return { token: null, errorKey: "authRefresh.invalidSession" };
+  }
+
+  if (!ngo.isActive || !ngo.isVerified) {
+    return { token: null, errorKey: "authRefresh.ngoApprovalRequired" };
+  }
+
+  return { token: issueNgoAccessToken(user, ngo), errorKey: null };
+}
 
 async function refreshSession({ event }) {
   try {
@@ -55,14 +89,23 @@ async function refreshSession({ event }) {
     }
 
     const { token: newRefreshToken } = await createRefreshToken(record.userId);
-    const accessToken = issueUserAccessToken(user);
+    const accessTokenResult = await buildAccessTokenForUser(user);
+
+    if (accessTokenResult.errorKey) {
+      return createErrorResponse(
+        accessTokenResult.errorKey === "authRefresh.ngoApprovalRequired" ? 403 : 401,
+        accessTokenResult.errorKey,
+        event
+      );
+    }
+
     const cookieHeader = buildRefreshCookie(newRefreshToken, event);
 
     return createSuccessResponse(
       200,
       event,
       {
-        accessToken,
+        accessToken: accessTokenResult.token,
         id: user._id.toString(),
       },
       {

@@ -70,6 +70,32 @@ describe("AuthRoute token utilities", () => {
     expect(decoded.exp - decoded.iat).toBe(15 * 60);
   });
 
+  test("issues NGO access tokens with ngoId and ngoName claims", () => {
+    const { issueNgoAccessToken } = require("../functions/AuthRoute/src/utils/token");
+
+    const token = issueNgoAccessToken(
+      {
+        _id: { toString: () => "user-123" },
+        email: "ngo@example.com",
+        role: "ngo",
+      },
+      {
+        _id: { toString: () => "ngo-999" },
+        name: "Rescue Org",
+      }
+    );
+
+    const decoded = authJwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
+
+    expect(decoded.userId).toBe("user-123");
+    expect(decoded.userEmail).toBe("ngo@example.com");
+    expect(decoded.userRole).toBe("ngo");
+    expect(decoded.ngoId).toBe("ngo-999");
+    expect(decoded.ngoName).toBe("Rescue Org");
+  });
+
   test("builds refresh cookies with strict scoped path", () => {
     const { buildRefreshCookie, readRefreshTokenFromEvent } = require("../functions/AuthRoute/src/utils/token");
 
@@ -510,5 +536,146 @@ describe("AuthRoute refresh service", () => {
 
     expect(replayResponse.statusCode).toBe(401);
     expect(replayBody.errorKey).toBe("authRefresh.invalidSession");
+  });
+
+  test("preserves NGO claims when refreshing an NGO session", async () => {
+    jest.doMock("../functions/AuthRoute/src/utils/rateLimit", () => ({
+      enforceRateLimit: jest.fn().mockResolvedValue({ allowed: true, count: 1 }),
+    }));
+    jest.doMock("../functions/AuthRoute/src/utils/token", () => {
+      const actual = jest.requireActual("../functions/AuthRoute/src/utils/token");
+      return {
+        ...actual,
+        createRefreshToken: jest.fn().mockResolvedValue({
+          token: "rotated-refresh-token",
+          expiresAt: new Date("2035-01-01T00:00:00.000Z"),
+        }),
+      };
+    });
+
+    const mongoose = require("../functions/AuthRoute/node_modules/mongoose");
+    jest.spyOn(mongoose, "model").mockImplementation((name) => {
+      if (name === "RefreshToken") {
+        return {
+          findOneAndDelete: jest.fn().mockReturnValue(makeQueryResult({
+            _id: "token-ngo-1",
+            userId: "user-ngo-123",
+            expiresAt: new Date(Date.now() + 60_000),
+          })),
+        };
+      }
+
+      if (name === "User") {
+        return {
+          findOne: jest.fn().mockReturnValue(makeQueryResult({
+            _id: { toString: () => "user-ngo-123" },
+            email: "ngo@example.com",
+            role: "ngo",
+          })),
+        };
+      }
+
+      if (name === "NgoUserAccess") {
+        return {
+          findOne: jest.fn().mockReturnValue(makeQueryResult({
+            ngoId: { toString: () => "ngo-abc" },
+          })),
+        };
+      }
+
+      if (name === "NGO") {
+        return {
+          findOne: jest.fn().mockReturnValue(makeQueryResult({
+            _id: { toString: () => "ngo-abc" },
+            name: "Pet Rescue HK",
+            isActive: true,
+            isVerified: true,
+          })),
+        };
+      }
+
+      throw new Error(`Unexpected model lookup: ${name}`);
+    });
+
+    const { refreshSession } = require("../functions/AuthRoute/src/services/refresh");
+    const response = await refreshSession({
+      event: makeEvent({
+        cookies: ["refreshToken=old-refresh-token"],
+      }),
+    });
+    const body = JSON.parse(response.body);
+
+    expect(response.statusCode).toBe(200);
+    expect(body.success).toBe(true);
+
+    const decoded = authJwt.verify(body.accessToken, process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
+
+    expect(decoded.userId).toBe("user-ngo-123");
+    expect(decoded.userRole).toBe("ngo");
+    expect(decoded.ngoId).toBe("ngo-abc");
+    expect(decoded.ngoName).toBe("Pet Rescue HK");
+  });
+
+  test("rejects NGO refresh when the NGO is no longer approved", async () => {
+    jest.doMock("../functions/AuthRoute/src/utils/rateLimit", () => ({
+      enforceRateLimit: jest.fn().mockResolvedValue({ allowed: true, count: 1 }),
+    }));
+
+    const mongoose = require("../functions/AuthRoute/node_modules/mongoose");
+    jest.spyOn(mongoose, "model").mockImplementation((name) => {
+      if (name === "RefreshToken") {
+        return {
+          findOneAndDelete: jest.fn().mockReturnValue(makeQueryResult({
+            _id: "token-ngo-2",
+            userId: "user-ngo-456",
+            expiresAt: new Date(Date.now() + 60_000),
+          })),
+        };
+      }
+
+      if (name === "User") {
+        return {
+          findOne: jest.fn().mockReturnValue(makeQueryResult({
+            _id: { toString: () => "user-ngo-456" },
+            email: "ngo2@example.com",
+            role: "ngo",
+          })),
+        };
+      }
+
+      if (name === "NgoUserAccess") {
+        return {
+          findOne: jest.fn().mockReturnValue(makeQueryResult({
+            ngoId: { toString: () => "ngo-disabled" },
+          })),
+        };
+      }
+
+      if (name === "NGO") {
+        return {
+          findOne: jest.fn().mockReturnValue(makeQueryResult({
+            _id: { toString: () => "ngo-disabled" },
+            name: "Paused NGO",
+            isActive: true,
+            isVerified: false,
+          })),
+        };
+      }
+
+      throw new Error(`Unexpected model lookup: ${name}`);
+    });
+
+    const { refreshSession } = require("../functions/AuthRoute/src/services/refresh");
+    const response = await refreshSession({
+      event: makeEvent({
+        cookies: ["refreshToken=old-refresh-token"],
+      }),
+    });
+    const body = JSON.parse(response.body);
+
+    expect(response.statusCode).toBe(403);
+    expect(body.errorKey).toBe("authRefresh.ngoApprovalRequired");
   });
 });

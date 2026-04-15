@@ -1,22 +1,17 @@
 # EmailVerification Test Report
 
-**Date:** 2026-04-13
+**Date:** 2026-04-15
 **Service:** `EmailVerification` Lambda (AWS SAM)
 **Test suite:** `__tests__/test-emailverification.test.js`
-**Command:** `npx jest --testPathPattern=test-emailverification --runInBand --verbose`
+**Command:** `npm test -- __tests__/test-emailverification.test.js --runInBand`
 **Result:** **30 / 30 tests passed ✅**
-**Duration:** `43.405 s`
+**Duration:** `72.745 s`
 
 ---
 
 ## 1. Summary
 
 The EmailVerification Lambda passed all current automated integration and DB-backed verification tests.
-
-The deployed Dev API Gateway flow was also manually validated after packaging fixes:
-
-- `POST /account/generate-email-code` succeeded against the deployed endpoint and delivered a real verification email
-- `POST /account/verify-email-code` succeeded against the deployed endpoint and returned the documented JSON contract with `uid`, `newUser`, and `token`
 
 Coverage includes:
 
@@ -27,7 +22,8 @@ Coverage includes:
 - Anti-enumeration behavior on generate and verify
 - Consistent error response shape and CORS headers
 - No user creation during generate (`C6`)
-- User creation only after successful verification
+- Verification requires an existing registered account
+- Existing-user verification flips `verified` to `true` when needed
 - Replay prevention through one-time code consumption
 - Existing-user reuse without duplicate user creation
 - Refresh cookie path alignment with `/auth/refresh`
@@ -38,7 +34,7 @@ Coverage includes:
 ## 2. Test Run Output
 
 ```text
-PASS  __tests__/test-emailverification.test.js (43.311 s)
+PASS  __tests__/test-emailverification.test.js (72.674 s)
   OPTIONS preflight
     √ returns 204 with CORS headers for an allowed origin (1098 ms)
     √ returns 403 for a disallowed origin (1047 ms)
@@ -70,8 +66,8 @@ PASS  __tests__/test-emailverification.test.js (43.311 s)
     √ CORS headers absent for disallowed origin (1075 ms)
   Tier 2: generate does not create User records (C6)
     √ generate-email-code does not create a user record (2699 ms)
-  Tier 2: verify creates user only after successful verification
-    √ user is created only on successful verification, not before (1467 ms)
+  Tier 2: verify requires an existing registered user
+    √ verification fails generically when no user exists for the verified email (1164 ms)
   Tier 2: replay prevention
     √ second verification with the same code fails generically (2356 ms)
   Tier 2: expired code
@@ -79,7 +75,7 @@ PASS  __tests__/test-emailverification.test.js (43.311 s)
   Tier 2: already-consumed code
     √ already-consumed code returns generic verificationFailed (1135 ms)
   Tier 2: existing user verification does not create duplicates
-    √ successful verification for existing user reuses the record (1261 ms)
+    √ successful verification for existing user reuses the record (1236 ms)
   Tier 2: anti-enumeration — existing vs non-existing email on generate
     √ generate returns identical shape for existing and non-existing emails (4030 ms)
   Tier 2: refresh cookie path matches /auth/refresh baseline
@@ -90,7 +86,7 @@ PASS  __tests__/test-emailverification.test.js (43.311 s)
 Test Suites: 1 passed, 1 total
 Tests:       30 passed, 30 total
 Snapshots:   0 total
-Time:        43.405 s
+Time:        72.745 s
 Ran all test suites matching /test-emailverification/i.
 ```
 
@@ -109,11 +105,11 @@ Ran all test suites matching /test-emailverification/i.
 | Anti-enumeration on verify | Generic `verificationFailed` response | ✅ |
 | Response-shape consistency | `success`, `errorKey`, `error` present | ✅ |
 | C6 no pre-verification user creation | DB-backed test checks no `users` row after generate | ✅ |
-| Create-after-verify only | DB-backed test checks user absent before verify, present after | ✅ |
+| Verify requires existing account | DB-backed test checks successful code still fails when no user exists | ✅ |
 | Replay prevention | Same code succeeds once, then fails generically | ✅ |
 | Expired code rejection | DB-backed expired-record verify test | ✅ |
 | Already-consumed code rejection | DB-backed consumed-record verify test | ✅ |
-| Existing-user reuse | DB-backed duplicate-prevention check | ✅ |
+| Existing-user reuse | DB-backed duplicate-prevention check plus verified-flag update | ✅ |
 | Refresh cookie path baseline | `Path=/auth/refresh`, `HttpOnly`, `Secure`, `SameSite=Strict` | ✅ |
 | Real email dispatch smoke | Verified against live mailbox route | ✅ |
 
@@ -131,22 +127,10 @@ These are worthwhile follow-up tests if the goal is near-exhaustive security reg
 
 ---
 
-## 5. Deployed Integration Validation
+## 5. Current Contract Note
 
-After the automated SAM-local run, the Dev deployment was rechecked through the real API Gateway endpoint.
+This report reflects the current register-first auth flow.
 
-Observed outcomes:
-
-- `POST /account/generate-email-code` returned success and delivered a real email to the test mailbox.
-- `POST /account/verify-email-code` returned success with the documented contract:
-  - `success: true`
-  - `message: "Email verification successful"`
-  - `uid: "69dc9185a8cba10792c47ea4"`
-  - `newUser: false`
-  - `token: <jwt>`
-
-Notes:
-
-- `newUser: false` is expected when the email already has a user record.
-- Replay-prevention semantics still require the same code to fail on a second verify attempt after consumption.
-- A deployment packaging issue was encountered and corrected before this validation: the Lambda artifact was missing the runtime `zod` dependency.
+- `POST /account/generate-email-code` remains public and anti-enumeration hardened.
+- `POST /account/verify-email-code` no longer creates a user account.
+- Successful verification now requires an existing, non-deleted user and returns `userId`, `role`, `isVerified`, and `token` without a `newUser` field.

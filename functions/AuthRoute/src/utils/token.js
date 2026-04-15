@@ -27,6 +27,16 @@ function issueUserAccessToken(user) {
   });
 }
 
+function issueNgoAccessToken(user, ngo) {
+  return issueCustomAccessToken({
+    userId: user._id.toString(),
+    userEmail: user.email,
+    userRole: user.role,
+    ngoId: ngo._id.toString(),
+    ngoName: ngo.name,
+  });
+}
+
 async function createRefreshToken(userId) {
   const RefreshToken = mongoose.model("RefreshToken");
   const token = generateRefreshToken();
@@ -99,6 +109,7 @@ module.exports = {
   generateRefreshToken,
   issueCustomAccessToken,
   issueUserAccessToken,
+  issueNgoAccessToken,
   createRefreshToken,
   getCookiePath,
   buildRefreshCookie,

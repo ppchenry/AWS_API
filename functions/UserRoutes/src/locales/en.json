@@ -37,6 +37,7 @@
       "invalidUserCredential": "Invalid user credentials",
       "userNGONotFound": "NGO user access rights not found",
       "NGONotFound": "No NGO found",
+      "ngoApprovalRequired": "NGO approval is required before login.",
       "success": "Login successful",
       "invalidEmailFormat": "Invalid email format"
     },
@@ -105,6 +106,7 @@
         "firstNameRequired": "First name is required.",
         "lastNameRequired": "Last name is required.",
         "passwordRequired": "Password must be at least 8 characters.",
+        "emailRequiredWithPassword": "Email is required when password is provided.",
         "invalidEmailFormat": "Invalid email format.",
         "invalidPhoneFormat": "Invalid phone number format.",
         "invalidImageUrl": "Invalid image URL format.",

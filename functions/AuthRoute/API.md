@@ -21,7 +21,7 @@ This Lambda does not perform primary login. It only renews an existing session t
 ### Verification Status
 
 - Refactor status: completed modularized reference implementation
-- Latest focused test result: `19 / 19` tests passed
+- Latest focused test result: `22 / 22` tests passed
 - Test report: `dev_docs/test_reports/AUTHROUTE_TEST_REPORT.md`
 
 ### API Gateway Requirements
@@ -68,7 +68,7 @@ The refresh endpoint is rate-limited per IP + token hash. Exceeding the limit re
 ### Refresh Token Cookie Properties
 
 | Property | Value |
-|---|---|
+| --- | --- |
 | Name | `refreshToken` |
 | HttpOnly | Yes |
 | Secure | Yes |
@@ -81,6 +81,7 @@ The refresh endpoint is rate-limited per IP + token hash. Exceeding the limit re
 - The refresh token cookie is **scoped to the `/auth/refresh` path** for the current stage. It is not sent with requests to other endpoints.
 - Each refresh call **consumes the old token** (single-use) and returns a new one via `Set-Cookie`. Clients must not retry with the old token — it will be rejected.
 - The access token returned in the response body expires in **15 minutes**. Use it as `Authorization: Bearer <token>` for protected endpoints on other Lambdas.
+- If the refreshed user is an NGO user, AuthRoute now preserves NGO session claims such as `ngoId` and `ngoName` so the refreshed session matches the original login contract.
 - If the refresh token is missing, expired, or replayed, the client should redirect to the login flow.
 
 ### Error Response Shape
@@ -97,7 +98,7 @@ Every error returns this consistent JSON body:
 ```
 
 | Field | Type | Purpose |
-|---|---|---|
+| --- | --- | --- |
 | `success` | `boolean` | Always `false` for errors. |
 | `errorKey` | `string` | Machine-readable dot-notation key. Use in `switch`/`if` for UI logic. |
 | `error` | `string` | Translated message (`zh` default, `en` with `?lang=en`). Display directly in toast/alert. |
@@ -149,21 +150,25 @@ Set-Cookie: refreshToken=<new-token>; HttpOnly; Secure; SameSite=Strict; Path=/D
 The returned `accessToken` is a JWT (HS256, 15-minute expiry) containing:
 
 | Claim | Type | Description |
-|---|---|---|
+| --- | --- | --- |
 | `userId` | string | MongoDB ObjectId of the user |
 | `userEmail` | string | User's email address |
 | `userRole` | string | User's role (`user`, `ngo`, etc.) |
+| `ngoId` | string | Present for NGO sessions; NGO record id preserved across refresh |
+| `ngoName` | string | Present for NGO sessions; NGO display name preserved across refresh |
 | `iat` | number | Issued-at timestamp |
 | `exp` | number | Expiry timestamp (iat + 900) |
 
 **Errors:**
 
 | Status | errorKey | Cause |
-|---|---|---|
+| --- | --- | --- |
 | 401 | `authRefresh.missingRefreshToken` | No `Cookie` header or no cookies present |
 | 401 | `authRefresh.invalidRefreshTokenCookie` | Cookie header present but `refreshToken` cookie not found |
 | 401 | `authRefresh.invalidSession` | Token not found in DB (consumed, expired, or replayed) |
 | 401 | `authRefresh.invalidSession` | User account deleted or not found |
+| 401 | `authRefresh.invalidSession` | NGO user no longer has an active NGO context or referenced NGO record |
+| 403 | `authRefresh.ngoApprovalRequired` | NGO session exists, but the NGO is no longer approved or active |
 | 429 | `others.rateLimited` | Too many refresh attempts in the current rate-limit window |
 | 405 | `others.methodNotAllowed` | HTTP method other than POST or OPTIONS |
 | 500 | `others.internalError` | Unexpected server error |
@@ -198,10 +203,11 @@ Access-Control-Allow-Methods: GET,POST,PUT,DELETE,OPTIONS
 ## Complete errorKey Reference
 
 | errorKey | HTTP | Message (en) | Message (zh) |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `authRefresh.missingRefreshToken` | 401 | Missing refresh token cookie | 缺少 refresh token cookie |
 | `authRefresh.invalidRefreshTokenCookie` | 401 | Invalid refresh token cookie format | refresh token cookie 格式無效 |
 | `authRefresh.invalidSession` | 401 | Refresh token expired or invalid | Refresh token 已過期或無效 |
+| `authRefresh.ngoApprovalRequired` | 403 | NGO approval required | NGO 尚未通過審核或已停用 |
 | `others.unauthorized` | 401 | Authentication required | 需要登入驗證 |
 | `others.methodNotAllowed` | 405 | Method not allowed | 不支援此 HTTP 方法 |
 | `others.rateLimited` | 429 | Too many requests, please try again later | 請求過於頻繁，請稍後再試 |

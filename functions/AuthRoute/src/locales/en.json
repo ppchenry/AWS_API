@@ -2,7 +2,8 @@
   "authRefresh": {
     "missingRefreshToken": "Missing refresh token cookie",
     "invalidRefreshTokenCookie": "Invalid refresh token cookie format",
-    "invalidSession": "Refresh token expired or invalid"
+    "invalidSession": "Refresh token expired or invalid",
+    "ngoApprovalRequired": "NGO approval is required before refreshing the session"
   },
   "others": {
     "internalError": "An internal error occurred",

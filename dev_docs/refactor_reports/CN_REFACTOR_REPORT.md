@@ -1,4 +1,4 @@
-# Monorepo 重構進度報告（2026-04-14）
+# Monorepo 重構進度報告（2026-04-15）
 
 ## 概述 (Overview)
 
@@ -14,12 +14,12 @@
 
 **目前已驗證的成果：**
 
-* `UserRoutes`：**102 / 102 項測試通過**
+* `UserRoutes`：**106 / 106 項整合測試通過**，另有 **6 / 6 項 SMS service 單元測試通過**
 * `PetBasicInfo`：**36 項通過 / 1 項因測試資料 (fixture) 跳過 / 共 37 項可達路徑**
 * `EmailVerification`：**30 / 30 項測試通過**
-* `AuthRoute`：**19 / 19 項測試通過**
+* `AuthRoute`：**22 / 22 項測試通過**
 * `GetAllPets`：**49 項通過 / 2 項因環境限制跳過 / 共 51 項可達路徑**
-* **綜合總計：236 項通過 + 3 項選配或環境限制測試跳過**
+* **綜合總計：243 項通過 + 3 項選配或環境限制測試跳過**
 
 另外，`EmailVerification` 已完成部署後的實機驗證：
 
@@ -30,8 +30,8 @@
 
 其中一個最重要的架構成果，是核心帳戶驗證循環現在已被拆分成 3 個更清晰的 Lambda 職責：
 
-* `UserRoutes`：負責主要登入入口與受保護的帳戶操作
-* `EmailVerification`：負責公開的 Email 身分證明流程，並可建立已驗證使用者的初始 session
+* `UserRoutes`：負責主要登入入口、register-first 帳戶建立、SMS 驗證登入、NGO auth 與受保護的帳戶操作
+* `EmailVerification`：負責公開的 Email 身分證明流程，並可為已註冊使用者建立已驗證 session
 * `AuthRoute`：負責 refresh token 輪替與短效 access token 更新
 
 **核心進展：安全性加固**
@@ -57,51 +57,71 @@
 
 ## 重構後的 Auth Flow
 
-目前的帳戶 session 生命週期已被拆分到 3 個 Lambda，且責任邊界更清晰。
+目前帳戶 session 生命週期已被拆分到 3 個 Lambda，責任邊界比舊系統清楚得多，也減少了隱性副作用。
 
-### 1. `UserRoutes` 負責初始登入與受保護帳戶操作
+### 1. `UserRoutes` 負責註冊、主要登入，以及 SMS 建立 Session
 
-`UserRoutes` 是主要的帳戶入口 Lambda，處理 email login、SMS login、registration 以及已登入後的帳戶操作。公開路由會被明確 allowlist；其餘受保護路由則先通過 JWT 驗證，才會進入業務邏輯。
+`UserRoutes` 現在是主要的帳戶入口 Lambda。它處理一般註冊、NGO 註冊、email/password login、SMS verification login，以及已登入後的帳戶操作。
 
-當主要登入流程成功時，`UserRoutes` 會發出：
+這次最重要的改動之一，是把一般使用者的註冊與 session 發放正式拆開。
+
+對一般使用者來說：
+
+* `POST /account/register` 現在只負責建立帳號
+* 註冊可以先建立 pending identity，但不直接發 token
+* session 會在後續的 `POST /account/login`、`POST /account/verify-sms-code` 或 `POST /account/verify-email-code` 成功後才建立
+
+對 NGO 來說：
+
+* `POST /account/register-ngo` 會建立 NGO 使用者上下文，並立即發出 NGO session
+* 後續 NGO login 會先檢查目前的 NGO approval 狀態，才決定是否發出 session
+
+只要是由 `UserRoutes` 成功建立 session，目前合約已經趨於一致：
 
 * 一個短效 Bearer JWT access token
 * 一個以 `HttpOnly` cookie 保存的 refresh token
 
-### 2. `EmailVerification` 在 Email 身分證明後建立 Session
+### 2. `EmailVerification` 負責 Email 身分證明，不再負責建立帳號
 
-`EmailVerification` 處理公開的 email code 產生與 email code 驗證。它位於 auth funnel 更前段：先證明 email 擁有權，之後才查找或建立對應的 user。
+`EmailVerification` 現在專注於公開的 email code 產生，以及註冊之後的 email 驗證。
 
-當驗證碼驗證成功時，`EmailVerification` 會：
+相較於舊流程，它的責任更窄，也更安全：
 
-* 以原子方式消耗驗證碼，避免 replay
-* 避免在證明擁有權之前建立 placeholder user
-* 發出與主要登入流程相同的驗證材料：短效 JWT 與 refresh-token cookie
+* generate 保持公開，並具備 anti-enumeration 保護
+* verify 會以原子方式消耗驗證碼，避免 replay
+* verify 不會建立新的 user account
+* verify 只有在對應帳號已存在且未被刪除時才會成功
+* 驗證成功後，會把該帳號標記為 verified，並發出與主要 login flow 相同的 session 材料
 
-這使 `EmailVerification` 不再只是工具型端點，而是另一條可建立登入狀態的 session bootstrap 路徑。
+這代表 `EmailVerification` 已不再是帳號建立機制，而是註冊後的 email proof 流程。只有既有 user record 存在時，它才會 bootstrap 一個 session。
 
-### 3. `AuthRoute` 負責 Session Renewal
+### 3. `AuthRoute` 負責 Refresh Rotation 與 Renewal Policy
 
-`AuthRoute` 現在是專職的 refresh-token Lambda。它目前唯一的公開路由是 `/auth/refresh`，之所以設計成 public route，是因為它透過 refresh-token cookie 驗證，而不是透過 Bearer token。
+`AuthRoute` 現在是專門處理 refresh token 的 Lambda。它的公開路由 `/auth/refresh` 不是靠 Bearer token，而是靠 refresh-token cookie 驗證。
 
-在 refresh 流程中，`AuthRoute` 會：
+在 refresh 流程中，它現在會執行更嚴格的 renewal 步驟：
 
 * 從 cookie 讀取 refresh token
-* 先將 token hash 後，消耗對應的儲存 refresh-token 記錄
-* 拒絕 missing、invalid、expired 或 replayed refresh token
+* 將 token hash 後，消耗對應的 refresh-token 記錄
+* 拒絕 missing、malformed、expired 或 replayed refresh token
 * 發出新的短效 access token
-* 同時輪替 refresh cookie，發出新的 refresh token
+* 輪替 refresh cookie，重新簽發新的 refresh token
 
-### 4. 端到端 Auth Cycle
+對 NGO 使用者來說，refresh 還會同時保留 session context 並執行目前的策略檢查：
 
-目前加固後的 auth cycle 為：
+* 新 access token 會保留 `ngoId`、`ngoName` 等 NGO claims
+* 若 NGO 已經不再 approved 或 active，refresh 會被拒絕
 
-1. 呼叫方先透過 `UserRoutes` 的 login，或 `EmailVerification` 的 email code verify 證明身分。
-2. 驗證成功後，由對應 Lambda 發出短效 access token 與 `HttpOnly` refresh-token cookie。
-3. 後續受保護路由透過 `authJWT` middleware 驗證 JWT。
-4. 當 access token 過期時，client 呼叫 `AuthRoute`，輪替 refresh token 並取得新的 access token。
+### 4. 端到端 Session Model
 
-相較於舊有遺留狀態，這是實質改善，因為 login、verification 與 refresh 現在都已被明確拆分、具備測試支撐，也更容易作為單一 session lifecycle 進行審計。
+目前加固後的 session lifecycle 可以整理成：
+
+1. 使用者先透過明確的 bootstrap path 建立身分：一般 login、SMS verification、email verification，或 NGO register / login。
+2. 只要 bootstrap path 成功，就會回傳短效 access token 與 `HttpOnly` refresh-token cookie。
+3. 後續受保護路由再透過 JWT middleware 驗證 access token。
+4. 當 access token 過期時，client 呼叫 `AuthRoute` 進行 refresh rotation，取得新的 access token。
+
+相較於舊有遺留狀態，這是實質改善，因為 registration、verification、login 與 refresh 現在都被拆成獨立責任，token 語意更一致，而且具備測試支撐，能作為一個完整的 auth system 被審計與維護。
 
 -----
 
@@ -132,7 +152,7 @@
 * **`UserRoutes`**：解決了 **19 項**遺留安全發現。
 * **`PetBasicInfo`**：解決了 **13 項**涵蓋權限、刪除操作與路徑匹配的發現。
 * **`EmailVerification`**：完成公開驗證流程的重構、嚴格複審、30/30 整合測試與部署後實機驗證。
-* **`AuthRoute`**：完成 refresh session 流程的生命週期重構，並以 **19 / 19** 測試覆蓋 handler、authJWT 與 refresh rotation/replay rejection。
+* **`AuthRoute`**：完成 refresh session 流程的生命週期重構，並以 **22 / 22** 測試覆蓋 handler、authJWT、NGO claim preservation、NGO approval denial 與 refresh rotation/replay rejection。
 * **`GetAllPets`**：完成寵物讀寫與權限控制流程的重構，並以 **49 項通過 / 2 項環境限制跳過** 的整合測試覆蓋公開 NGO 查詢、JWT 驗證、自身存取、ownership enforcement、delete 與 update 路徑。
 * **評估**：這些已完成 Lambda 的已知核心攻擊面約有 **75% 至 85%** 得到實質強化。
 
@@ -184,6 +204,6 @@
 
 ## 結語
 
-截至 2026-04-14，Monorepo 重構工作已產出 5 個可作為基準的參考實作，並累積 **236 項通過測試 + 3 項選配或環境限制測試跳過**。這份報告應被視為某一日期節點的進度快照，而不是以「第幾天」為主的階段命名。
+截至 2026-04-15，Monorepo 重構工作已產出 5 個可作為基準的參考實作，並累積 **243 項通過測試 + 3 項選配或環境限制測試跳過**。這份報告應被視為某一日期節點的進度快照，而不是以「第幾天」為主的階段命名。
 
-目前這一階段的努力不僅產出了 5 個強大的參考實現，更透過 **236 項測試**，證明了這套模式的可行性。這不是單純的「美容工程」，而是具備高度複利效應的工程實踐。在初創企業中，這種能平衡業務交付與風險控制的工作，應被視為保護公司資產的核心貢獻。
+目前這一階段的努力不僅產出了 5 個強大的參考實現，更透過 **243 項通過測試**，證明了這套模式的可行性。這不是單純的「美容工程」，而是具備高度複利效應的工程實踐。在初創企業中，這種能平衡業務交付與風險控制的工作，應被視為保護公司資產的核心貢獻。
