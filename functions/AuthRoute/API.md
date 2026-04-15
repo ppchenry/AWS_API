@@ -21,7 +21,7 @@ This Lambda does not perform primary login. It only renews an existing session t
 ### Verification Status
 
 - Refactor status: completed modularized reference implementation
-- Latest focused test result: `21 / 21` tests passed
+- Latest focused test result: `22 / 22` tests passed
 - Test report: `dev_docs/test_reports/AUTHROUTE_TEST_REPORT.md`
 
 ### API Gateway Requirements
@@ -168,6 +168,7 @@ The returned `accessToken` is a JWT (HS256, 15-minute expiry) containing:
 | 401 | `authRefresh.invalidSession` | Token not found in DB (consumed, expired, or replayed) |
 | 401 | `authRefresh.invalidSession` | User account deleted or not found |
 | 401 | `authRefresh.invalidSession` | NGO user no longer has an active NGO context or referenced NGO record |
+| 403 | `authRefresh.ngoApprovalRequired` | NGO session exists, but the NGO is no longer approved or active |
 | 429 | `others.rateLimited` | Too many refresh attempts in the current rate-limit window |
 | 405 | `others.methodNotAllowed` | HTTP method other than POST or OPTIONS |
 | 500 | `others.internalError` | Unexpected server error |
@@ -206,6 +207,7 @@ Access-Control-Allow-Methods: GET,POST,PUT,DELETE,OPTIONS
 | `authRefresh.missingRefreshToken` | 401 | Missing refresh token cookie | 缺少 refresh token cookie |
 | `authRefresh.invalidRefreshTokenCookie` | 401 | Invalid refresh token cookie format | refresh token cookie 格式無效 |
 | `authRefresh.invalidSession` | 401 | Refresh token expired or invalid | Refresh token 已過期或無效 |
+| `authRefresh.ngoApprovalRequired` | 403 | NGO approval required | NGO 尚未通過審核或已停用 |
 | `others.unauthorized` | 401 | Authentication required | 需要登入驗證 |
 | `others.methodNotAllowed` | 405 | Method not allowed | 不支援此 HTTP 方法 |
 | `others.rateLimited` | 429 | Too many requests, please try again later | 請求過於頻繁，請稍後再試 |

@@ -40,6 +40,10 @@ async function handleNGOLogin({ user, event }) {
       return createErrorResponse(500, "emailLogin.NGONotFound", event);
     }
 
+    if (!ngo.isActive || !ngo.isVerified) {
+      return createErrorResponse(403, "emailLogin.ngoApprovalRequired", event);
+    }
+
     const token = issueNgoAccessToken(user, ngo);
 
     const { token: newRefreshToken } = await createRefreshToken(user._id);
@@ -53,9 +57,6 @@ async function handleNGOLogin({ user, event }) {
         role: user.role,
         token,
         isVerified: user.verified,
-        email: user.email,
-        ngo,
-        ngoUserAccess,
       },
       {
         "Set-Cookie": buildRefreshCookie(newRefreshToken, event),
@@ -106,7 +107,7 @@ async function emailLogin({ event, body }) {
     const User = mongoose.model("User");
     const user = await User.findOne({ email, deleted: false });
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
       return createErrorResponse(401, "emailLogin.invalidUserCredential", event);
     }
 
@@ -130,7 +131,6 @@ async function emailLogin({ event, body }) {
         role: user.role,
         token,
         isVerified: user.verified,
-        email: user.email,
       },
       {
         "Set-Cookie": buildRefreshCookie(newRefreshToken, event),

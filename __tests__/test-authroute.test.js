@@ -588,6 +588,8 @@ describe("AuthRoute refresh service", () => {
           findOne: jest.fn().mockReturnValue(makeQueryResult({
             _id: { toString: () => "ngo-abc" },
             name: "Pet Rescue HK",
+            isActive: true,
+            isVerified: true,
           })),
         };
       }
@@ -614,5 +616,66 @@ describe("AuthRoute refresh service", () => {
     expect(decoded.userRole).toBe("ngo");
     expect(decoded.ngoId).toBe("ngo-abc");
     expect(decoded.ngoName).toBe("Pet Rescue HK");
+  });
+
+  test("rejects NGO refresh when the NGO is no longer approved", async () => {
+    jest.doMock("../functions/AuthRoute/src/utils/rateLimit", () => ({
+      enforceRateLimit: jest.fn().mockResolvedValue({ allowed: true, count: 1 }),
+    }));
+
+    const mongoose = require("../functions/AuthRoute/node_modules/mongoose");
+    jest.spyOn(mongoose, "model").mockImplementation((name) => {
+      if (name === "RefreshToken") {
+        return {
+          findOneAndDelete: jest.fn().mockReturnValue(makeQueryResult({
+            _id: "token-ngo-2",
+            userId: "user-ngo-456",
+            expiresAt: new Date(Date.now() + 60_000),
+          })),
+        };
+      }
+
+      if (name === "User") {
+        return {
+          findOne: jest.fn().mockReturnValue(makeQueryResult({
+            _id: { toString: () => "user-ngo-456" },
+            email: "ngo2@example.com",
+            role: "ngo",
+          })),
+        };
+      }
+
+      if (name === "NgoUserAccess") {
+        return {
+          findOne: jest.fn().mockReturnValue(makeQueryResult({
+            ngoId: { toString: () => "ngo-disabled" },
+          })),
+        };
+      }
+
+      if (name === "NGO") {
+        return {
+          findOne: jest.fn().mockReturnValue(makeQueryResult({
+            _id: { toString: () => "ngo-disabled" },
+            name: "Paused NGO",
+            isActive: true,
+            isVerified: false,
+          })),
+        };
+      }
+
+      throw new Error(`Unexpected model lookup: ${name}`);
+    });
+
+    const { refreshSession } = require("../functions/AuthRoute/src/services/refresh");
+    const response = await refreshSession({
+      event: makeEvent({
+        cookies: ["refreshToken=old-refresh-token"],
+      }),
+    });
+    const body = JSON.parse(response.body);
+
+    expect(response.statusCode).toBe(403);
+    expect(body.errorKey).toBe("authRefresh.ngoApprovalRequired");
   });
 });

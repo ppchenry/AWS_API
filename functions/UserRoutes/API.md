@@ -24,7 +24,7 @@ Local SAM testing does not enforce this gateway-level requirement unless you exp
 
 ### Authentication
 
-Most endpoints require a JWT Bearer token obtained from `POST /account/login` or `POST /account/verify-sms-code`. Token expiry is 1 hour.
+Most endpoints require a JWT Bearer token obtained from a successful auth bootstrap flow such as `POST /account/login`, `POST /account/verify-sms-code`, or `POST /account/register-ngo`. Access tokens issued by UserRoutes expire in 15 minutes.
 
 ```http
 Authorization: Bearer <token>
@@ -33,6 +33,8 @@ Authorization: Bearer <token>
 Public endpoints (login, register, SMS) do not require authentication.
 
 Some public auth and verification endpoints are rate-limited and return `429` with `others.rateLimited` when abused.
+
+Regular registration is create-only. Session issuance happens only after `POST /account/login` or successful verification of an already registered account.
 
 Protected endpoints enforce **self-access** — a user can only read/modify their own data. Attempting to access another user's resource returns `403`.
 
@@ -102,7 +104,7 @@ Every error returns this consistent JSON body:
 ```
 
 | Field | Type | Purpose |
-|---|---|---|
+| --- | --- | --- |
 | `success` | `boolean` | Always `false` for errors. |
 | `errorKey` | `string` | Machine-readable dot-notation key. Use in `switch`/`if` for UI logic. |
 | `error` | `string` | Translated message (`zh` default, `en` with `?lang=en`). Display directly in toast/alert. |
@@ -120,9 +122,11 @@ Append `?lang=en` to any request for English error messages. Default is `zh` (Tr
 
 #### POST /account/register
 
-Creates a new user account. At least one of `email` or `phoneNumber` is required. Returns a JWT token and refresh token cookie.
+Creates a new user account only. At least one of `email` or `phoneNumber` is required. This endpoint does not issue a login session.
 
 Client-supplied `role` is ignored. Regular registration always creates `role: "user"`.
+
+If `password` is provided, `email` must also be provided. `phoneNumber + password` without `email` is rejected.
 
 This endpoint is rate-limited and may return `429` when abused.
 
@@ -131,12 +135,12 @@ This endpoint is rate-limited and may return `429` when abused.
 **Body:**
 
 | Field | Type | Required | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `firstName` | string | Yes | Min 1 char |
 | `lastName` | string | Yes | Min 1 char |
 | `email` | string | Conditional | Required if no `phoneNumber` |
 | `phoneNumber` | string | Conditional | E.164 format. Required if no `email` |
-| `password` | string | Yes | Min 8 chars |
+| `password` | string | No | Min 8 chars when provided. Requires `email`. |
 | `subscribe` | boolean | No | |
 | `promotion` | boolean | No | |
 | `district` | string | No | |
@@ -161,27 +165,26 @@ This endpoint is rate-limited and may return `429` when abused.
 {
   "success": true,
   "id": "665f1a2b3c4d5e6f7a8b9c0d",
-  "token": "eyJhbGciOiJIUzI1NiIs...",
   "user": {
     "id": "665f1a2b3c4d5e6f7a8b9c0d",
     "firstName": "John",
     "lastName": "Doe",
     "email": "john@example.com",
     "role": "user",
-    "verified": false
+    "verified": false,
+    "hasPassword": true
   }
 }
 ```
 
-Also sets an `HttpOnly` refresh token cookie via `Set-Cookie` header.
-
 **Errors:**
 
 | Status | errorKey | Cause |
-|---|---|---|
+| --- | --- | --- |
 | 400 | `register.errors.firstNameRequired` | Missing firstName |
 | 400 | `register.errors.lastNameRequired` | Missing lastName |
-| 400 | `register.errors.passwordRequired` | Password under 8 chars |
+| 400 | `register.errors.passwordRequired` | Password under 8 chars when provided |
+| 400 | `register.errors.emailRequiredWithPassword` | Password was provided without email |
 | 400 | `register.errors.emailOrPhoneRequired` | Neither email nor phone provided |
 | 400 | `register.errors.invalidEmailFormat` | Invalid email format |
 | 400 | `register.errors.invalidPhoneFormat` | Invalid phone format |
@@ -193,14 +196,14 @@ Also sets an `HttpOnly` refresh token cookie via `Set-Cookie` header.
 
 #### POST /account/login
 
-Authenticates by email and password. Returns JWT access token and refresh token cookie. NGO users receive an extended payload with `ngo` and `ngoUserAccess` data.
+Authenticates by email and password. Returns a JWT access token and refresh token cookie. Both regular-user and NGO login now use the same standardized success shape.
 
 **Auth:** None
 
 **Body:**
 
 | Field | Type | Required |
-|---|---|---|
+| --- | --- | --- |
 | `email` | string | Yes |
 | `password` | string | Yes |
 
@@ -222,19 +225,19 @@ Authenticates by email and password. Returns JWT access token and refresh token 
   "userId": "665f1a2b3c4d5e6f7a8b9c0d",
   "role": "user",
   "token": "eyJhbGciOiJIUzI1NiIs...",
-  "isVerified": true,
-  "email": "john@example.com"
+  "isVerified": true
 }
 ```
 
 **Errors:**
 
 | Status | errorKey | Cause |
-|---|---|---|
+| --- | --- | --- |
 | 400 | `emailLogin.paramsMissing` | Missing email or password |
 | 400 | `emailLogin.invalidEmailFormat` | Invalid email format |
 | 400 | `others.invalidJSON` | Malformed JSON request body |
 | 401 | `emailLogin.invalidUserCredential` | Wrong password or non-existent user |
+| 403 | `emailLogin.ngoApprovalRequired` | NGO user exists but the NGO is no longer approved / active |
 | 403 | `emailLogin.userNGONotFound` | NGO user authenticated, but no active NGO access exists |
 | 429 | `others.rateLimited` | Too many failed attempts in the current rate-limit window |
 | 500 | `emailLogin.NGONotFound` | NGO user access exists, but referenced NGO record is missing |
@@ -250,7 +253,7 @@ Deprecated endpoint. The public route is disabled and should not be used.
 **Errors:**
 
 | Status | errorKey | Cause |
-|---|---|---|
+| --- | --- | --- |
 | 400 | `others.missingParams` | Empty request body |
 | 405 | `others.methodNotAllowed` | Endpoint is deprecated and disabled |
 
@@ -298,7 +301,7 @@ For authenticated requests, self-access is enforced before any user lookup. A pa
 **Errors:**
 
 | Status | errorKey | Cause |
-|---|---|---|
+| --- | --- | --- |
 | 401 | `others.unauthorized` | Missing or invalid JWT |
 | 403 | `others.unauthorized` | Accessing another user's profile |
 | 404 | `others.getUserNotFound` | User does not exist or has already been deleted |
@@ -314,7 +317,7 @@ Partially updates the authenticated user's profile. Only provided fields are upd
 **Body:**
 
 | Field | Type | Required | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `userId` | string | Yes | Must match JWT userId |
 | `firstName` | string | No | |
 | `lastName` | string | No | |
@@ -346,7 +349,7 @@ Partially updates the authenticated user's profile. Only provided fields are upd
 **Errors:**
 
 | Status | errorKey | Cause |
-|---|---|---|
+| --- | --- | --- |
 | 400 | `others.invalidPUT` | Missing or invalid userId |
 | 400 | `others.invalidEmailFormat` | Invalid email format |
 | 400 | `others.invalidPhoneFormat` | Invalid phone format |
@@ -379,7 +382,7 @@ For authenticated requests, self-access is enforced before ObjectId format or ex
 **Errors:**
 
 | Status | errorKey | Cause |
-|---|---|---|
+| --- | --- | --- |
 | 401 | `others.unauthorized` | Missing or invalid JWT |
 | 403 | `others.unauthorized` | Deleting another user |
 | 404 | `others.getUserNotFound` | User does not exist or has already been deleted |
@@ -395,7 +398,7 @@ Changes the user's password. Requires current password for verification.
 **Body:**
 
 | Field | Type | Required | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `userId` | string | Yes | Must match JWT userId |
 | `oldPassword` | string | Yes | |
 | `newPassword` | string | Yes | Min 8 chars |
@@ -419,7 +422,7 @@ Changes the user's password. Requires current password for verification.
 **Errors:**
 
 | Status | errorKey | Cause |
-|---|---|---|
+| --- | --- | --- |
 | 400 | `updatePassword.passwordUnchanged` | New password same as old |
 | 400 | `updatePassword.currentPasswordInvalid` | Wrong old password |
 | 400 | `updatePassword.passwordLong` | New password under 8 chars |
@@ -439,7 +442,7 @@ Updates the user's profile image URL.
 **Body:**
 
 | Field | Type | Required | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `userId` | string | Yes | Must match JWT userId |
 | `image` | string | Yes | Valid URL |
 
@@ -461,7 +464,7 @@ Updates the user's profile image URL.
 **Errors:**
 
 | Status | errorKey | Cause |
-|---|---|---|
+| --- | --- | --- |
 | 400 | `updateImage.invalidImageUrl` | Invalid image URL |
 | 400 | `updateImage.invalidUserId` | Missing or invalid userId |
 | 403 | `others.unauthorized` | userId does not match JWT |
@@ -478,7 +481,7 @@ Soft-deletes a user by email and revokes all refresh tokens.
 **Body:**
 
 | Field | Type | Required |
-|---|---|---|
+| --- | --- | --- |
 | `email` | string | Yes |
 
 **Example:**
@@ -500,7 +503,7 @@ Soft-deletes a user by email and revokes all refresh tokens.
 **Errors:**
 
 | Status | errorKey | Cause |
-|---|---|---|
+| --- | --- | --- |
 | 400 | `others.missingParams` | Missing email |
 | 400 | `deleteAccount.invalidEmailFormat` | Invalid email format |
 | 403 | `others.unauthorized` | Email does not match JWT |
@@ -522,7 +525,7 @@ This endpoint is rate-limited and may return `429` when abused.
 **Body:**
 
 | Field | Type | Required | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `firstName` | string | Yes | |
 | `lastName` | string | Yes | |
 | `email` | string | Yes | Valid email |
@@ -554,7 +557,7 @@ This endpoint is rate-limited and may return `429` when abused.
 }
 ```
 
-**Success (201):**
+**Success (200):**
 
 ```json
 {
@@ -569,7 +572,7 @@ This endpoint is rate-limited and may return `429` when abused.
 **Errors:**
 
 | Status | errorKey | Cause |
-|---|---|---|
+| --- | --- | --- |
 | 400 | `registerNgo.errors.firstNameRequired` | Missing firstName |
 | 400 | `registerNgo.errors.lastNameRequired` | Missing lastName |
 | 400 | `registerNgo.errors.passwordRequired` | Password under 8 chars |
@@ -596,7 +599,7 @@ Paginated list of NGO user records with search.
 **Query Parameters:**
 
 | Parameter | Type | Default | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `page` | integer | 1 | Min 1 |
 | `search` | string | "" | Searches across firstName, lastName, NGO name, registrationNumber |
 
@@ -628,7 +631,7 @@ Items per page: 50.
 **Errors:**
 
 | Status | errorKey | Cause |
-|---|---|---|
+| --- | --- | --- |
 | 401 | `others.unauthorized` | Missing or invalid JWT |
 | 403 | `others.unauthorized` | Caller is authenticated but not an NGO user |
 
@@ -677,7 +680,7 @@ Returned `userProfile` data is sanitized and does not include `password`.
 **Errors:**
 
 | Status | errorKey | Cause |
-|---|---|---|
+| --- | --- | --- |
 | 401 | `others.unauthorized` | Missing or invalid JWT |
 | 403 | `others.unauthorized` | Caller is authenticated but not an NGO user |
 | 400 | `ngo.invalidId` | Invalid ObjectId format |
@@ -751,7 +754,7 @@ Atomically updates NGO-related records within a MongoDB transaction. Uses whitel
 **Errors:**
 
 | Status | errorKey | Cause |
-|---|---|---|
+| --- | --- | --- |
 | 401 | `others.unauthorized` | Missing or invalid JWT |
 | 403 | `others.unauthorized` | Caller is authenticated but not an NGO user |
 | 400 | `ngo.invalidBody` | Invalid request body |
@@ -782,7 +785,7 @@ Returns pet placement options for an NGO.
 **Errors:**
 
 | Status | errorKey | Cause |
-|---|---|---|
+| --- | --- | --- |
 | 401 | `others.unauthorized` | Missing or invalid JWT |
 | 403 | `others.unauthorized` | Caller is authenticated but not an NGO user |
 | 400 | `ngo.invalidId` | Invalid ObjectId format |
@@ -803,7 +806,7 @@ The response is intentionally generic and does not reveal whether the phone belo
 **Body:**
 
 | Field | Type | Required | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `phoneNumber` | string | Yes | E.164 format (e.g. `+85298765432`) |
 
 **Success (201):**
@@ -815,7 +818,7 @@ The response is intentionally generic and does not reveal whether the phone belo
 **Errors:**
 
 | Status | errorKey | Cause |
-|---|---|---|
+| --- | --- | --- |
 | 400 | `others.missingParams` | Missing phoneNumber |
 | 400 | `verification.invalidPhoneFormat` | Invalid phone format |
 | 429 | `others.rateLimited` | Too many SMS send attempts in the current rate-limit window |
@@ -825,18 +828,18 @@ The response is intentionally generic and does not reveal whether the phone belo
 
 #### POST /account/verify-sms-code
 
-Verifies a 6-digit code with Twilio. For existing users, returns JWT + refresh token (same as login). For new users, returns `userId: "new user"` to signal registration flow.
+Verifies a 6-digit code with Twilio for an existing registered phone account. On success, it marks the account verified and returns JWT + refresh token (same as login).
 
 **Auth:** None
 
 **Body:**
 
 | Field | Type | Required | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `phoneNumber` | string | Yes | E.164 format |
 | `code` | string | Yes | 6-digit code |
 
-**Success (201) — existing user:**
+**Success (201):**
 
 ```json
 {
@@ -844,29 +847,18 @@ Verifies a 6-digit code with Twilio. For existing users, returns JWT + refresh t
   "message": "Login successful",
   "userId": "665f1a...",
   "role": "user",
+  "isVerified": true,
   "token": "eyJhbGciOiJIUzI1NiIs..."
-}
-```
-
-**Success (201) — new user:**
-
-```json
-{
-  "success": true,
-  "message": "Registration successful",
-  "userId": "new user",
-  "role": "user",
-  "token": ""
 }
 ```
 
 **Errors:**
 
 | Status | errorKey | Cause |
-|---|---|---|
+| --- | --- | --- |
 | 400 | `verification.missingCodeParams` | Missing code |
 | 400 | `verification.invalidPhoneFormat` | Invalid or missing phone |
-| 400 | `verification.codeIncorrect` | Wrong code |
+| 400 | `verification.codeIncorrect` | Wrong code or no registered account matches the verified phone |
 | 400 | `verification.codeExpired` | Code expired |
 | 429 | `others.rateLimited` | Too many SMS verification attempts in the current rate-limit window |
 | 503 | `others.serviceUnavailable` | Twilio not configured |
@@ -880,7 +872,7 @@ These endpoints return `405` and exist only for backward compatibility.
 For these POST routes, an empty body is rejected earlier by the request guard with `400` and `others.missingParams`. Integration tests send a non-empty body when asserting the deprecated `405` response.
 
 | Method | Path | errorKey |
-|---|---|---|
+| --- | --- | --- |
 | POST | `/account/login-2` | `others.methodNotAllowed` |
 | POST | `/account/register-by-email` | `others.methodNotAllowed` |
 | POST | `/account/register-by-phoneNumber` | `others.methodNotAllowed` |
@@ -891,7 +883,7 @@ For these POST routes, an empty body is rejected earlier by the request guard wi
 ## Complete errorKey Reference
 
 | errorKey | Default message (zh) |
-|---|---|
+| --- | --- |
 | `emailLogin.invalidUserCredential` | 使用者憑證無效 |
 | `emailLogin.invalidEmailFormat` | 電子郵件格式無效 |
 | `emailLogin.paramsMissing` | 需要電郵和密碼 |

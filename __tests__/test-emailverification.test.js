@@ -401,16 +401,14 @@ describe("Tier 2: generate does not create User records (C6)", () => {
   );
 });
 
-describe("Tier 2: verify creates user only after successful verification", () => {
+describe("Tier 2: verify requires an existing registered user", () => {
   const testEmail = `verify-create-${Date.now()}@noexist.example.com`;
   const testCode = "314159";
   const codeHash = crypto.createHash("sha256").update(testCode).digest("hex");
 
   dbTest(
-    "user is created only on successful verification, not before",
+    "verification fails generically when no user exists for the verified email",
     async () => {
-      // 1. Insert a verification record directly (simulating generate)
-      //    _id = normalized email
       await verificationCodesCol().insertOne({
         _id: testEmail,
         codeHash,
@@ -419,36 +417,21 @@ describe("Tier 2: verify creates user only after successful verification", () =>
         createdAt: new Date(),
       });
 
-      // 2. Confirm no user exists yet
       const beforeUser = await usersCol().findOne({ email: testEmail });
       expect(beforeUser).toBeNull();
 
-      // 3. Verify with the correct code
       const res = await req("POST", "/account/verify-email-code", {
         email: testEmail,
         resetCode: testCode,
       });
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.newUser).toBe(true);
-      expect(res.body.uid).toBeDefined();
-      expect(res.body.token).toBeDefined();
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.errorKey).toBe("verificationFailed");
 
-      // 4. Confirm user NOW exists
       const afterUser = await usersCol().findOne({ email: testEmail });
-      expect(afterUser).not.toBeNull();
-      expect(afterUser.verified).toBe(true);
-      expect(afterUser.role).toBe("user");
+      expect(afterUser).toBeNull();
 
-      // Cleanup
-      await usersCol().deleteMany({ email: testEmail });
       await verificationCodesCol().deleteMany({ _id: testEmail });
-      // Clean up refresh tokens
-      if (afterUser) {
-        await mongoose.connection.db
-          .collection("refresh_tokens")
-          .deleteMany({ userId: afterUser._id });
-      }
     }
   );
 });
@@ -461,6 +444,18 @@ describe("Tier 2: replay prevention", () => {
   dbTest(
     "second verification with the same code fails generically",
     async () => {
+      const insertResult = await usersCol().insertOne({
+        email: testEmail,
+        role: "user",
+        verified: false,
+        deleted: false,
+        credit: 300,
+        vetCredit: 300,
+        eyeAnalysisCredit: 300,
+        bloodAnalysisCredit: 300,
+      });
+      const existingUserId = insertResult.insertedId;
+
       // 1. Insert verification record (_id = email)
       await verificationCodesCol().insertOne({
         _id: testEmail,
@@ -492,14 +487,11 @@ describe("Tier 2: replay prevention", () => {
       expect(record.consumedAt).not.toBeNull();
 
       // Cleanup
-      const user = await usersCol().findOne({ email: testEmail });
       await usersCol().deleteMany({ email: testEmail });
       await verificationCodesCol().deleteMany({ _id: testEmail });
-      if (user) {
-        await mongoose.connection.db
-          .collection("refresh_tokens")
-          .deleteMany({ userId: user._id });
-      }
+      await mongoose.connection.db
+        .collection("refresh_tokens")
+        .deleteMany({ userId: existingUserId });
     }
   );
 });
@@ -578,7 +570,6 @@ describe("Tier 2: existing user verification does not create duplicates", () => 
         role: "user",
         verified: true,
         deleted: false,
-        newUser: false,
         credit: 300,
         vetCredit: 300,
         eyeAnalysisCredit: 300,
@@ -602,12 +593,17 @@ describe("Tier 2: existing user verification does not create duplicates", () => 
       });
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.newUser).toBe(false);
-      expect(res.body.uid).toBe(existingUserId.toString());
+      expect(res.body.userId).toBe(existingUserId.toString());
+      expect(res.body.role).toBe("user");
+      expect(res.body.isVerified).toBe(true);
+      expect(res.body).not.toHaveProperty("newUser");
 
       // 4. Confirm no duplicate users were created
       const userCount = await usersCol().countDocuments({ email: testEmail });
       expect(userCount).toBe(1);
+
+      const reusedUser = await usersCol().findOne({ email: testEmail });
+      expect(reusedUser.verified).toBe(true);
 
       // Cleanup
       await usersCol().deleteMany({ email: testEmail });
@@ -674,6 +670,18 @@ describe("Tier 2: refresh cookie path matches /auth/refresh baseline", () => {
   dbTest(
     "Set-Cookie uses /auth/refresh path, not /account/verify-email-code",
     async () => {
+      const insertResult = await usersCol().insertOne({
+        email: testEmail,
+        role: "user",
+        verified: false,
+        deleted: false,
+        credit: 300,
+        vetCredit: 300,
+        eyeAnalysisCredit: 300,
+        bloodAnalysisCredit: 300,
+      });
+      const existingUserId = insertResult.insertedId;
+
       // Insert verification record (_id = email)
       await verificationCodesCol().insertOne({
         _id: testEmail,
@@ -700,14 +708,11 @@ describe("Tier 2: refresh cookie path matches /auth/refresh baseline", () => {
       expect(setCookie).toContain("SameSite=Strict");
 
       // Cleanup
-      const user = await usersCol().findOne({ email: testEmail });
       await usersCol().deleteMany({ email: testEmail });
       await verificationCodesCol().deleteMany({ _id: testEmail });
-      if (user) {
-        await mongoose.connection.db
-          .collection("refresh_tokens")
-          .deleteMany({ userId: user._id });
-      }
+      await mongoose.connection.db
+        .collection("refresh_tokens")
+        .deleteMany({ userId: existingUserId });
     }
   );
 });

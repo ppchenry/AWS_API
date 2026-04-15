@@ -1,22 +1,31 @@
 # UserRoutes Test Report
 
-**Date:** 2026-04-11
+**Date:** 2026-04-15
 **Service:** `UserRoutes` Lambda (AWS SAM)
-**Test suite:** `__tests__/test-userroutes.test.js`
-**Result:** **102 / 102 tests passed ✅**
+**Primary integration suite:** `__tests__/test-userroutes.test.js`
+**Additional unit suite:** `__tests__/test-sms-service.test.js`
+**Result:** **106 / 106 integration tests passed ✅**
+**Additional SMS unit coverage:** **6 / 6 tests passed ✅**
 
 ---
 
 ## 1. What Was Tested
 
-Tests were run as end-to-end integration tests against a live SAM local environment connected to the UAT MongoDB cluster (`petpetclub_uat`). Every test sent a real HTTP request and asserted on HTTP status code, response body fields, and machine-readable error keys.
+Tests were run against a live SAM local environment connected to the UAT MongoDB cluster (`petpetclub_uat`) plus a focused SMS service unit suite with mocked Twilio and persistence dependencies. Integration tests sent real HTTP requests and asserted on HTTP status codes, response body fields, and machine-readable error keys.
+
+Current status:
+
+- The main UserRoutes integration suite is fully green and reflects the new register-first auth contract.
+- The `POST /account/delete-user-with-email` block now passes after isolating its sacrificial-user setup from earlier register rate-limit state.
+- The SMS service unit suite is fully green and covers the Twilio-backed verify behavior that the integration suite intentionally does not exercise live.
+- NGO auth coverage now includes register-issued session assertions and a DB-backed login-denial check when NGO approval is revoked.
 
 ### 1.1 Endpoint Coverage
 
 | Endpoint | Method | Tests |
 | --- | --- | --- |
-| `/account/register` | POST | 10 |
-| `/account/login` | POST | 10 |
+| `/account/register` | POST | 13 |
+| `/account/login` | POST | 11 |
 | `/account/login-2` | POST | 2 |
 | `/account/{userId}` | GET | 2 |
 | `/account` | PUT | 6 |
@@ -25,7 +34,7 @@ Tests were run as end-to-end integration tests against a live SAM local environm
 | `/account/user-list` | GET | 4 |
 | `/account/register-by-email` etc. | POST | 3 |
 | `/account/register-ngo` | POST | 10 |
-| `/account/login` (NGO) | POST | 1 |
+| `/account/login` (NGO) | POST | 2 |
 | `/account/edit-ngo/{ngoId}` | GET | 5 |
 | `/account/edit-ngo/{ngoId}` | PUT | 5 |
 | `/account/edit-ngo/{ngoId}/pet-placement-options` | GET | 5 |
@@ -35,21 +44,30 @@ Tests were run as end-to-end integration tests against a live SAM local environm
 | `/account/{userId}` | DELETE | 7 |
 | Cross-registration duplicate protection | — | 1 |
 | Security (cross-cutting) | — | 13 |
-| **Total** | | **102** |
+| **Total** | | **106** |
+
+### 1.1.1 SMS Unit Coverage
+
+| Suite | Scope | Tests | Result |
+| --- | --- | --- | --- |
+| `__tests__/test-sms-service.test.js` | `functions/UserRoutes/src/services/sms.js` | 6 | 6 / 6 passed |
 
 ### 1.2 Test Categories
 
 #### Happy-path flows
 
-- User registration (email), login, profile read, profile update, password update, image update, soft-delete
+- User registration (email and phone-only), login, profile read, profile update, password update, image update, soft-delete
 - NGO registration, NGO login, NGO profile read and update, pet placement options read
 - User list (paginated, with search)
+- SMS service unit coverage for generate and verify success/failure paths
+- NGO approval enforcement on login after approval revocation
 
 #### Input validation — 400 responses
 
 Every required field and every business rule is checked individually:
 
 - Missing required fields (firstName, lastName, password, email/phone, code, etc.)
+- `phoneNumber + password` without `email` on regular register → 400
 - Malformed JSON request bodies on both public and protected routes
 - Invalid email format
 - Invalid phone number format (must be E.164)
@@ -62,8 +80,8 @@ Every required field and every business rule is checked individually:
 
 #### Business-logic errors — 4xx responses
 
-- Duplicate email on register → 409
-- Duplicate email on register with different casing → 409
+- Duplicate verified email on register → 409
+- Duplicate verified phone on register → 409
 - Register abuse throttling → 429
 - Duplicate email on NGO register → 409
 - Duplicate phone on NGO register → 409
@@ -94,6 +112,7 @@ Every required field and every business rule is checked individually:
 - `DELETE /account/{userId}` with a non-ObjectId path param returns `403` — self-access guard fires before format validation
 - Public `POST /account/login-2` route disabled → 405
 - Deleted user token can no longer read the profile → 404
+- Verified SMS code with no registered account → `verification.codeIncorrect` (unit-tested)
 
 #### Security hardening
 
@@ -101,6 +120,9 @@ Every required field and every business rule is checked individually:
 - **Registration throttling** — repeated register and NGO-register attempts are rate-limited and return `429`
 - **Mass assignment prevention** — extra fields (`role`, `password`, `credit`) in `PUT /account` are silently stripped by Zod; the request succeeds but the database row is unaffected
 - **Registration role hardening** — regular `POST /account/register` ignores a caller-supplied `role` and still creates a standard user
+- **Register-first flow** — regular `POST /account/register` is creation-only and does not issue a session
+- **Duplicate unverified signup recovery** — regular `POST /account/register` returns `201` with `continueVerification: true` for existing unverified email/phone identities so the frontend can resume verification instead of being forced into a hard conflict path
+- **NGO session alignment** — `POST /account/register-ngo` now issues an NGO session and `POST /account/login` rejects NGOs whose approval has been revoked
 - **Cross-account conflict prevention** — profile updates and NGO edit reject email conflicts against existing accounts → `409`
 - **Body `userId` injection on NGO edit** — `userId` in the request body is ignored; the server always uses the JWT identity
 - **NGO self-delete hardening** — `deleted` in the NGO edit request body is ignored and does not soft-delete the caller
@@ -168,11 +190,13 @@ The full list of `errorKey` values used across UserRoutes, with their default (C
 | `emailLogin.paramsMissing` | 需要電郵和密碼 |
 | `emailLogin.userNGONotFound` | 未找到 NGO 使用者存取權限 |
 | `emailLogin.NGONotFound` | 未找到非政府組織 |
+| `emailLogin.ngoApprovalRequired` | NGO 帳號尚未獲批，暫時無法登入。 |
 | `phoneRegister.existWithEmail` | 使用此電郵的使用者已存在 |
 | `phoneRegister.userExist` | 用戶已存在 |
 | `register.errors.firstNameRequired` | 必須提供名字 |
 | `register.errors.lastNameRequired` | 必須提供姓氏 |
 | `register.errors.passwordRequired` | 密碼必須至少 8 個字符 |
+| `register.errors.emailRequiredWithPassword` | 提供密碼時必須同時提供電子郵件 |
 | `register.errors.invalidEmailFormat` | 電子郵件格式無效 |
 | `register.errors.invalidPhoneFormat` | 電話號碼格式無效 |
 | `register.errors.emailOrPhoneRequired` | 必須提供電子郵件或電話號碼 |
@@ -213,6 +237,13 @@ The full list of `errorKey` values used across UserRoutes, with their default (C
 | `verification.codeIncorrect` | 驗證碼不正確，請重試 |
 | `verification.codeExpired` | 驗證碼已過期 |
 
+### Setup Fix Applied
+
+The `POST /account/delete-user-with-email` setup now uses its own `x-forwarded-for` identity inside `__tests__/test-userroutes.test.js`.
+
+- This prevents the sacrificial-user registration step from inheriting the rate-limit state created earlier by the explicit register-throttling test.
+- With that isolation in place, the delete-by-email setup and all downstream assertions pass in the full suite.
+
 ---
 
 ## 3. Security Measures Verified
@@ -235,6 +266,8 @@ The full list of `errorKey` values used across UserRoutes, with their default (C
 | Duplicate NGO registration number on edit | NGO edit rejects conflicting `registrationNumber` → 409 | ✅ |
 | SMS / login abuse | Mongo-backed rate limiting throttles login and SMS send/verify flows | ✅ |
 | SMS account enumeration at send step | Implementation returns a generic SMS send response; live SMS success flows were previously verified and are omitted from routine reruns to avoid recurring Twilio cost | ✅ |
+| SMS verify contract | Service marks existing users verified, issues tokens, and rejects verified phones with no registered account | ✅ (unit suite) |
+| NGO approval enforcement | NGO login returns 403 when the underlying NGO loses approval | ✅ |
 | NoSQL operator injection (`{ "$gt": "" }`) | Zod type check rejects non-string values → 400 | ✅ |
 
 ---
@@ -246,6 +279,18 @@ The full list of `errorKey` values used across UserRoutes, with their default (C
 | Runtime | Node.js 22 (AWS SAM Local) |
 | Test framework | Jest 29.7 (`--runInBand`) |
 | Database | MongoDB Atlas UAT (`petpetclub_uat`) |
-| SMS | Live SMS send/verify success flows were previously validated and confirmed working; the active suite now focuses on negative-path and validation coverage to avoid recurring Twilio cost |
+| SMS | Live SAM integration suite covers validation and negative paths; dedicated unit suite mocks Twilio and covers generate/verify service behavior |
 | SAM command | `sam local start-api --env-vars env.json --warm-containers EAGER` |
-| Run command | `npm test` (root of repo) |
+| Run command | `npm test -- __tests__/test-userroutes.test.js --runInBand` and `npm test -- __tests__/test-sms-service.test.js --runInBand` |
+
+### Latest Verified Results
+
+```text
+PASS  __tests__/test-userroutes.test.js (151.304 s)
+Test Suites: 1 passed, 1 total
+Tests:       106 passed, 106 total
+
+PASS  __tests__/test-sms-service.test.js
+Test Suites: 1 passed, 1 total
+Tests:       6 passed, 6 total
+```

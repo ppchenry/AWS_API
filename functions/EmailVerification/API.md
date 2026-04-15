@@ -6,9 +6,9 @@
 
 ## Overview
 
-Email-based account verification API for the PetPetClub platform. This Lambda handles public email-code generation and email-code verification, then issues an access token and refresh-token cookie after proof of email ownership.
+Email-based account verification API for the PetPetClub platform. This Lambda handles public email-code generation and post-registration email-code verification, then issues an access token and refresh-token cookie after proof of email ownership.
 
-This flow is intentionally public. It does not require an existing user account and does not create placeholder users during code generation.
+This flow is intentionally public. `POST /account/generate-email-code` does not require an existing user account and does not create placeholder users during code generation. `POST /account/verify-email-code` requires an existing, non-deleted user account and never creates one.
 
 ### API Gateway Requirements
 
@@ -74,7 +74,7 @@ Content-Type: application/json
 - Log `requestId` on failures so CloudWatch logs can be correlated quickly.
 - `POST /account/generate-email-code` is anti-enumeration hardened. A successful response does not indicate whether the email already belongs to an account.
 - `POST /account/verify-email-code` returns `verificationFailed` for wrong code, expired code, consumed code, and nonexistent verification state. Do not build UX that tries to distinguish those cases.
-- Successful verification may create a new user account only after proof of email ownership.
+- Successful verification requires a pre-registered, non-deleted account. On success it marks that account verified and issues a session.
 
 ### Error Response Shape
 
@@ -170,15 +170,15 @@ If SMTP delivery fails after the verification record is written, the endpoint re
 
 ### POST /account/verify-email-code
 
-Verifies a submitted 6-digit code against the dedicated verification store. On success, the code is atomically consumed, the user is created or reused, and auth tokens are issued.
+Verifies a submitted 6-digit code against the dedicated verification store. On success, the code is atomically consumed, the existing user is marked verified, and auth tokens are issued.
 
 Behavioral notes:
 
 - verification records are keyed by normalized email
 - the submitted code is compared by SHA-256 hash
 - successful verification is single-use; replay attempts fail
-- if no user exists yet, one is created only after successful verification
-- if an existing user is present and not deleted, it is reused
+- verification only succeeds for an existing, non-deleted account
+- if an existing user is present and not deleted, it is reused and marked verified
 
 **Auth:** None
 
@@ -208,8 +208,9 @@ Behavioral notes:
 {
   "success": true,
   "message": "Email verification successful",
-  "uid": "665f1a2b3c4d5e6f7a8b9c0d",
-  "newUser": true,
+  "userId": "665f1a2b3c4d5e6f7a8b9c0d",
+  "role": "user",
+  "isVerified": true,
   "token": "eyJhbGciOiJIUzI1NiIs..."
 }
 ```
@@ -232,7 +233,7 @@ Also sets an `HttpOnly` refresh token cookie via `Set-Cookie` header.
 | 400 | `missingParams` | Missing `email` or `resetCode` |
 | 400 | `invalidEmailFormat` | Invalid email format |
 | 400 | `invalidResetCodeFormat` | `resetCode` is not exactly 6 digits |
-| 400 | `verificationFailed` | Wrong code, expired code, consumed code, deleted user, or no matching verification record |
+| 400 | `verificationFailed` | Wrong code, expired code, consumed code, deleted user, no matching verification record, or no registered account for the verified email |
 | 429 | `others.rateLimited` | Too many verify attempts in the current rate-limit window |
 | 500 | `others.internalError` | Unexpected server error |
 

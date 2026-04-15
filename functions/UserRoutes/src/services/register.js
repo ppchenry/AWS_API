@@ -1,17 +1,17 @@
 const mongoose = require("mongoose");
-const { issueUserAccessToken, createRefreshToken, buildRefreshCookie } = require("../utils/token");
 const bcrypt = require("bcrypt");
 const { createErrorResponse, createSuccessResponse } = require("../utils/response");
 const { getFirstZodIssueMessage } = require("../utils/zod");
 const { logError } = require("../utils/logger");
 const { enforceRateLimit } = require("../utils/rateLimit");
 const { normalizeEmail, normalizePhone } = require("../utils/validators");
+const { issueNgoAccessToken, createRefreshToken, buildRefreshCookie } = require("../utils/token");
 const { registerSchema } = require("../zodSchema/registerSchema");
 const { registerNgoSchema } = require("../zodSchema/registerNgoSchema");
 
 /**
  * UNIFIED REGISTER
- * Handles: Email Registration, Phone Registration, and mixed.
+ * Handles account creation for email, phone, or mixed identities.
  */
 async function register({ event, body }) {
   try {
@@ -34,12 +34,12 @@ async function register({ event, body }) {
       return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error), event);
     }
 
-    const { 
-      firstName, 
-      lastName, 
-      phoneNumber, 
-      email, 
-      password, 
+    const {
+      firstName,
+      lastName,
+      phoneNumber,
+      email,
+      password,
       subscribe,
       promotion,
       district,
@@ -49,9 +49,11 @@ async function register({ event, body }) {
     } = parseResult.data;
     const normalizedEmail = normalizeEmail(email);
     const normalizedPhoneNumber = normalizePhone(phoneNumber);
+    const passwordValue = password && password !== "" ? password : null;
 
-    // 2. Optimized Duplicate Check (One DB Trip)
-    // We check if either the email OR phone is already taken by an active account
+    // 2. Duplicate Check
+    // Existing verified accounts still block registration, but existing
+    // unverified accounts are treated as resumable pending signups.
     const existingUser = await User.findOne({
       $or: [
         ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
@@ -61,15 +63,33 @@ async function register({ event, body }) {
     }).lean();
 
     if (existingUser) {
+      if (!existingUser.verified) {
+        return createSuccessResponse(201, event, {
+          id: existingUser._id,
+          continueVerification: true,
+          user: {
+            id: existingUser._id,
+            firstName: existingUser.firstName,
+            lastName: existingUser.lastName,
+            email: normalizedEmail || existingUser.email,
+            phoneNumber: normalizedPhoneNumber || existingUser.phoneNumber,
+            role: existingUser.role,
+            verified: existingUser.verified,
+            hasPassword: Boolean(existingUser.password),
+          }
+        });
+      }
+
       const isPhoneConflict = normalizedPhoneNumber && existingUser.phoneNumber === normalizedPhoneNumber;
       const errorKey = isPhoneConflict ? 'phoneRegister.userExist' : 'phoneRegister.existWithEmail';
       return createErrorResponse(409, errorKey, event);
     }
 
-    // 3. Security: Hash Password
-    // Use 10 salt rounds (Standard for performance/security balance)
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    let hashedPassword;
+    if (passwordValue) {
+      const saltRounds = 10;
+      hashedPassword = await bcrypt.hash(passwordValue, saltRounds);
+    }
 
     // 4. Create User Instance
     const newId = new mongoose.Types.ObjectId();
@@ -82,7 +102,7 @@ async function register({ event, body }) {
       phoneNumber: normalizedPhoneNumber,
       email: normalizedEmail || `${newId.toString()}@temp.account`,
       role: "user",
-      verified: !!normalizedPhoneNumber,
+      verified: false,
       subscribe: subscribe === 'true' || subscribe === true,
       promotion: promotion ?? false,
       district: district ?? null,
@@ -99,14 +119,9 @@ async function register({ event, body }) {
     // 5. Save to Database
     await newUser.save();
 
-    // 6. Generate Authentication Tokens
-    const token = issueUserAccessToken(newUser);
-    const { token: newRefreshToken } = await createRefreshToken(newUser._id);
-
-    // 7. Final Success Response with Refresh Token Cookie
+    // 6. Final Success Response (creation only, no session issuance)
     return createSuccessResponse(201, event, {
       id: newUser._id,
-      token: token,
       user: {
         id: newUser._id,
         firstName: newUser.firstName,
@@ -115,9 +130,8 @@ async function register({ event, body }) {
         phoneNumber: newUser.phoneNumber,
         role: newUser.role,
         verified: newUser.verified,
+        hasPassword: Boolean(hashedPassword),
       }
-    }, {
-      "Set-Cookie": buildRefreshCookie(newRefreshToken, event)
     });
 
   } catch (err) {
@@ -239,7 +253,8 @@ async function registerNgo({ event, body }) {
         registrationNumber: businessRegistrationNumber,
         establishedDate: new Date(),
         categories: [],
-        role: "ngo"
+        role: "ngo",
+        isVerified: true,
       }], { session });
 
       const [newNgoUserAccess] = await NgoUserAccess.create([{
@@ -259,11 +274,21 @@ async function registerNgo({ event, body }) {
 
       await session.commitTransaction();
 
+      const token = issueNgoAccessToken(newUser, newNgo);
+      const { token: refreshToken } = await createRefreshToken(newUser._id);
+
       return createSuccessResponse(201, event, {
+        message: "NGO registration successful",
         userId: newUser._id,
+        role: newUser.role,
+        isVerified: true,
+        token,
         ngoId: newNgo._id,
         ngoUserAccessId: newNgoUserAccess._id,
         newNgoCounters: newNgoCounters._id
+      }, {
+        "Set-Cookie": buildRefreshCookie(refreshToken, event),
+        "Access-Control-Allow-Credentials": "true",
       });
     } catch (createErr) {
       if (session.inTransaction()) {

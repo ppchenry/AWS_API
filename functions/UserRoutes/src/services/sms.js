@@ -67,8 +67,8 @@ async function generateSmsCode({ event, body }) {
 }
 
 /**
- * Verifies an SMS code with Twilio. Issues JWT + refresh token for existing users,
- * or signals a new-user flow for unregistered phone numbers.
+ * Verifies an SMS code with Twilio. Marks existing users verified and
+ * issues JWT + refresh token.
  * @param {RouteContext} routeContext
  */
 async function verifySmsCode({ event, body }) {
@@ -119,24 +119,25 @@ async function verifySmsCode({ event, body }) {
     // 4. Approved Logic
     const user = await User.findOne({ phoneNumber, deleted: false }).lean();
 
-    // New User Flow
     if (!user) {
-      return createSuccessResponse(201, event, {
-        message: "Registration successful",
-        userId: "new user",
-        role: "user",
-        token: "",
-      });
+      return createErrorResponse(400, "verification.codeIncorrect", event);
     }
 
-    // Existing User Flow
+    if (!user.verified) {
+      await User.findOneAndUpdate(
+        { _id: user._id },
+        { $set: { verified: true } }
+      );
+    }
+
     const token = issueUserAccessToken(user);
     const { token: newRefreshToken } = await createRefreshToken(user._id);
 
-    return createSuccessResponse(201, event, {
+    return createSuccessResponse(200, event, {
       message: "Login successful",
       userId: user._id,
       role: user.role,
+      isVerified: true,
       token,
     }, {
       "Set-Cookie": buildRefreshCookie(newRefreshToken, event),

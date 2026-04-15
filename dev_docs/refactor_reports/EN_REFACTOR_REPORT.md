@@ -1,4 +1,4 @@
-# Monorepo Refactor Report (2026-04-14)
+# Monorepo Refactor Report (2026-04-15)
 
 ## Overview
 
@@ -14,12 +14,12 @@ This work sits inside the broader monorepo cleanup described in [README.md](READ
 
 The current verified outcome is:
 
-* `UserRoutes`: **102 / 102 tests passed**
+* `UserRoutes`: **106 / 106 integration tests passed** plus **6 / 6 SMS service unit tests passed**
 * `PetBasicInfo`: **36 passed, 1 skipped by fixture / 37 reachable**
 * `EmailVerification`: **30 / 30 tests passed**
-* `AuthRoute`: **21 / 21 tests passed**
+* `AuthRoute`: **22 / 22 tests passed**
 * `GetAllPets`: **49 passed, 2 skipped by environment / 51 reachable**
-* Combined: **238 passed + 3 optional or env-gated tests skipped**
+* Combined: **243 passed + 3 optional or env-gated tests skipped**
 
 The current verified outcome now also includes live deployed checks for `EmailVerification`:
 
@@ -30,8 +30,8 @@ This means the refactoring effort is already producing measurable improvements i
 
 The core account auth flow is now also clearer at the monorepo level:
 
-* `UserRoutes` handles primary login and protected account operations
-* `EmailVerification` handles public email proof and can bootstrap a verified session
+* `UserRoutes` handles primary login, register-first account creation, SMS verification login, NGO auth, and protected account operations
+* `EmailVerification` handles public email proof and can bootstrap a verified session for an already registered account
 * `AuthRoute` handles refresh-token rotation and access-token renewal
 
 The biggest improvement so far is security hardening. This refactor stage did not just clean up code structure. It directly reduced exploitability in five high-value Lambda surfaces already modernized.
@@ -62,52 +62,72 @@ That also means the completed work should be seen as high-leverage groundwork, n
 
 ## Refactored Auth Cycle
 
-The current account session lifecycle is now split across 3 Lambdas with clearer boundaries.
+The account session lifecycle is now split across 3 Lambdas with clearer ownership and fewer hidden side effects.
 
-### 1. `UserRoutes` Issues Sessions Through Primary Login
+### 1. `UserRoutes` Owns Registration, Primary Login, and SMS Session Bootstrap
 
-`UserRoutes` is the main entry Lambda for email login, SMS login, registration, and authenticated account operations. Public routes are explicitly allowlisted, while protected routes pass through JWT verification before business logic.
+`UserRoutes` is now the main account-entry Lambda. It handles regular registration, NGO registration, email/password login, SMS verification login, and the authenticated account-management surface.
 
-On successful primary login, `UserRoutes` now issues:
+The most important change is that normal-user registration and session issuance are no longer mixed together.
+
+For regular users:
+
+* `POST /account/register` is now creation-only
+* registration can create a pending identity without issuing tokens
+* session issuance happens later through `POST /account/login`, `POST /account/verify-sms-code`, or `POST /account/verify-email-code`
+
+For NGOs:
+
+* `POST /account/register-ngo` creates the NGO user context and now issues an NGO-scoped session immediately
+* later NGO login checks current NGO approval state before issuing a session
+
+When `UserRoutes` does issue a session, the contract is now aligned across the supported paths:
 
 * a short-lived Bearer JWT access token
 * a refresh token stored as an `HttpOnly` cookie
 
-### 2. `EmailVerification` Bootstraps Sessions After Email Proof
+### 2. `EmailVerification` Owns Email Proof, Not Account Creation
 
-`EmailVerification` handles public email-code generation and email-code verification. It proves email ownership first, then finds or creates the corresponding user record.
+`EmailVerification` is now responsible for public email-code generation and post-registration email-code verification.
 
-On successful code verification, `EmailVerification` now:
+Its role is narrower and safer than the legacy flow:
 
-* atomically consumes the verification code to prevent replay
-* avoids placeholder user creation before proof of ownership
-* issues the same auth artifacts as the main login flow: a short-lived JWT plus refresh-token cookie
+* generate is public and anti-enumeration hardened
+* verify consumes the code atomically to prevent replay
+* verify never creates a user account
+* verify only succeeds for an existing, non-deleted registered account
+* on success it marks that account verified and issues the same session artifacts used by the main login flow
 
-That makes `EmailVerification` an alternate session bootstrap path, not just a utility endpoint.
+This means `EmailVerification` is no longer an account-creation mechanism. It is a controlled email-proof step that can bootstrap a session only after a user record already exists.
 
-### 3. `AuthRoute` Renews Sessions Through Refresh Rotation
+### 3. `AuthRoute` Owns Refresh Rotation and Renewal Policy
 
 `AuthRoute` is now the dedicated refresh-token Lambda. Its public route `/auth/refresh` authenticates with the refresh-token cookie rather than a Bearer token.
 
-On refresh, `AuthRoute` now:
+On refresh, it now performs a stricter renewal flow:
 
 * reads the incoming refresh cookie
 * hashes and consumes the stored refresh-token record
-* rejects missing, invalid, expired, or replayed refresh tokens
+* rejects missing, malformed, expired, or replayed refresh tokens
 * issues a new short-lived access token
-* preserves NGO session claims (`ngoId`, `ngoName`) when the refreshed user is an NGO user with an active NGO context
 * rotates the refresh cookie by minting a new refresh token
 
-### 4. End-To-End Flow
+For NGO users, refresh also preserves session context and enforces current policy state:
 
-The hardened auth cycle is now:
+* NGO claims such as `ngoId` and `ngoName` are preserved on the new access token
+* refresh is denied when the NGO is no longer approved or active
 
-1. A caller proves identity through `UserRoutes` login or `EmailVerification` code verification.
-2. The successful auth Lambda returns a short-lived access token plus an `HttpOnly` refresh-token cookie.
-3. Protected routes later use the JWT through `authJWT` middleware.
-4. When the access token expires, the client calls `AuthRoute` to rotate the refresh token and obtain a new access token.
+### 4. End-To-End Session Model
 
-This is a meaningful improvement over the earlier legacy state because login, verification, and refresh are now explicit, test-backed, and easier to audit as one session lifecycle.
+The hardened session lifecycle is now:
+
+1. A user first establishes identity through one of the explicit bootstrap paths:
+	regular login, SMS verification, email verification, or NGO registration/login.
+2. A successful bootstrap path returns a short-lived access token plus an `HttpOnly` refresh-token cookie.
+3. Protected routes use the access token through the JWT middleware layer.
+4. When the access token expires, the client calls `AuthRoute` to rotate the refresh token and obtain a fresh access token.
+
+Compared with the earlier legacy state, this is a material improvement because registration, verification, login, and refresh now have distinct responsibilities, consistent token semantics, and test-backed behavior that can be audited as one coherent auth system.
 
 ---
 
@@ -148,7 +168,7 @@ For the first completed reference Lambdas, the hardening coverage is high.
 
 * `UserRoutes` documented **19 legacy security findings**, and its changelog states those legacy findings were addressed in this refactor stage
 * `PetBasicInfo` documented **13 legacy security findings** across auth, ownership, destructive operations, route matching, sanitization, and error handling
-* `AuthRoute` now has a dedicated **21 / 21 passing** suite covering handler lifecycle, public-resource bypass, JWT middleware branches, NGO-claim token issuance, replay rejection, and refresh rotation
+* `AuthRoute` now has a dedicated **22 / 22 passing** suite covering handler lifecycle, public-resource bypass, JWT middleware branches, NGO-claim token issuance, NGO approval denial, replay rejection, and refresh rotation
 * `GetAllPets` now has a dedicated **49 passed, 2 env-gated skipped** integration report covering public NGO listing, JWT verification, self-access, ownership enforcement, validation, sanitization, and mutation safety
 
 Taken together, that is **32 documented legacy security findings** directly addressed across the first 2 completed Lambdas, plus completed strict modernization and test-backed hardening for `EmailVerification`, `AuthRoute`, and `GetAllPets` covering the public verification, refresh-session, and pet-access-control portions of the platform surface.
@@ -407,7 +427,7 @@ This is why the work may feel slower than surface-level coding changes: secure m
 
 ## Conclusion
 
-As of 2026-04-14, the monorepo refactor effort has already produced 5 strong reference implementations, 236 passing integration tests plus 3 optional or env-gated skipped tests, and a verified pattern for continuing the remaining Lambda modernization work.
+As of 2026-04-15, the monorepo refactor effort has already produced 5 strong reference implementations, 243 passed tests plus 3 optional or env-gated skipped tests, and a verified pattern for continuing the remaining Lambda modernization work.
 
 The completed refactors show clear improvement across:
 

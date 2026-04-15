@@ -3,7 +3,7 @@
 **Date:** 2026-04-15
 **Service:** `AuthRoute` Lambda (AWS SAM)
 **Test suite:** `__tests__/test-authroute.test.js`
-**Result:** **21 / 21 tests passed ✅**
+**Result:** **22 / 22 tests passed ✅**
 
 ---
 
@@ -18,8 +18,8 @@ Tests are unit/integration tests using Jest with module mocking. The handler tes
 | Token utilities | 3 |
 | Handler lifecycle | 5 |
 | authJWT middleware | 7 |
-| Refresh service | 6 |
-| **Total** | **21** |
+| Refresh service | 7 |
+| **Total** | **22** |
 
 ### 1.2 Test Categories
 
@@ -56,6 +56,7 @@ Tests are unit/integration tests using Jest with module mocking. The handler tes
 - Stale/missing token record in DB → 401 with `authRefresh.invalidSession`
 - Successful token rotation: old token consumed via `findOneAndDelete`, new refresh token issued, new access token returned with correct claims, `Set-Cookie` header with stage-scoped path and `SameSite=Strict`, replay of old token returns 401
 - NGO session refresh preserves `ngoId` and `ngoName` claims instead of downgrading the refreshed session to a plain user token
+- NGO session refresh returns 403 when the NGO is no longer approved (`!isActive || !isVerified`)
 
 ---
 
@@ -88,6 +89,7 @@ Every error response from AuthRoute follows a fixed shape:
 | `authRefresh.missingRefreshToken` | 缺少 refresh token cookie | 401 |
 | `authRefresh.invalidRefreshTokenCookie` | refresh token cookie 格式無效 | 401 |
 | `authRefresh.invalidSession` | Refresh token 已過期或無效 | 401 |
+| `authRefresh.ngoApprovalRequired` | NGO 帳號尚未獲批，無法刷新工作階段 | 403 |
 | `others.unauthorized` | 需要登入驗證 | 401 |
 | `others.internalError` | 發生內部錯誤 | 500 |
 | `others.methodNotAllowed` | 不支援此 HTTP 方法 | 405 |
@@ -106,6 +108,7 @@ Every error response from AuthRoute follows a fixed shape:
 | Missing `JWT_SECRET` at runtime | Explicit check returns 500, does not leak stack | ✅ |
 | Refresh token replay | `findOneAndDelete` consumes token atomically; replay returns 401 | ✅ |
 | NGO session downgrade after refresh | Refresh rehydrates active NGO context and preserves NGO claims | ✅ |
+| NGO refresh after approval revocation | Refresh checks `isActive` and `isVerified`, then returns 403 | ✅ |
 | Refresh cookie theft (cross-site) | `SameSite=Strict`, `HttpOnly`, `Secure`, stage-scoped `Path` | ✅ |
 | Brute-force refresh abuse | Mongo-backed rate limiter returns 429 | ✅ |
 | Algorithm confusion | `authJWT` enforces `algorithms: ["HS256"]` | ✅ |
@@ -121,7 +124,7 @@ Every error response from AuthRoute follows a fixed shape:
 | Path | Method | Tested via handler | Tested via service |
 | --- | --- | --- | --- |
 | `/auth/refresh` | OPTIONS | ✅ (204 preflight) | — |
-| `/auth/refresh` | POST | ✅ (full lifecycle) | ✅ (6 service tests) |
+| `/auth/refresh` | POST | ✅ (full lifecycle) | ✅ (7 service tests) |
 
 No other methods or paths are deployed. The PUT 405 test documents a Lambda-level safety net, not a production route.
 

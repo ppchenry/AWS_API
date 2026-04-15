@@ -10,8 +10,8 @@
  * update atomically sets consumedAt, so a concurrent second request with the
  * same code finds zero matching documents.
  *
- * C6 compliance: User records are created only AFTER successful code
- * verification. No placeholder users exist before this point.
+ * Verification is a post-registration step. It never creates a new account,
+ * and no placeholder users exist before this point.
  */
 
 const crypto = require("crypto");
@@ -90,64 +90,18 @@ async function verifyEmailCode({ event, body }) {
 
     if (!consumed) return genericFail();
 
-    // 6. Code verified — now handle user lookup/creation.
-    //    User is created only here, after proof of email ownership (C6).
+    // 6. Code verified — now handle the existing user lookup.
     const User = mongoose.model("User");
-    let user = await User.findOne({ email })
-      .select("_id email role newUser deleted verified")
+    const user = await User.findOne({ email })
+      .select("_id email role deleted verified")
       .lean();
+    if (!user || user.deleted === true) return genericFail();
 
-    let isNewUser = false;
-
-    if (user) {
-      // Existing user — check if account is soft-deleted
-      if (user.deleted === true) return genericFail();
-
-      // Mark as verified if not already
-      if (!user.verified) {
-        await User.findOneAndUpdate(
-          { _id: user._id },
-          { $set: { verified: true } }
-        );
-      }
-    } else {
-      // No user exists — create one now with server-controlled defaults only
-      isNewUser = true;
-      try {
-        const newUserDoc = await new User({
-          email,
-          role: "user",
-          verified: true,
-          deleted: false,
-          newUser: true,
-          credit: 300,
-          vetCredit: 300,
-          eyeAnalysisCredit: 300,
-          bloodAnalysisCredit: 300,
-        }).save();
-        user = {
-          _id: newUserDoc._id,
-          email: newUserDoc.email,
-          role: newUserDoc.role,
-        };
-      } catch (createErr) {
-        // E11000: race — another request created the user between our findOne
-        // and save. Find the now-existing user and proceed.
-        if (createErr.code === 11000) {
-          user = await User.findOne({ email })
-            .select("_id email role newUser deleted verified")
-            .lean();
-          if (!user || user.deleted === true) return genericFail();
-          if (!user.verified) {
-            await User.findOneAndUpdate(
-              { _id: user._id },
-              { $set: { verified: true } }
-            );
-          }
-        } else {
-          throw createErr;
-        }
-      }
+    if (!user.verified) {
+      await User.findOneAndUpdate(
+        { _id: user._id },
+        { $set: { verified: true } }
+      );
     }
 
     // 7. Issue JWT access token (15m expiry)
@@ -160,18 +114,18 @@ async function verifyEmailCode({ event, body }) {
     logInfo("Email verification successful", {
       scope: SCOPE,
       event,
-      extra: { email, userId: user._id, isNewUser },
+      extra: { email, userId: user._id },
     });
 
-    // 9. Success response — returned only after proof of email ownership,
-    //     so uid and newUser are not enumeration vectors here.
+    // 9. Success response.
     return createSuccessResponse(
       200,
       event,
       {
         message: getTranslation(t, "verifySuccessful"),
-        uid: user._id,
-        newUser: isNewUser,
+        userId: user._id,
+        role: user.role,
+        isVerified: true,
         token,
       },
       { "Set-Cookie": cookieHeader }

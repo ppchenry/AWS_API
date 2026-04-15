@@ -10,13 +10,61 @@ const envConfig = require("../env.json");
 const BASE_URL = "http://localhost:3000";
 const TEST_TS = Date.now();
 const JWT_SECRET = envConfig.UserRoutesFunction.JWT_SECRET;
+const MONGODB_URI = envConfig.UserRoutesFunction?.MONGODB_URI || "";
 const SESSION_TEST_IP = `198.51.100.${(TEST_TS % 200) + 1}`;
+const CROSS_REGISTER_HEADERS = { "x-forwarded-for": `cross-register-${TEST_TS}` };
+
+let mongoose;
+let dbReady = false;
+let connectAttempted = false;
+
+async function connectDB() {
+  if (dbReady || connectAttempted || !MONGODB_URI) return;
+  connectAttempted = true;
+  try {
+    require("dns").setServers(["8.8.8.8", "1.1.1.1"]);
+    mongoose = require("mongoose");
+    if (mongoose.connection.readyState === 0) {
+      await mongoose.connect(MONGODB_URI, {
+        serverSelectionTimeoutMS: 5000,
+        maxPoolSize: 1,
+      });
+    }
+    dbReady = true;
+  } catch (err) {
+    console.warn("[test] MongoDB unavailable - DB-backed UserRoutes checks will be skipped:", err.message);
+    dbReady = false;
+  }
+}
+
+async function disconnectDB() {
+  if (dbReady && mongoose) {
+    await mongoose.disconnect();
+    dbReady = false;
+  }
+}
+
+function ngosCol() {
+  return mongoose.connection.db.collection("ngos");
+}
+
+const dbTest = MONGODB_URI
+  ? (name, fn) => test(name, async () => {
+      await connectDB();
+      if (!dbReady) {
+        console.log(`[skip] ${name} - no DB connection`);
+        return;
+      }
+      await fn();
+    })
+  : test.skip;
 
 // Shared state across ordered tests
 const state = {
   userId: null,
   email: `testuser_${TEST_TS}@test.com`,
   password: "Test1234!",
+  phoneOnly: `+8526${String(TEST_TS).slice(-7)}`,
   token: null,
   // NGO test state
   ngoUserId: null,
@@ -57,6 +105,10 @@ async function rawReq(method, path, body, headers = {}) {
   return { status: res.status, body: json };
 }
 
+afterAll(async () => {
+  await disconnectDB();
+});
+
 // Returns Authorization header if token is available
 function auth() {
   return state.token ? { Authorization: `Bearer ${state.token}` } : {};
@@ -94,20 +146,35 @@ describe("POST /account/register", () => {
     });
     expect(res.status).toBe(201);
     state.userId = res.body?.id;
+    expect(res.body?.token).toBeUndefined();
+    expect(res.body?.user?.hasPassword).toBe(true);
   });
 
-  test("rejects duplicate email → 409", async () => {
+  test("allows phone-only registration without password", async () => {
+    const res = await req("POST", "/account/register", {
+      firstName: "Phone",
+      lastName: "Only",
+      phoneNumber: state.phoneOnly,
+    });
+    expect(res.status).toBe(201);
+    expect(res.body?.user?.phoneNumber).toMatch(/^\+852/);
+    expect(res.body?.user?.hasPassword).toBe(false);
+  });
+
+  test("returns 201 for duplicate unverified email so frontend can continue verification", async () => {
     const res = await req("POST", "/account/register", {
       firstName: "Test",
       lastName: "User",
       email: state.email,
       password: state.password,
     });
-    expect(res.status).toBe(409);
-    expect(res.body.errorKey).toBe("phoneRegister.existWithEmail");
+    expect(res.status).toBe(201);
+    expect(res.body?.continueVerification).toBe(true);
+    expect(String(res.body?.id)).toBe(String(state.userId));
+    expect(res.body?.user?.verified).toBe(false);
   });
 
-  test("rejects duplicate email with different casing → 409", async () => {
+  test("returns 201 for duplicate unverified email with different casing", async () => {
     const [localPart, domain] = state.email.split("@");
     const res = await req("POST", "/account/register", {
       firstName: "Case",
@@ -115,8 +182,22 @@ describe("POST /account/register", () => {
       email: `${localPart.toUpperCase()}@${domain.toUpperCase()}`,
       password: "Test1234!",
     });
-    expect(res.status).toBe(409);
-    expect(res.body.errorKey).toBe("phoneRegister.existWithEmail");
+    expect(res.status).toBe(201);
+    expect(res.body?.continueVerification).toBe(true);
+    expect(String(res.body?.id)).toBe(String(state.userId));
+    expect(res.body?.user?.verified).toBe(false);
+  });
+
+  test("returns 201 for duplicate unverified phone so frontend can continue verification", async () => {
+    const res = await req("POST", "/account/register", {
+      firstName: "Phone",
+      lastName: "Retry",
+      phoneNumber: state.phoneOnly,
+    });
+    expect(res.status).toBe(201);
+    expect(res.body?.continueVerification).toBe(true);
+    expect(res.body?.user?.phoneNumber).toBe(state.phoneOnly);
+    expect(res.body?.user?.verified).toBe(false);
   });
 
   test("rejects missing firstName → 400", async () => {
@@ -147,6 +228,17 @@ describe("POST /account/register", () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.errorKey).toBe("register.errors.passwordRequired");
+  });
+
+  test("rejects phone plus password without email → 400", async () => {
+    const res = await req("POST", "/account/register", {
+      firstName: "Phone",
+      lastName: "Password",
+      phoneNumber: `+8525${String(TEST_TS).slice(-7)}`,
+      password: "Test1234!",
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.errorKey).toBe("register.errors.emailRequiredWithPassword");
   });
 
   test("rejects invalid email format → 400", async () => {
@@ -491,6 +583,11 @@ describe("POST /account/register-ngo", () => {
     });
     expect(res.status).toBe(201);
     state.ngoUserId = res.body?.userId?.toString();
+    state.ngoId = res.body?.ngoId?.toString();
+    state.ngoToken = res.body?.token;
+    expect(res.body?.role).toBe("ngo");
+    expect(res.body?.isVerified).toBe(true);
+    expect(typeof res.body?.token).toBe("string");
   });
 
   test("rejects duplicate NGO email → 409", async () => {
@@ -665,7 +762,7 @@ describe("Cross-registration duplicate protection", () => {
       lastName: "NgoEmail",
       email: state.ngoEmail,
       password: "Test1234!",
-    });
+    }, CROSS_REGISTER_HEADERS);
     expect(res.status).toBe(409);
     expect(res.body.errorKey).toBe("phoneRegister.existWithEmail");
   });
@@ -681,6 +778,40 @@ describe("POST /account/login (NGO)", () => {
     });
     expect(res.status).toBe(200);
     state.ngoToken = res.body?.token;
+    expect(res.body?.role).toBe("ngo");
+    expect(res.body?.isVerified).toBe(true);
+  });
+
+  dbTest("rejects NGO login when approval is revoked", async () => {
+    const ngoObjectId = new mongoose.Types.ObjectId(state.ngoId);
+    const originalNgo = await ngosCol().findOne({ _id: ngoObjectId });
+
+    expect(originalNgo).toBeTruthy();
+
+    await ngosCol().updateOne(
+      { _id: ngoObjectId },
+      { $set: { isVerified: false } }
+    );
+
+    try {
+      const res = await req("POST", "/account/login", {
+        email: state.ngoEmail,
+        password: state.ngoPassword,
+      }, { "x-forwarded-for": `ngo-approval-${TEST_TS}` });
+
+      expect(res.status).toBe(403);
+      expect(res.body?.errorKey).toBe("emailLogin.ngoApprovalRequired");
+    } finally {
+      await ngosCol().updateOne(
+        { _id: ngoObjectId },
+        {
+          $set: {
+            isActive: originalNgo.isActive,
+            isVerified: originalNgo.isVerified,
+          },
+        }
+      );
+    }
   });
 });
 
@@ -841,6 +972,7 @@ describe("GET /account/edit-ngo/{ngoId}/pet-placement-options", () => {
 describe("POST /account/delete-user-with-email", () => {
   const SAC_EMAIL = `sacuser_${TEST_TS}@test.com`;
   const SAC_PASS = "Test1234!";
+  const SAC_HEADERS = { "x-forwarded-for": `198.51.106.${(TEST_TS % 200) + 1}` };
   let sacToken = null;
 
   test("setup: registers sacrificial user", async () => {
@@ -849,7 +981,7 @@ describe("POST /account/delete-user-with-email", () => {
       lastName: "User",
       email: SAC_EMAIL,
       password: SAC_PASS,
-    });
+    }, SAC_HEADERS);
     expect(res.status).toBe(201);
   });
 
@@ -857,7 +989,7 @@ describe("POST /account/delete-user-with-email", () => {
     const res = await req("POST", "/account/login", {
       email: SAC_EMAIL,
       password: SAC_PASS,
-    });
+    }, SAC_HEADERS);
     expect(res.status).toBe(200);
     sacToken = res.body?.token;
   });

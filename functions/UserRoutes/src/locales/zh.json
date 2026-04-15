@@ -37,6 +37,7 @@
       "invalidUserCredential": "使用者憑證無效",
       "userNGONotFound": "未找到 NGO 使用者存取權限",
       "NGONotFound": "未找到非政府組織",
+      "ngoApprovalRequired": "NGO 帳號尚未獲批，暫時無法登入。",
       "success": "登入成功",
       "invalidEmailFormat": "電子郵件格式無效"
     },
@@ -103,6 +104,7 @@
         "firstNameRequired": "必須提供名字。",
         "lastNameRequired": "必須提供姓氏。",
         "passwordRequired": "密碼必須至少 8 個字符。",
+        "emailRequiredWithPassword": "提供密碼時必須同時提供電子郵件。",
         "invalidEmailFormat": "電子郵件格式無效。",
         "invalidPhoneFormat": "電話號碼格式無效。",
         "invalidImageUrl": "圖片連結格式無效。",
