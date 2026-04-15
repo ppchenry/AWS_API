@@ -17,9 +17,9 @@ The current verified outcome is:
 * `UserRoutes`: **102 / 102 tests passed**
 * `PetBasicInfo`: **36 passed, 1 skipped by fixture / 37 reachable**
 * `EmailVerification`: **30 / 30 tests passed**
-* `AuthRoute`: **19 / 19 tests passed**
+* `AuthRoute`: **21 / 21 tests passed**
 * `GetAllPets`: **49 passed, 2 skipped by environment / 51 reachable**
-* Combined: **236 passed + 3 optional or env-gated tests skipped**
+* Combined: **238 passed + 3 optional or env-gated tests skipped**
 
 The current verified outcome now also includes live deployed checks for `EmailVerification`:
 
@@ -95,6 +95,7 @@ On refresh, `AuthRoute` now:
 * hashes and consumes the stored refresh-token record
 * rejects missing, invalid, expired, or replayed refresh tokens
 * issues a new short-lived access token
+* preserves NGO session claims (`ngoId`, `ngoName`) when the refreshed user is an NGO user with an active NGO context
 * rotates the refresh cookie by minting a new refresh token
 
 ### 4. End-To-End Flow
@@ -147,7 +148,7 @@ For the first completed reference Lambdas, the hardening coverage is high.
 
 * `UserRoutes` documented **19 legacy security findings**, and its changelog states those legacy findings were addressed in this refactor stage
 * `PetBasicInfo` documented **13 legacy security findings** across auth, ownership, destructive operations, route matching, sanitization, and error handling
-* `AuthRoute` now has a dedicated **19 / 19 passing** suite covering handler lifecycle, public-resource bypass, JWT middleware branches, replay rejection, and refresh rotation
+* `AuthRoute` now has a dedicated **21 / 21 passing** suite covering handler lifecycle, public-resource bypass, JWT middleware branches, NGO-claim token issuance, replay rejection, and refresh rotation
 * `GetAllPets` now has a dedicated **49 passed, 2 env-gated skipped** integration report covering public NGO listing, JWT verification, self-access, ownership enforcement, validation, sanitization, and mutation safety
 
 Taken together, that is **32 documented legacy security findings** directly addressed across the first 2 completed Lambdas, plus completed strict modernization and test-backed hardening for `EmailVerification`, `AuthRoute`, and `GetAllPets` covering the public verification, refresh-session, and pet-access-control portions of the platform surface.
@@ -241,6 +242,7 @@ For `AuthRoute`, the hardened flow now includes:
 * refresh-token parsing from cookies with structured 401 responses for missing or malformed cookies
 * one-time-use refresh-token consumption to reject replay
 * refresh-token rotation with a new `HttpOnly` cookie on success
+* preservation of NGO-specific token claims across refresh so NGO sessions are not downgraded after renewal
 * handler-level and middleware-level branch coverage for the refresh auth path
 
 For `GetAllPets`, the hardened flow now includes:

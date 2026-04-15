@@ -7,9 +7,39 @@ const {
   hashToken,
   createRefreshToken,
   issueUserAccessToken,
+  issueNgoAccessToken,
   buildRefreshCookie,
   readRefreshTokenFromEvent,
 } = require("../utils/token");
+
+async function buildAccessTokenForUser(user) {
+  if (user.role !== "ngo") {
+    return issueUserAccessToken(user);
+  }
+
+  const NgoUserAccess = mongoose.model("NgoUserAccess");
+  const ngoUserAccess = await NgoUserAccess.findOne({
+    userId: user._id,
+    isActive: true,
+  })
+    .select("ngoId")
+    .lean();
+
+  if (!ngoUserAccess?.ngoId) {
+    return null;
+  }
+
+  const NGO = mongoose.model("NGO");
+  const ngo = await NGO.findOne({ _id: ngoUserAccess.ngoId })
+    .select("_id name")
+    .lean();
+
+  if (!ngo) {
+    return null;
+  }
+
+  return issueNgoAccessToken(user, ngo);
+}
 
 async function refreshSession({ event }) {
   try {
@@ -55,7 +85,12 @@ async function refreshSession({ event }) {
     }
 
     const { token: newRefreshToken } = await createRefreshToken(record.userId);
-    const accessToken = issueUserAccessToken(user);
+    const accessToken = await buildAccessTokenForUser(user);
+
+    if (!accessToken) {
+      return createErrorResponse(401, "authRefresh.invalidSession", event);
+    }
+
     const cookieHeader = buildRefreshCookie(newRefreshToken, event);
 
     return createSuccessResponse(

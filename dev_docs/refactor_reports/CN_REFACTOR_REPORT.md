@@ -17,9 +17,9 @@
 * `UserRoutes`：**102 / 102 項測試通過**
 * `PetBasicInfo`：**36 項通過 / 1 項因測試資料 (fixture) 跳過 / 共 37 項可達路徑**
 * `EmailVerification`：**30 / 30 項測試通過**
-* `AuthRoute`：**19 / 19 項測試通過**
+* `AuthRoute`：**21 / 21 項測試通過**
 * `GetAllPets`：**49 項通過 / 2 項因環境限制跳過 / 共 51 項可達路徑**
-* **綜合總計：236 項通過 + 3 項選配或環境限制測試跳過**
+* **綜合總計：238 項通過 + 3 項選配或環境限制測試跳過**
 
 另外，`EmailVerification` 已完成部署後的實機驗證：
 
@@ -90,6 +90,7 @@
 * 先將 token hash 後，消耗對應的儲存 refresh-token 記錄
 * 拒絕 missing、invalid、expired 或 replayed refresh token
 * 發出新的短效 access token
+* 若刷新的是 NGO 使用者，保留 `ngoId` 與 `ngoName` 等 NGO session claims，避免 refresh 後 session 降級
 * 同時輪替 refresh cookie，發出新的 refresh token
 
 ### 4. 端到端 Auth Cycle
@@ -132,7 +133,7 @@
 * **`UserRoutes`**：解決了 **19 項**遺留安全發現。
 * **`PetBasicInfo`**：解決了 **13 項**涵蓋權限、刪除操作與路徑匹配的發現。
 * **`EmailVerification`**：完成公開驗證流程的重構、嚴格複審、30/30 整合測試與部署後實機驗證。
-* **`AuthRoute`**：完成 refresh session 流程的生命週期重構，並以 **19 / 19** 測試覆蓋 handler、authJWT 與 refresh rotation/replay rejection。
+* **`AuthRoute`**：完成 refresh session 流程的生命週期重構，並以 **21 / 21** 測試覆蓋 handler、authJWT、NGO claim preservation 與 refresh rotation/replay rejection。
 * **`GetAllPets`**：完成寵物讀寫與權限控制流程的重構，並以 **49 項通過 / 2 項環境限制跳過** 的整合測試覆蓋公開 NGO 查詢、JWT 驗證、自身存取、ownership enforcement、delete 與 update 路徑。
 * **評估**：這些已完成 Lambda 的已知核心攻擊面約有 **75% 至 85%** 得到實質強化。
 
@@ -184,6 +185,6 @@
 
 ## 結語
 
-截至 2026-04-14，Monorepo 重構工作已產出 5 個可作為基準的參考實作，並累積 **236 項通過測試 + 3 項選配或環境限制測試跳過**。這份報告應被視為某一日期節點的進度快照，而不是以「第幾天」為主的階段命名。
+截至 2026-04-14，Monorepo 重構工作已產出 5 個可作為基準的參考實作，並累積 **238 項通過測試 + 3 項選配或環境限制測試跳過**。這份報告應被視為某一日期節點的進度快照，而不是以「第幾天」為主的階段命名。
 
-目前這一階段的努力不僅產出了 5 個強大的參考實現，更透過 **236 項測試**，證明了這套模式的可行性。這不是單純的「美容工程」，而是具備高度複利效應的工程實踐。在初創企業中，這種能平衡業務交付與風險控制的工作，應被視為保護公司資產的核心貢獻。
+目前這一階段的努力不僅產出了 5 個強大的參考實現，更透過 **238 項通過測試**，證明了這套模式的可行性。這不是單純的「美容工程」，而是具備高度複利效應的工程實踐。在初創企業中，這種能平衡業務交付與風險控制的工作，應被視為保護公司資產的核心貢獻。

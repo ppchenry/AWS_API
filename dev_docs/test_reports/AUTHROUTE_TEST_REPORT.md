@@ -1,9 +1,9 @@
 # AuthRoute Test Report
 
-**Date:** 2026-04-14
+**Date:** 2026-04-15
 **Service:** `AuthRoute` Lambda (AWS SAM)
 **Test suite:** `__tests__/test-authroute.test.js`
-**Result:** **19 / 19 tests passed ✅**
+**Result:** **21 / 21 tests passed ✅**
 
 ---
 
@@ -15,17 +15,18 @@ Tests are unit/integration tests using Jest with module mocking. The handler tes
 
 | Suite | Tests |
 | --- | --- |
-| Token utilities | 2 |
+| Token utilities | 3 |
 | Handler lifecycle | 5 |
 | authJWT middleware | 7 |
-| Refresh service | 5 |
-| **Total** | **19** |
+| Refresh service | 6 |
+| **Total** | **21** |
 
 ### 1.2 Test Categories
 
 #### Token Utilities
 
 - Access token issuance with modern claims (`userId`, `userEmail`, `userRole`) and 15-minute expiry
+- NGO access token issuance with preserved `ngoId` and `ngoName` claims
 - Refresh cookie construction with `HttpOnly`, `Secure`, `SameSite=Strict`, stage-scoped path, and `Max-Age`
 - Cookie parsing from `event.cookies` array format
 
@@ -54,6 +55,7 @@ Tests are unit/integration tests using Jest with module mocking. The handler tes
 - Invalid refresh token cookie (present but wrong name) → 401 with `authRefresh.invalidRefreshTokenCookie`
 - Stale/missing token record in DB → 401 with `authRefresh.invalidSession`
 - Successful token rotation: old token consumed via `findOneAndDelete`, new refresh token issued, new access token returned with correct claims, `Set-Cookie` header with stage-scoped path and `SameSite=Strict`, replay of old token returns 401
+- NGO session refresh preserves `ngoId` and `ngoName` claims instead of downgrading the refreshed session to a plain user token
 
 ---
 
@@ -103,6 +105,7 @@ Every error response from AuthRoute follows a fixed shape:
 | `JWT_BYPASS` in production | Bypass condition requires `NODE_ENV !== "production"` → 401 | ✅ |
 | Missing `JWT_SECRET` at runtime | Explicit check returns 500, does not leak stack | ✅ |
 | Refresh token replay | `findOneAndDelete` consumes token atomically; replay returns 401 | ✅ |
+| NGO session downgrade after refresh | Refresh rehydrates active NGO context and preserves NGO claims | ✅ |
 | Refresh cookie theft (cross-site) | `SameSite=Strict`, `HttpOnly`, `Secure`, stage-scoped `Path` | ✅ |
 | Brute-force refresh abuse | Mongo-backed rate limiter returns 429 | ✅ |
 | Algorithm confusion | `authJWT` enforces `algorithms: ["HS256"]` | ✅ |
@@ -118,7 +121,7 @@ Every error response from AuthRoute follows a fixed shape:
 | Path | Method | Tested via handler | Tested via service |
 | --- | --- | --- | --- |
 | `/auth/refresh` | OPTIONS | ✅ (204 preflight) | — |
-| `/auth/refresh` | POST | ✅ (full lifecycle) | ✅ (5 service tests) |
+| `/auth/refresh` | POST | ✅ (full lifecycle) | ✅ (6 service tests) |
 
 No other methods or paths are deployed. The PUT 405 test documents a Lambda-level safety net, not a production route.
 
@@ -132,4 +135,4 @@ No other methods or paths are deployed. The PUT 405 test documents a Lambda-leve
 | Test framework | Jest 29.7 |
 | Database | Mocked (no live MongoDB) |
 | Mocking strategy | `jest.doMock` for DB, rate limiter, and token utils; `jest.spyOn` for Mongoose model lookups |
-| Run command | `npx jest __tests__/test-authroute.test.js --no-coverage` |
+| Run command | `npm test -- __tests__/test-authroute.test.js` |
