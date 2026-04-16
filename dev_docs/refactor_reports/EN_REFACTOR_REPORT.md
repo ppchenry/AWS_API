@@ -2,7 +2,7 @@
 
 ## Overview
 
-The first refactor stage of the monorepo modernization effort has now completed 6 Lambdas in place:
+The first refactor stage of the monorepo modernization effort has now completed 7 Lambdas in place:
 
 * `functions/UserRoutes`
 * `functions/PetBasicInfo`
@@ -21,7 +21,7 @@ The current verified outcome is:
 * `AuthRoute`: **22 / 22 tests passed**
 * `GetAllPets`: **49 passed, 2 skipped by environment / 51 reachable**
 * `PetLostandFound`: **59 / 59 integration tests passed**
-* Combined: **302 passed + 3 optional or env-gated tests skipped**
+* Combined: **396 passed + 3 optional or env-gated tests skipped**
 
 The current verified outcome now also includes live deployed checks for `EmailVerification`:
 
@@ -50,7 +50,7 @@ The monorepo started from a legacy state where many Lambdas duplicated helpers, 
 
 As of 2026-04-16, the program now has:
 
-* 6 modularized reference Lambdas
+* 7 modularized reference Lambdas
 * a written modernization standard
 * a line-count and risk-based Lambda inventory
 * integration-test-backed verification for the first completed targets
@@ -58,9 +58,9 @@ As of 2026-04-16, the program now has:
 
 The completed Lambdas now act as the implementation baseline for the remaining 25-Lambda refactor program.
 
-By Lambda count, **6 of 25** Lambdas currently present in this workspace are now at the new hardened baseline. That is roughly **24%** of the Lambda fleet.
+By Lambda count, **7 of 25** Lambdas currently present in this workspace are now at the new hardened baseline. That is roughly **28%** of the Lambda fleet.
 
-That also means the completed work should be seen as high-leverage groundwork, not as isolated refactoring. These first 6 Lambdas establish the secure pattern, the test strategy, and the operational standard that the remaining Lambdas can now follow.
+That also means the completed work should be seen as high-leverage groundwork, not as isolated refactoring. These first 7 Lambdas establish the secure pattern, the test strategy, and the operational standard that the remaining Lambdas can now follow.
 
 ---
 
@@ -192,8 +192,8 @@ This is intentionally conservative and not stated as a hard 100%, because some r
 At the monorepo level, the hardening is still early.
 
 * **5 of 25** Lambdas in the current workspace have been modernized to the new baseline
-* that means roughly **24%** of the Lambda fleet has received this full hardening treatment so far
-* roughly **76%** of Lambdas still require the same route-by-route security verification and refactor discipline
+* that means roughly **28%** of the Lambda fleet has received this full hardening treatment so far
+* roughly **72%** of Lambdas still require the same route-by-route security verification and refactor discipline
 
 So the correct interpretation is:
 
@@ -326,7 +326,7 @@ The completed reference Lambdas now follow a consistent lifecycle:
 * JWT auth
 * guard validation
 * DB bootstrap
-* exact route dispatch
+ The first refactor stage of the monorepo modernization effort has now completed 7 Lambdas in place:
 * service execution
 * centralized response building
 
@@ -334,23 +334,39 @@ This gives engineers a predictable structure across Lambdas and reduces the risk
 
 That improves:
 
+ * `functions/EyeUpload`
 * readability
 * testability
 * reviewability
-* onboarding speed
+* `EyeUpload`: **94 / 94 integration tests passed**
+* Combined: **396 passed + 3 optional or env-gated tests skipped**
 * confidence when changing one route without breaking unrelated behavior
 
 ---
+ By Lambda count, **7 of 25** Lambdas currently present in this workspace are now at the new hardened baseline. That is roughly **28%** of the Lambda fleet.
 
 ### 4. Scalability Improvements
+ Taken together, that is **32 documented legacy security findings** directly addressed across the first 2 completed Lambdas, plus completed strict modernization and test-backed hardening for `EmailVerification`, `AuthRoute`, `GetAllPets`, `PetLostandFound`, and `EyeUpload` covering the public verification, refresh-session, pet-access-control, pet-domain CRUD, and pet-upload / analysis portions of the platform surface.
 
 The refactors improve scalability in both codebase and operational terms.
-
+* **7 of 25** Lambdas in the current workspace have been modernized to the new baseline
 At the codebase level:
+* that means roughly **28%** of the Lambda fleet has received this full hardening treatment so far
 
 * the monorepo now has a reusable Lambda shape that can be repeated consistently
+* `EyeUpload` now has a dedicated **94 / 94 passing** integration suite covering CORS preflight, JWT auth, dead-route dispatch, schema validation, ownership enforcement, NGO authorization branches, upload validation, rate limiting, and fixture-backed pet access checks
 * utilities and patterns are becoming standardized instead of reimplemented ad hoc
 * route-level logic is easier to extend without expanding a single god file
+
+For `EyeUpload`, the hardened flow now includes:
+
+* full modular separation from a 1000+ line monolith into handler, router, middleware, config, service, utils, and schema modules
+* exact route dispatch with explicit 405 handling for legacy dead routes
+* JWT-protected create, update, upload, and analysis routes with DB-backed pet ownership enforcement
+* schema-backed validation for create, update, and breed-analysis payloads with stable `eyeUpload.*` error keys under Zod 4
+* upload allowlisting and folder traversal rejection for pet-breed image storage paths
+* per-route Mongo-backed rate limiting across all 6 active routes
+* integration coverage across auth, validation, ownership, NGO authorization, upload behavior, dead routes, and response shape
 
 At the runtime level:
 
@@ -447,7 +463,7 @@ This is why the work may feel slower than surface-level coding changes: secure m
 
 ## Conclusion
 
-As of 2026-04-16, the monorepo refactor effort has already produced 6 strong reference implementations, 302 passed tests plus 3 optional or env-gated skipped tests, and a verified pattern for continuing the remaining Lambda modernization work.
+As of 2026-04-16, the monorepo refactor effort has already produced 7 strong reference implementations, 396 passed tests plus 3 optional or env-gated skipped tests, and a verified pattern for continuing the remaining Lambda modernization work.
 
 The completed refactors show clear improvement across:
 

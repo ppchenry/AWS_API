@@ -1,5 +1,27 @@
 # Changelog – EmailVerification Lambda
 
+## [2.3.1] – 2026-04-16 — Zod 4 standardization and verification refresh
+
+### Scope
+
+Aligns EmailVerification with the Zod 4 baseline already used by the other refactored lambdas and refreshes the automated test evidence after the dependency update.
+
+Files changed:
+- `package.json` — upgraded `zod` to `^4.3.6`
+- test/docs refresh only; no service contract changes required
+
+### Verification
+
+- `sam build EmailVerificationFunction`
+- `npx jest --runInBand --testPathPattern=test-emailverification --modulePathIgnorePatterns=".aws-sam" --no-coverage`
+- Result: `30 passed`
+
+### Result Of This Stage
+
+EmailVerification now uses Zod 4 like the other refactored lambdas and still passes the full 30-test integration suite with the existing API contract unchanged.
+
+---
+
 ## [2.3.0] – 2026-04-13 — _id-based verification record uniqueness
 
 ### Scope

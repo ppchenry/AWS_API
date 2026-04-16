@@ -269,3 +269,9 @@ See `__tests__/test-emailverification.test.js` for the current integration cover
 - expired and consumed code rejection
 - refresh-cookie path contract
 - real email smoke test
+
+The current verified local command is:
+
+```text
+npx jest --runInBand --testPathPattern=test-emailverification --modulePathIgnorePatterns=".aws-sam" --no-coverage
+```

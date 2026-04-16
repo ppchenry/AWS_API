@@ -1,11 +1,11 @@
 # EmailVerification Test Report
 
-**Date:** 2026-04-15
+**Date:** 2026-04-16
 **Service:** `EmailVerification` Lambda (AWS SAM)
 **Test suite:** `__tests__/test-emailverification.test.js`
-**Command:** `npm test -- __tests__/test-emailverification.test.js --runInBand`
+**Command:** `npx jest --runInBand --testPathPattern=test-emailverification --modulePathIgnorePatterns=".aws-sam" --no-coverage`
 **Result:** **30 / 30 tests passed ✅**
-**Duration:** `72.745 s`
+**Duration:** `44.028 s`
 
 ---
 
@@ -34,7 +34,7 @@ Coverage includes:
 ## 2. Test Run Output
 
 ```text
-PASS  __tests__/test-emailverification.test.js (72.674 s)
+PASS  __tests__/test-emailverification.test.js (43.947 s)
   OPTIONS preflight
     √ returns 204 with CORS headers for an allowed origin (1098 ms)
     √ returns 403 for a disallowed origin (1047 ms)
@@ -86,7 +86,7 @@ PASS  __tests__/test-emailverification.test.js (72.674 s)
 Test Suites: 1 passed, 1 total
 Tests:       30 passed, 30 total
 Snapshots:   0 total
-Time:        72.745 s
+Time:        44.028 s
 Ran all test suites matching /test-emailverification/i.
 ```
 

@@ -2,7 +2,7 @@
 
 ## 概述 (Overview)
 
-在目前這一階段的 Monorepo 現代化工程中，已完成 6 個 Lambda 函式的原位 (in-place) 重構：
+在目前這一階段的 Monorepo 現代化工程中，已完成 7 個 Lambda 函式的原位 (in-place) 重構：
 
 * `functions/UserRoutes`
 * `functions/PetBasicInfo`
@@ -10,6 +10,7 @@
 * `functions/AuthRoute`
 * `functions/GetAllPets`
 * `functions/PetLostandFound`
+* `functions/EyeUpload`
 
 此項工作隸屬於 [README.md](README.md) 中定義的 Monorepo 清理計畫，嚴格遵循 [dev\_docs/REFACTOR\_CHECKLIST.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/REFACTOR_CHECKLIST.md) 的現代化基準，並依據 [dev\_docs/LAMBDA\_REFACTOR\_INVENTORY.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/LAMBDA_REFACTOR_INVENTORY.md) 的優先順序執行。
 
@@ -21,7 +22,8 @@
 * `AuthRoute`：**22 / 22 項測試通過**
 * `GetAllPets`：**49 項通過 / 2 項因環境限制跳過 / 共 51 項可達路徑**
 * `PetLostandFound`：**59 / 59 項整合測試通過**
-* **綜合總計：302 項通過 + 3 項選配或環境限制測試跳過**
+* `EyeUpload`：**94 / 94 項整合測試通過**
+* **綜合總計：396 項通過 + 3 項選配或環境限制測試跳過**
 
 另外，`EmailVerification` 已完成部署後的實機驗證：
 
@@ -49,13 +51,13 @@
 
 **目前進度：**
 
-* 6 個模組化的參考基準 Lambda
+* 7 個模組化的參考基準 Lambda
 * 一套完整的現代化執行標準
 * 基於程式碼行數與風險的 Lambda 盤點清單
 * 基於整合測試 (Integration Test) 的驗證機制
 * 可重複運用的重構模式（適用於剩餘 Lambda）
 
-目前 **25 個**工作區中的 Lambda 裡，已有 **6 個**完成加固，約為 **24%**。這意味著雖然我們已證明加固方案的可行性，但整個 Monorepo 仍處於現代化曲線的早期階段，剩餘部分仍存有潛在風險。
+目前 **25 個**工作區中的 Lambda 裡，已有 **7 個**完成加固，約為 **28%**。這意味著雖然我們已證明加固方案的可行性，但整個 Monorepo 仍處於現代化曲線的早期階段，剩餘部分仍存有潛在風險。
 
 -----
 
@@ -159,12 +161,13 @@
 * **`AuthRoute`**：完成 refresh session 流程的生命週期重構，並以 **22 / 22** 測試覆蓋 handler、authJWT、NGO claim preservation、NGO approval denial 與 refresh rotation/replay rejection。
 * **`GetAllPets`**：完成寵物讀寫與權限控制流程的重構，並以 **49 項通過 / 2 項環境限制跳過** 的整合測試覆蓋公開 NGO 查詢、JWT 驗證、自身存取、ownership enforcement、delete 與 update 路徑。
 * **`PetLostandFound`**：完成 1089 行單體的全面拆分（20+ 模組），4 輪審計修復 15 項發現，並以 **59 / 59** 整合測試覆蓋 pet-lost/pet-found CRUD、notifications CRUD、CORS、auth、guard、rate limiting 與 response shape。測試過程中發現並修復 `mime` v4 ESM-only 相容性問題。
+* **`EyeUpload`**：完成 1000+ 行單體的全面拆分，並在 Zod 4 標準化後以 **94 / 94** 整合測試覆蓋 CORS、JWT auth、dead routes、schema validation、ownership enforcement、NGO authorization、upload flows、rate limiting 與 fixture-backed pet access。
 * **評估**：這些已完成 Lambda 的已知核心攻擊面約有 **75% 至 85%** 得到實質強化。
 
 ### 2\. 整體 Monorepo 的覆蓋程度
 
-* 目前 **6 / 25** 已完成。
-* 約 **24%** 的 Lambda 隊列已達新標準，**76%** 仍需進行相同的審查與重構。
+* 目前 **7 / 25** 已完成。
+* 約 **28%** 的 Lambda 隊列已達新標準，**72%** 仍需進行相同的審查與重構。
 
 -----
 
@@ -209,6 +212,6 @@
 
 ## 結語
 
-截至 2026-04-16，Monorepo 重構工作已產出 6 個可作為基準的參考實作，並累積 **302 項通過測試 + 3 項選配或環境限制測試跳過**。這份報告應被視為某一日期節點的進度快照，而不是以「第幾天」為主的階段命名。
+截至 2026-04-16，Monorepo 重構工作已產出 7 個可作為基準的參考實作，並累積 **396 項通過測試 + 3 項選配或環境限制測試跳過**。這份報告應被視為某一日期節點的進度快照，而不是以「第幾天」為主的階段命名。
 
-目前這一階段的努力不僅產出了 6 個強大的參考實現，更透過 **302 項通過測試**，證明了這套模式的可行性。這不是單純的「美容工程」，而是具備高度複利效應的工程實踐。在初創企業中，這種能平衡業務交付與風險控制的工作，應被視為保護公司資產的核心貢獻。
+目前這一階段的努力不僅產出了 7 個強大的參考實現，更透過 **396 項通過測試**，證明了這套模式的可行性。這不是單純的「美容工程」，而是具備高度複利效應的工程實踐。在初創企業中，這種能平衡業務交付與風險控制的工作，應被視為保護公司資產的核心貢獻。
