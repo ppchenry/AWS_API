@@ -1,14 +1,15 @@
-# Monorepo Refactor Report (2026-04-15)
+# Monorepo Refactor Report (2026-04-16)
 
 ## Overview
 
-The first refactor stage of the monorepo modernization effort has now completed 5 Lambdas in place:
+The first refactor stage of the monorepo modernization effort has now completed 6 Lambdas in place:
 
 * `functions/UserRoutes`
 * `functions/PetBasicInfo`
 * `functions/EmailVerification`
 * `functions/AuthRoute`
 * `functions/GetAllPets`
+* `functions/PetLostandFound`
 
 This work sits inside the broader monorepo cleanup described in [README.md](README.md), follows the modernization baseline in [dev_docs/REFACTOR_CHECKLIST.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/REFACTOR_CHECKLIST.md), and is prioritized using [dev_docs/LAMBDA_REFACTOR_INVENTORY.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/LAMBDA_REFACTOR_INVENTORY.md).
 
@@ -19,7 +20,8 @@ The current verified outcome is:
 * `EmailVerification`: **30 / 30 tests passed**
 * `AuthRoute`: **22 / 22 tests passed**
 * `GetAllPets`: **49 passed, 2 skipped by environment / 51 reachable**
-* Combined: **243 passed + 3 optional or env-gated tests skipped**
+* `PetLostandFound`: **59 / 59 integration tests passed**
+* Combined: **302 passed + 3 optional or env-gated tests skipped**
 
 The current verified outcome now also includes live deployed checks for `EmailVerification`:
 
@@ -34,19 +36,21 @@ The core account auth flow is now also clearer at the monorepo level:
 * `EmailVerification` handles public email proof and can bootstrap a verified session for an already registered account
 * `AuthRoute` handles refresh-token rotation and access-token renewal
 
-The biggest improvement so far is security hardening. This refactor stage did not just clean up code structure. It directly reduced exploitability in five high-value Lambda surfaces already modernized.
+`PetLostandFound` is the first non-auth, pet-domain Lambda to complete full modular separation. The original 1089-line monolith was decomposed into 20+ focused modules, underwent 4 audit rounds fixing 15 findings, and passed 59 integration tests. During testing, a critical `mime` v4 ESM-only compatibility bug was discovered and fixed.
+
+The biggest improvement so far is security hardening. This refactor stage did not just clean up code structure. It directly reduced exploitability in six high-value Lambda surfaces already modernized.
 
 For non-technical stakeholders, the important point is this: this work was not optional cleanup. It removed weaknesses that could have allowed unauthorized data access, unauthorized account or pet deletion, account takeover, sensitive data leakage, brute-force abuse, and route-level authorization bypass. In a startup environment, those are not theoretical engineering concerns. They are business risks that can turn into customer-impacting incidents, emergency hotfixes, support burden, reputational damage, and loss of trust.
 
 ---
 
-## Monorepo Status As Of 2026-04-14
+## Monorepo Status As Of 2026-04-16
 
 The monorepo started from a legacy state where many Lambdas duplicated helpers, mixed routing and business logic in the same file, and were difficult to evolve safely. The current direction is not a full re-architecture yet. It is a controlled in-situ modernization pass designed to stabilize each Lambda one by one.
 
-As of 2026-04-14, the program now has:
+As of 2026-04-16, the program now has:
 
-* 5 modularized reference Lambdas
+* 6 modularized reference Lambdas
 * a written modernization standard
 * a line-count and risk-based Lambda inventory
 * integration-test-backed verification for the first completed targets
@@ -54,9 +58,9 @@ As of 2026-04-14, the program now has:
 
 The completed Lambdas now act as the implementation baseline for the remaining 25-Lambda refactor program.
 
-By Lambda count, **5 of 25** Lambdas currently present in this workspace are now at the new hardened baseline. That is roughly **20%** of the Lambda fleet. The program is still early, but the hardened reference surface is now broader than the initial two-Lambda baseline.
+By Lambda count, **6 of 25** Lambdas currently present in this workspace are now at the new hardened baseline. That is roughly **24%** of the Lambda fleet.
 
-That also means the completed work should be seen as high-leverage groundwork, not as isolated refactoring. These first 5 Lambdas establish the secure pattern, the test strategy, and the operational standard that the remaining Lambdas can now follow.
+That also means the completed work should be seen as high-leverage groundwork, not as isolated refactoring. These first 6 Lambdas establish the secure pattern, the test strategy, and the operational standard that the remaining Lambdas can now follow.
 
 ---
 
@@ -135,7 +139,7 @@ Compared with the earlier legacy state, this is a material improvement because r
 
 The strongest message from this refactor stage is this: the legacy monolith pattern is not only a maintainability problem. It is an active security risk.
 
-Based on the confirmed legacy findings in `UserRoutes`, `PetBasicInfo`, the strict re-audit of `EmailVerification`, the refresh-session hardening in `AuthRoute`, and the ownership/auth hardening in `GetAllPets`, the kinds of cyberattacks that can occur at any time in unmodernized legacy Lambdas, where the same coding patterns still exist, include:
+Based on the confirmed legacy findings in `UserRoutes`, `PetBasicInfo`, the strict re-audit of `EmailVerification`, the refresh-session hardening in `AuthRoute`, the ownership/auth hardening in `GetAllPets`, and the full modular separation of `PetLostandFound`, the kinds of cyberattacks that can occur at any time in unmodernized legacy Lambdas, where the same coding patterns still exist, include:
 
 * broken authentication attacks, where protected routes can be reached without valid JWT verification
 * horizontal privilege escalation / IDOR attacks, where a caller reads or mutates another user's or pet's data by changing a path param or body field
@@ -170,8 +174,9 @@ For the first completed reference Lambdas, the hardening coverage is high.
 * `PetBasicInfo` documented **13 legacy security findings** across auth, ownership, destructive operations, route matching, sanitization, and error handling
 * `AuthRoute` now has a dedicated **22 / 22 passing** suite covering handler lifecycle, public-resource bypass, JWT middleware branches, NGO-claim token issuance, NGO approval denial, replay rejection, and refresh rotation
 * `GetAllPets` now has a dedicated **49 passed, 2 env-gated skipped** integration report covering public NGO listing, JWT verification, self-access, ownership enforcement, validation, sanitization, and mutation safety
+* `PetLostandFound` now has a dedicated **59 / 59 passing** integration suite covering pet-lost/pet-found CRUD, notifications CRUD, CORS preflight, JWT auth, guard validation, self-access enforcement, ownership-guarded delete, rate limiting, and response shape consistency
 
-Taken together, that is **32 documented legacy security findings** directly addressed across the first 2 completed Lambdas, plus completed strict modernization and test-backed hardening for `EmailVerification`, `AuthRoute`, and `GetAllPets` covering the public verification, refresh-session, and pet-access-control portions of the platform surface.
+Taken together, that is **32 documented legacy security findings** directly addressed across the first 2 completed Lambdas, plus completed strict modernization and test-backed hardening for `EmailVerification`, `AuthRoute`, `GetAllPets`, and `PetLostandFound` covering the public verification, refresh-session, pet-access-control, and pet-domain CRUD portions of the platform surface.
 
 A more defensible rough estimate is that **around 75% to 85% of the known code-owned attack surface identified in the first 2 audited Lambdas, plus the core public verification attack surface in `EmailVerification`, has now been meaningfully hardened**.
 
@@ -187,15 +192,15 @@ This is intentionally conservative and not stated as a hard 100%, because some r
 At the monorepo level, the hardening is still early.
 
 * **5 of 25** Lambdas in the current workspace have been modernized to the new baseline
-* that means roughly **20%** of the Lambda fleet has received this full hardening treatment so far
-* roughly **80%** of Lambdas still require the same route-by-route security verification and refactor discipline
+* that means roughly **24%** of the Lambda fleet has received this full hardening treatment so far
+* roughly **76%** of Lambdas still require the same route-by-route security verification and refactor discipline
 
 So the correct interpretation is:
 
 * inside the 5 completed Lambdas, most of the known code-owned attack classes on those surfaces have been handled
 * across the whole monorepo, the modernization program is still in an early phase and broad residual risk remains until more Lambdas are refactored
 
-For management, this should be read as risk retirement in progress. This refactor stage did not finish the security program, but it already removed a meaningful amount of immediately actionable risk from 5 important production surfaces.
+For management, this should be read as risk retirement in progress. This refactor stage did not finish the security program, but it already removed a meaningful amount of immediately actionable risk from 6 important production surfaces.
 
 ---
 
@@ -275,7 +280,22 @@ For `GetAllPets`, the hardened flow now includes:
 * centralized pet sanitization and standardized error responses
 * integration coverage across public NGO listing, protected user listing, delete, update, and auth/error paths
 
-These security fixes are backed by the integration results summarized in [dev_docs/test_reports/USERROUTES_TEST_REPORT.md](dev_docs/test_reports/USERROUTES_TEST_REPORT.md), [dev_docs/test_reports/PETBASICINFO_TEST_REPORT.md](dev_docs/test_reports/PETBASICINFO_TEST_REPORT.md), and [dev_docs/test_reports/EMAIL_VERIFICATION_TEST_REPORT.md](dev_docs/test_reports/EMAIL_VERIFICATION_TEST_REPORT.md).
+For `PetLostandFound`, the hardened flow now includes:
+
+* full modular decomposition from 1089-line monolith to 20+ focused CJS modules
+* exact route dispatch with method-level routing for pet-lost, pet-found, and notifications
+* JWT auth on all mutation routes with self-access enforcement on notification routes
+* ownership-guarded delete for pet-lost and pet-found records
+* Zod-backed body and path-param validation with ObjectId guard checks
+* rate limiting on pet-lost and pet-found create routes (5 req/60s per user)
+* multipart form-data parsing with file size validation (10MB limit)
+* S3 image upload with serial number generation
+* `mime` v4 ESM-only compatibility fix using dynamic `import()` with lazy caching
+* centralized i18n error responses with `errorKey` and `requestId` contract
+* CORS preflight with origin validation on all route groups
+* integration coverage across all CRUD operations, notifications, auth, guard, rate limiting, and response shape
+
+These security fixes are backed by the integration results summarized in [dev_docs/test_reports/USERROUTES_TEST_REPORT.md](dev_docs/test_reports/USERROUTES_TEST_REPORT.md), [dev_docs/test_reports/PETBASICINFO_TEST_REPORT.md](dev_docs/test_reports/PETBASICINFO_TEST_REPORT.md), [dev_docs/test_reports/EMAIL_VERIFICATION_TEST_REPORT.md](dev_docs/test_reports/EMAIL_VERIFICATION_TEST_REPORT.md), and [dev_docs/test_reports/PETLOSTANDFOUND_TEST_REPORT.md](dev_docs/test_reports/PETLOSTANDFOUND_TEST_REPORT.md).
 
 ---
 
@@ -427,7 +447,7 @@ This is why the work may feel slower than surface-level coding changes: secure m
 
 ## Conclusion
 
-As of 2026-04-15, the monorepo refactor effort has already produced 5 strong reference implementations, 243 passed tests plus 3 optional or env-gated skipped tests, and a verified pattern for continuing the remaining Lambda modernization work.
+As of 2026-04-16, the monorepo refactor effort has already produced 6 strong reference implementations, 302 passed tests plus 3 optional or env-gated skipped tests, and a verified pattern for continuing the remaining Lambda modernization work.
 
 The completed refactors show clear improvement across:
 
@@ -441,4 +461,4 @@ Most importantly, they demonstrate why in-situ modernization is the right first 
 
 This is not the end-state architecture yet, but it is the correct and necessary foundation for getting there safely.
 
-If the objective is to protect the business while continuing to ship, this 2026-04-14 report should be evaluated as early security risk reduction with compounding engineering payoff, not as time spent on cosmetic refactoring.
+If the objective is to protect the business while continuing to ship, this 2026-04-16 report should be evaluated as early security risk reduction with compounding engineering payoff, not as time spent on cosmetic refactoring.
