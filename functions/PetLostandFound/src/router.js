@@ -35,6 +35,19 @@ const routes = {
   "GET /v2/account/{userId}/notifications": lazyRoute("./services/notifications", "listNotifications"),
   "POST /v2/account/{userId}/notifications": lazyRoute("./services/notifications", "createNotification"),
   "PUT /v2/account/{userId}/notifications/{notificationId}": lazyRoute("./services/notifications", "archiveNotification"),
+
+  // ==========================================
+  // DEAD / GHOST ROUTES (Safe to ignore or remove)
+  // These routes were either moved to other Lambdas or deleted from API Gateway,
+  // but logic or permissions for them still existed in the monolithic index.js.
+  // ==========================================
+  // Unknown else legacy route N/A (Catch-all Tag Uploader)<br>(Formerly /ptag/...)?
+  "Unknown Else Probably /ptag?": null,
+  // Moved to EyeUpload Lambda (Currently misconfigured in API Gateway)
+  "GET /pets/gets3Image": null,
+  "POST /pets/upload-array-images": null,
+  // Moved to OrderVerification
+  "PUT /orderVerification/supplier/{proxy+}": null,
 };
 
 /**

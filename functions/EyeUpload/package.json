@@ -2,7 +2,6 @@
   "name": "eye-upload-lambda",
   "version": "1.0.0",
   "description": "Lambda function for pet eye analysis and image upload",
-  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -12,7 +11,8 @@
     "jsonwebtoken": "^9.0.3",
     "lambda-multipart-parser": "^1.0.1",
     "mime": "^4.0.1",
-    "mongoose": "^8.1.0"
+    "mongoose": "^8.1.0",
+    "zod": "^4.3.6"
   },
   "keywords": [
     "lambda",

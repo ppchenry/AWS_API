@@ -1,0 +1,42 @@
+{
+  "others": {
+    "internalError": "Internal server error",
+    "unauthorized": "Authentication required. Please provide a valid token.",
+    "methodNotAllowed": "Method not allowed",
+    "invalidJSON": "Invalid JSON in request body",
+    "missingParams": "Missing required parameters",
+    "invalidInput": "Invalid input"
+  },
+  "eyeUpload": {
+    "petIdRequired": "Pet ID is required",
+    "noFilesUploaded": "No files uploaded",
+    "maxImagesExceeded": "Maximum 5 images allowed",
+    "tooManyFiles": "Only one file is allowed per request",
+    "invalidImageFormat": "File must be in JPEG or PNG format",
+    "fileTooLarge": "Image file is too large (max 30MB)",
+    "fileTooSmall": "Image file is empty",
+    "petNotFound": "Pet not found",
+    "userNotFound": "User not found",
+    "uploadFailed": "Failed to upload image",
+    "missingArguments": "Missing required arguments",
+    "unsupportedFormat": "Unsupported image format",
+    "duplicateNgoPetId": "Duplicate pet with this NGO Pet ID already exists",
+    "analysisError": "Eye analysis failed",
+    "speciesRequired": "Species is required",
+    "urlRequired": "Image URL is required",
+    "missingPetId": "Pet ID is required in path",
+    "invalidObjectId": "Invalid ID format",
+    "forbidden": "You do not have permission to perform this action",
+    "rateLimited": "Too many requests. Please try again later.",
+    "invalidFolder": "Invalid upload folder path",
+    "invalidRemovedIndices": "removedIndices must be a valid JSON array of numbers",
+    "ngoRoleRequired": "Only NGO accounts can perform this action",
+    "ngoIdClaimRequired": "Your NGO account is missing an organization ID. Please contact support.",
+    "nameRequired": "Pet name is required",
+    "animalRequired": "Animal type is required",
+    "sexRequired": "Sex is required",
+    "fieldTooLong": "Field value exceeds maximum length",
+    "invalidUrl": "Invalid URL format",
+    "unknownField": "Unknown field is not allowed"
+  }
+}
