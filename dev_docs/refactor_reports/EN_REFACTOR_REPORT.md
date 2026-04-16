@@ -10,6 +10,7 @@ The first refactor stage of the monorepo modernization effort has now completed 
 * `functions/AuthRoute`
 * `functions/GetAllPets`
 * `functions/PetLostandFound`
+* `functions/EyeUpload`
 
 This work sits inside the broader monorepo cleanup described in [README.md](README.md), follows the modernization baseline in [dev_docs/REFACTOR_CHECKLIST.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/REFACTOR_CHECKLIST.md), and is prioritized using [dev_docs/LAMBDA_REFACTOR_INVENTORY.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/LAMBDA_REFACTOR_INVENTORY.md).
 
@@ -21,6 +22,7 @@ The current verified outcome is:
 * `AuthRoute`: **22 / 22 tests passed**
 * `GetAllPets`: **49 passed, 2 skipped by environment / 51 reachable**
 * `PetLostandFound`: **59 / 59 integration tests passed**
+* `EyeUpload`: **94 / 94 integration tests passed**
 * Combined: **396 passed + 3 optional or env-gated tests skipped**
 
 The current verified outcome now also includes live deployed checks for `EmailVerification`:
@@ -38,7 +40,7 @@ The core account auth flow is now also clearer at the monorepo level:
 
 `PetLostandFound` is the first non-auth, pet-domain Lambda to complete full modular separation. The original 1089-line monolith was decomposed into 20+ focused modules, underwent 4 audit rounds fixing 15 findings, and passed 59 integration tests. During testing, a critical `mime` v4 ESM-only compatibility bug was discovered and fixed.
 
-The biggest improvement so far is security hardening. This refactor stage did not just clean up code structure. It directly reduced exploitability in six high-value Lambda surfaces already modernized.
+The biggest improvement so far is security hardening. This refactor stage did not just clean up code structure. It directly reduced exploitability in seven high-value Lambda surfaces already modernized.
 
 For non-technical stakeholders, the important point is this: this work was not optional cleanup. It removed weaknesses that could have allowed unauthorized data access, unauthorized account or pet deletion, account takeover, sensitive data leakage, brute-force abuse, and route-level authorization bypass. In a startup environment, those are not theoretical engineering concerns. They are business risks that can turn into customer-impacting incidents, emergency hotfixes, support burden, reputational damage, and loss of trust.
 
@@ -172,11 +174,13 @@ For the first completed reference Lambdas, the hardening coverage is high.
 
 * `UserRoutes` documented **19 legacy security findings**, and its changelog states those legacy findings were addressed in this refactor stage
 * `PetBasicInfo` documented **13 legacy security findings** across auth, ownership, destructive operations, route matching, sanitization, and error handling
+* `EmailVerification` completed strict re-audit, **30 / 30 passing** integration tests, and live deployed verification for generate/verify behavior
 * `AuthRoute` now has a dedicated **22 / 22 passing** suite covering handler lifecycle, public-resource bypass, JWT middleware branches, NGO-claim token issuance, NGO approval denial, replay rejection, and refresh rotation
 * `GetAllPets` now has a dedicated **49 passed, 2 env-gated skipped** integration report covering public NGO listing, JWT verification, self-access, ownership enforcement, validation, sanitization, and mutation safety
 * `PetLostandFound` now has a dedicated **59 / 59 passing** integration suite covering pet-lost/pet-found CRUD, notifications CRUD, CORS preflight, JWT auth, guard validation, self-access enforcement, ownership-guarded delete, rate limiting, and response shape consistency
+* `EyeUpload` now has a dedicated **94 / 94 passing** integration suite covering CORS preflight, JWT auth, dead-route dispatch, schema validation, ownership enforcement, NGO authorization branches, upload validation, rate limiting, and fixture-backed pet access checks
 
-Taken together, that is **32 documented legacy security findings** directly addressed across the first 2 completed Lambdas, plus completed strict modernization and test-backed hardening for `EmailVerification`, `AuthRoute`, `GetAllPets`, and `PetLostandFound` covering the public verification, refresh-session, pet-access-control, and pet-domain CRUD portions of the platform surface.
+Taken together, that is **32 documented legacy security findings** directly addressed across the first 2 completed Lambdas, plus completed strict modernization and test-backed hardening for `EmailVerification`, `AuthRoute`, `GetAllPets`, `PetLostandFound`, and `EyeUpload` covering the public verification, refresh-session, pet-access-control, pet-domain CRUD, and pet-upload / analysis portions of the platform surface.
 
 A more defensible rough estimate is that **around 75% to 85% of the known code-owned attack surface identified in the first 2 audited Lambdas, plus the core public verification attack surface in `EmailVerification`, has now been meaningfully hardened**.
 
@@ -191,16 +195,16 @@ This is intentionally conservative and not stated as a hard 100%, because some r
 
 At the monorepo level, the hardening is still early.
 
-* **5 of 25** Lambdas in the current workspace have been modernized to the new baseline
+* **7 of 25** Lambdas in the current workspace have been modernized to the new baseline
 * that means roughly **28%** of the Lambda fleet has received this full hardening treatment so far
 * roughly **72%** of Lambdas still require the same route-by-route security verification and refactor discipline
 
 So the correct interpretation is:
 
-* inside the 5 completed Lambdas, most of the known code-owned attack classes on those surfaces have been handled
+* inside the 7 completed Lambdas, most of the known code-owned attack classes on those surfaces have been handled
 * across the whole monorepo, the modernization program is still in an early phase and broad residual risk remains until more Lambdas are refactored
 
-For management, this should be read as risk retirement in progress. This refactor stage did not finish the security program, but it already removed a meaningful amount of immediately actionable risk from 6 important production surfaces.
+For management, this should be read as risk retirement in progress. This refactor stage did not finish the security program, but it already removed a meaningful amount of immediately actionable risk from 7 important production surfaces.
 
 ---
 
@@ -295,7 +299,17 @@ For `PetLostandFound`, the hardened flow now includes:
 * CORS preflight with origin validation on all route groups
 * integration coverage across all CRUD operations, notifications, auth, guard, rate limiting, and response shape
 
-These security fixes are backed by the integration results summarized in [dev_docs/test_reports/USERROUTES_TEST_REPORT.md](dev_docs/test_reports/USERROUTES_TEST_REPORT.md), [dev_docs/test_reports/PETBASICINFO_TEST_REPORT.md](dev_docs/test_reports/PETBASICINFO_TEST_REPORT.md), [dev_docs/test_reports/EMAIL_VERIFICATION_TEST_REPORT.md](dev_docs/test_reports/EMAIL_VERIFICATION_TEST_REPORT.md), and [dev_docs/test_reports/PETLOSTANDFOUND_TEST_REPORT.md](dev_docs/test_reports/PETLOSTANDFOUND_TEST_REPORT.md).
+For `EyeUpload`, the hardened flow now includes:
+
+* full modular separation from a 1000+ line monolith into handler, router, middleware, config, service, utils, and schema modules
+* exact route dispatch with explicit `405` handling for legacy dead routes
+* JWT-protected create, update, upload, and analysis routes with DB-backed pet ownership enforcement
+* schema-backed validation for create, update, and breed-analysis payloads with stable `eyeUpload.*` error keys under Zod 4
+* upload allowlisting and folder traversal rejection for pet-breed image storage paths
+* per-route Mongo-backed rate limiting across all 6 active routes
+* integration coverage across auth, validation, ownership, NGO authorization, upload behavior, dead routes, and response shape
+
+These security fixes are backed by the integration results summarized in [dev_docs/test_reports/USERROUTES_TEST_REPORT.md](dev_docs/test_reports/USERROUTES_TEST_REPORT.md), [dev_docs/test_reports/PETBASICINFO_TEST_REPORT.md](dev_docs/test_reports/PETBASICINFO_TEST_REPORT.md), [dev_docs/test_reports/EMAIL_VERIFICATION_TEST_REPORT.md](dev_docs/test_reports/EMAIL_VERIFICATION_TEST_REPORT.md), [dev_docs/test_reports/PETLOSTANDFOUND_TEST_REPORT.md](dev_docs/test_reports/PETLOSTANDFOUND_TEST_REPORT.md), and [dev_docs/test_reports/EYEUPLOAD_TEST_REPORT.md](dev_docs/test_reports/EYEUPLOAD_TEST_REPORT.md).
 
 ---
 
@@ -326,7 +340,6 @@ The completed reference Lambdas now follow a consistent lifecycle:
 * JWT auth
 * guard validation
 * DB bootstrap
- The first refactor stage of the monorepo modernization effort has now completed 7 Lambdas in place:
 * service execution
 * centralized response building
 
@@ -334,39 +347,22 @@ This gives engineers a predictable structure across Lambdas and reduces the risk
 
 That improves:
 
- * `functions/EyeUpload`
 * readability
 * testability
 * reviewability
-* `EyeUpload`: **94 / 94 integration tests passed**
-* Combined: **396 passed + 3 optional or env-gated tests skipped**
 * confidence when changing one route without breaking unrelated behavior
 
 ---
- By Lambda count, **7 of 25** Lambdas currently present in this workspace are now at the new hardened baseline. That is roughly **28%** of the Lambda fleet.
 
 ### 4. Scalability Improvements
- Taken together, that is **32 documented legacy security findings** directly addressed across the first 2 completed Lambdas, plus completed strict modernization and test-backed hardening for `EmailVerification`, `AuthRoute`, `GetAllPets`, `PetLostandFound`, and `EyeUpload` covering the public verification, refresh-session, pet-access-control, pet-domain CRUD, and pet-upload / analysis portions of the platform surface.
 
 The refactors improve scalability in both codebase and operational terms.
-* **7 of 25** Lambdas in the current workspace have been modernized to the new baseline
+
 At the codebase level:
-* that means roughly **28%** of the Lambda fleet has received this full hardening treatment so far
 
 * the monorepo now has a reusable Lambda shape that can be repeated consistently
-* `EyeUpload` now has a dedicated **94 / 94 passing** integration suite covering CORS preflight, JWT auth, dead-route dispatch, schema validation, ownership enforcement, NGO authorization branches, upload validation, rate limiting, and fixture-backed pet access checks
 * utilities and patterns are becoming standardized instead of reimplemented ad hoc
 * route-level logic is easier to extend without expanding a single god file
-
-For `EyeUpload`, the hardened flow now includes:
-
-* full modular separation from a 1000+ line monolith into handler, router, middleware, config, service, utils, and schema modules
-* exact route dispatch with explicit 405 handling for legacy dead routes
-* JWT-protected create, update, upload, and analysis routes with DB-backed pet ownership enforcement
-* schema-backed validation for create, update, and breed-analysis payloads with stable `eyeUpload.*` error keys under Zod 4
-* upload allowlisting and folder traversal rejection for pet-breed image storage paths
-* per-route Mongo-backed rate limiting across all 6 active routes
-* integration coverage across auth, validation, ownership, NGO authorization, upload behavior, dead routes, and response shape
 
 At the runtime level:
 
