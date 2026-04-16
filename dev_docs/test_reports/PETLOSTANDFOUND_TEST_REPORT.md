@@ -2,15 +2,22 @@
 
 **Date:** 2026-04-15
 **Service:** `PetLostandFound` Lambda (AWS SAM)
-**Suite:** `__tests__/test-petlostandfound.test.js`
+**Primary test suite:** `__tests__/test-petlostandfound.test.js`
 **Result:** **59 / 59 tests passed ✅**
-**Runtime:** ~72 seconds
+**Duration:** `~72 seconds`
 
 ---
 
 ## 1. What Was Tested
 
 Tests were run against a live SAM local environment (`sam local start-api --env-vars env.json --warm-containers EAGER`) connected to the UAT MongoDB cluster (`petpetclub_uat`). Integration tests sent real HTTP requests and asserted on HTTP status codes, response body fields, and machine-readable error keys.
+
+Current status:
+
+- Lost-pet, found-pet, and notification routes are all covered through live integration requests.
+- Ownership, self-access, malformed input, and rate-limit behavior are explicitly asserted.
+- Multipart create flows and notification archive flows are stable in the current suite.
+- The report also captures the runtime bug found during testing and the code fix applied.
 
 ### 1.1 Endpoint Coverage
 
@@ -108,16 +115,23 @@ Every error response follows a fixed shape:
 ### Field Reference
 
 | Field | Type | Purpose |
-|-------|------|---------|
+| --- | --- | --- |
 | `success` | `boolean` | Always `false` for errors |
 | `errorKey` | `string` | Machine-readable dot-notation key for `switch`/`if` routing |
 | `error` | `string` | Human-readable translated message (`zh` default, `en` with `?lang=en`) |
 | `requestId` | `string` | AWS Lambda request ID for CloudWatch log lookup |
 
+### CloudWatch Log Lookup
+
+```text
+AWS Console -> CloudWatch -> Log Groups -> /aws/lambda/PetLostandFound
+  -> Search by requestId value
+```
+
 ### Error Key Reference Table
 
 | errorKey | Context |
-|----------|---------|
+| --- | --- |
 | `others.unauthorized` | Missing, expired, or invalid JWT |
 | `others.selfAccessDenied` | JWT userId ≠ path userId, or not record owner |
 | `others.invalidJSON` | Malformed JSON body |
@@ -136,19 +150,39 @@ Every error response follows a fixed shape:
 
 ---
 
-## 3. Bugs Found & Fixed During Testing
+## 3. Security Measures Verified
 
-| # | Severity | Issue | Fix |
-|---|----------|-------|-----|
-| 1 | **Critical** | `mime` v4 is ESM-only — `require("mime")` threw `ERR_REQUIRE_ESM` in Lambda Docker runtime, causing all pet-lost and pet-found routes to return 500 | Replaced static `require("mime")` with lazy `async getMime()` using dynamic `import()` with module-level caching in `src/services/imageUpload.js` |
-| 2 | Low | Rate limit test used non-hex userIds (e.g. `rl_lost_...`) causing CastError | Test-only fix — userIds now generated as valid 24-char hex strings |
+| Attack / Risk | Mitigation | Verified |
+| --- | --- | --- |
+| Missing or invalid JWT | Auth guard rejects missing, expired, malformed, and wrong-secret tokens | ✅ |
+| Cross-user notification access | Self-access enforcement compares JWT userId against path userId | ✅ |
+| Cross-owner lost-pet deletion | Ownership check returns 403 for non-owners | ✅ |
+| Archive mutation on another user's notification | Compound query prevents cross-user archive and returns 404 | ✅ |
+| Create-route abuse | Pet-lost and pet-found creates rate-limit at 5 req / 60 s per user | ✅ |
+| `isArchived` mass-assignment injection | Create flow ignores caller-supplied `isArchived: true` | ✅ |
+| Invalid ObjectId path injection | Path params validated before downstream DB logic | ✅ |
+| Malformed JSON body | Guard returns `400 others.invalidJSON` | ✅ |
+| Empty request body | POST and PUT body guards return `400 others.missingParams` | ✅ |
+| CORS origin abuse | Disallowed origins on OPTIONS return 403 | ✅ |
+| Internal field leakage | List responses exclude `__v` and preserve fixed error shape | ✅ |
+| Legacy or unmapped methods | Unsupported methods return 405 or are blocked before handler logic | ✅ |
 
 ---
 
-## 4. Environment
+## 4. Additional Notes
+
+### Bugs Found & Fixed During Testing
+
+| # | Severity | Issue | Fix |
+| --- | --- | --- | --- |
+| 1 | **Critical** | `mime` v4 is ESM-only — `require("mime")` threw `ERR_REQUIRE_ESM` in Lambda Docker runtime, causing all pet-lost and pet-found routes to return 500 | Replaced static `require("mime")` with lazy `async getMime()` using dynamic `import()` with module-level caching in `src/services/imageUpload.js` |
+| 2 | Low | Rate limit test used non-hex userIds (e.g. `rl_lost_...`) causing CastError | Test-only fix — userIds now generated as valid 24-char hex strings |
+
+
+### Test Environment
 
 | Component | Version/Config |
-|-----------|---------------|
+| --- | --- |
 | Runtime | nodejs22.x (SAM Docker) |
 | Node.js (host) | v24.14.0 |
 | Mongoose | v9.2.0 |
@@ -160,9 +194,8 @@ Every error response follows a fixed shape:
 | MongoDB | Atlas cluster (petpetclub_uat) |
 | SAM CLI | sam local start-api with --warm-containers EAGER |
 
----
 
-## 5. How To Run
+### How To Run
 
 ```bash
 # Terminal 1 — Start SAM local
@@ -175,12 +208,11 @@ npm test -- --testPathPattern=test-petlostandfound
 
 Tests auto-clean up test data via DB-backed cleanup (requires `MONGODB_URI` in `env.json` `PetLostandFoundFunction`).
 
----
 
-## 6. Remaining Gaps
+### Remaining Gaps
 
 | Item | Owner | Status |
-|------|-------|--------|
+| --- | --- | --- |
 | Serial number race condition | infra | Deferred — needs DB unique index |
 | Hard delete → soft delete migration | code | Deferred |
 | File upload integration test (actual S3 write) | test | Not covered — would need S3 mocking or localstack |

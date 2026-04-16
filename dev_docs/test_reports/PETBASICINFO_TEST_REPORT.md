@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-12
 **Service:** `PetBasicInfo` Lambda (AWS SAM)
-**Test suite:** `__tests__/test-petbasicinfo.test.js`
+**Primary test suite:** `__tests__/test-petbasicinfo.test.js`
 **Result:** `36 passed, 1 skipped` in the latest local run with only `TEST_PET_ID` + `TEST_OWNER_USER_ID` configured. The full delete lifecycle path was previously validated and passes when `TEST_DISPOSABLE_PET_ID` is configured to a separate live pet.
 
 > **Fixture dependency:** 16 of the 37 tests are gated behind `TEST_PET_ID` + `TEST_OWNER_USER_ID` in `env.json PetBasicInfoFunction`. One additional lifecycle test requires `TEST_DISPOSABLE_PET_ID`, and that disposable pet must be different from `TEST_PET_ID`.
@@ -12,6 +12,13 @@
 ## 1. What Was Tested
 
 Tests were run as end-to-end integration tests against a live SAM local environment connected to the UAT MongoDB cluster (`petpetclub_uat`). Every test sent a real HTTP request and asserted on HTTP status code, response body fields, and machine-readable error keys.
+
+Current status:
+
+- Core read, update, eye-log, and delete behavior is covered against live UAT data.
+- Ownership, malformed JSON, field governance, and sanitization paths are all explicitly asserted.
+- One delete lifecycle test remains env-gated on a disposable pet fixture instead of being treated as a product failure.
+- The report already reflects the current uniform 404 behavior for missing and deleted pets.
 
 ### 1.1 Endpoint Coverage
 
@@ -90,11 +97,20 @@ Every error response from PetBasicInfo follows the same fixed shape used across 
 }
 ```
 
+### Field Reference
+
+| Field | Type | Purpose |
+| --- | --- | --- |
+| `success` | `boolean` | Always `false` for errors. Safe to check as a gate. |
+| `errorKey` | `string` | Machine-readable dot-notation key for frontend routing. |
+| `error` | `string` | Human-readable translated message (`zh` default, `en` with `?lang=en`). |
+| `requestId` | `string` | AWS Lambda request ID for CloudWatch lookup. |
+
 ### CloudWatch Log Lookup
 
 ```text
-AWS Console → CloudWatch → Log Groups → /aws/lambda/PetBasicInfoFunction
-  → Search by requestId value
+AWS Console -> CloudWatch -> Log Groups -> /aws/lambda/PetBasicInfoFunction
+  -> Search by requestId value
 ```
 
 ### Error Key Reference Table
@@ -148,7 +164,9 @@ AWS Console → CloudWatch → Log Groups → /aws/lambda/PetBasicInfoFunction
 
 ---
 
-## 4. Test Environment
+## 4. Additional Notes
+
+### Test Environment
 
 | Item | Value |
 | --- | --- |

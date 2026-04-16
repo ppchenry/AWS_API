@@ -2,8 +2,8 @@
 
 **Date:** 2026-04-16
 **Service:** `EyeUpload` Lambda (AWS SAM)
-**Test suite:** `__tests__/test-eyeupload.test.js`
-**Command:** `npx jest --runInBand --testPathPattern=test-eyeupload --modulePathIgnorePatterns=".aws-sam" --no-coverage`
+**Primary test suite:** `__tests__/test-eyeupload.test.js`
+**Run command:** `npx jest --runInBand --testPathPattern=test-eyeupload --modulePathIgnorePatterns=".aws-sam" --no-coverage`
 **Result:** **94 / 94 tests passed ✅**
 **Duration:** `93.58 s`
 
@@ -14,6 +14,13 @@ This report reflects the latest full rerun after standardizing EyeUpload on Zod 
 ## 1. What Was Tested
 
 Tests were executed as end-to-end integration tests against a live SAM local environment on `http://localhost:3000`, with EyeUpload connected to the UAT MongoDB cluster (`petpetclub_uat`) and the configured S3 / external ML dependencies from `env.json`.
+
+Current status:
+
+- All six active routes are covered across auth, validation, happy-path upload, ownership, and rate-limit behavior.
+- Legacy dead routes remain explicitly mapped to `405 others.methodNotAllowed`.
+- Strict Zod validation is now consistently enforced across create, update, and breed-analysis flows.
+- File upload and folder allowlist protections are covered with integration tests.
 
 ### 1.1 Endpoint Coverage
 
@@ -92,43 +99,7 @@ These were validated through direct router dispatch in the test suite, not throu
 
 ---
 
-## 2. Test Environment
-
-| Item | Value |
-| --- | --- |
-| Runtime | Node.js 22 (AWS SAM Local) |
-| Test framework | Jest 29.7 (`--runInBand`) |
-| Database | MongoDB Atlas UAT (`petpetclub_uat`) |
-| SAM setup used for latest full verification | Fresh SAM local API on `http://localhost:3000` after `sam build EyeUploadFunction` |
-| Full suite command | `npx jest --runInBand --testPathPattern=test-eyeupload --modulePathIgnorePatterns=".aws-sam" --no-coverage` |
-| Fixture config | `env.json EyeUploadFunction`: `TEST_PET_ID`, `TEST_OWNER_USER_ID` |
-
-### Notes
-
-- Fixture-backed requests under local SAM can still be slow, so those tests retain extended per-test timeouts in the suite.
-- The first allowed-origin preflight request may also pay a SAM-local cold-start penalty, so that single preflight test now uses a 60-second timeout to avoid false failures unrelated to application logic.
-
----
-
-## 3. Security Measures Verified
-
-| Attack | Mitigation | Test evidence |
-| --- | --- | --- |
-| Missing / expired / tampered JWT | `authJWT` rejects invalid tokens with HS256 pinned | ✅ Asserted |
-| `alg:none` JWT bypass | Algorithm restricted to `HS256` | ✅ Asserted |
-| Cross-owner pet update | `loadAuthorizedPet` enforces owner / NGO ownership | ✅ Asserted |
-| Cross-owner eye analysis | `loadAuthorizedPet` enforces owner / NGO ownership | ✅ Asserted |
-| Client-supplied `userId` mass-assignment | Strict schemas reject `userId` in create flow; eye analysis uses JWT identity only | ✅ Asserted |
-| Unknown field mass-assignment | Schema-level allowlist validation rejects extra fields with `eyeUpload.unknownField` before DB writes | ✅ Asserted |
-| Invalid JSON body | Guard rejects malformed JSON before service execution | ✅ Asserted |
-| Folder traversal / arbitrary key injection | uploadPetBreedImage uses allowlisted top-level prefixes and rejects `.` / `..` segments | ✅ Asserted |
-| Upload validation mismatch | `/util/uploadImage` validates the actual uploaded file and restricts requests to one file | ✅ Asserted |
-| Rate-limit storage race | Mongo-backed limiter includes duplicate-key retry and was validated through integration tests | ✅ Asserted |
-| Dead-route accidental exposure | Deprecated routes return explicit `405` via router instead of executing logic | ✅ Asserted |
-
----
-
-## 4. Error Response Contract
+## 2. How Frontend Can Trace Errors
 
 All EyeUpload errors follow the standard shape:
 
@@ -139,6 +110,22 @@ All EyeUpload errors follow the standard shape:
   "error": "Pet not found",
   "requestId": "aws-request-id"
 }
+```
+
+### Field Reference
+
+| Field | Type | Purpose |
+| --- | --- | --- |
+| `success` | `boolean` | Always `false` for errors. Safe to check as a gate. |
+| `errorKey` | `string` | Machine-readable dot-notation key for frontend routing. |
+| `error` | `string` | Human-readable translated message. |
+| `requestId` | `string` | AWS Lambda request ID for CloudWatch lookup. |
+
+### CloudWatch Log Lookup
+
+```text
+AWS Console -> CloudWatch -> Log Groups -> /aws/lambda/EyeUpload
+  -> Search by requestId value
 ```
 
 ### Representative error keys verified by tests
@@ -163,7 +150,43 @@ All EyeUpload errors follow the standard shape:
 
 ---
 
-## 5. Documentation Notes
+## 3. Security Measures Verified
+
+| Attack | Mitigation | Test evidence |
+| --- | --- | --- |
+| Missing / expired / tampered JWT | `authJWT` rejects invalid tokens with HS256 pinned | ✅ Asserted |
+| `alg:none` JWT bypass | Algorithm restricted to `HS256` | ✅ Asserted |
+| Cross-owner pet update | `loadAuthorizedPet` enforces owner / NGO ownership | ✅ Asserted |
+| Cross-owner eye analysis | `loadAuthorizedPet` enforces owner / NGO ownership | ✅ Asserted |
+| Client-supplied `userId` mass-assignment | Strict schemas reject `userId` in create flow; eye analysis uses JWT identity only | ✅ Asserted |
+| Unknown field mass-assignment | Schema-level allowlist validation rejects extra fields with `eyeUpload.unknownField` before DB writes | ✅ Asserted |
+| Invalid JSON body | Guard rejects malformed JSON before service execution | ✅ Asserted |
+| Folder traversal / arbitrary key injection | uploadPetBreedImage uses allowlisted top-level prefixes and rejects `.` / `..` segments | ✅ Asserted |
+| Upload validation mismatch | `/util/uploadImage` validates the actual uploaded file and restricts requests to one file | ✅ Asserted |
+| Rate-limit storage race | Mongo-backed limiter includes duplicate-key retry and was validated through integration tests | ✅ Asserted |
+| Dead-route accidental exposure | Deprecated routes return explicit `405` via router instead of executing logic | ✅ Asserted |
+
+---
+
+## 4. Additional Notes
+
+### Test Environment
+
+| Item | Value |
+| --- | --- |
+| Runtime | Node.js 22 (AWS SAM Local) |
+| Test framework | Jest 29.7 (`--runInBand`) |
+| Database | MongoDB Atlas UAT (`petpetclub_uat`) |
+| SAM setup used for latest full verification | Fresh SAM local API on `http://localhost:3000` after `sam build EyeUploadFunction` |
+| Full suite command | `npx jest --runInBand --testPathPattern=test-eyeupload --modulePathIgnorePatterns=".aws-sam" --no-coverage` |
+| Fixture config | `env.json EyeUploadFunction`: `TEST_PET_ID`, `TEST_OWNER_USER_ID` |
+
+### Notes
+
+- Fixture-backed requests under local SAM can still be slow, so those tests retain extended per-test timeouts in the suite.
+- The first allowed-origin preflight request may also pay a SAM-local cold-start penalty, so that single preflight test now uses a 60-second timeout to avoid false failures unrelated to application logic.
+
+### Documentation Notes
 
 - `PUT /pets/updatePetEye` remains a dead route in the EyeUpload router and should not be mounted under `EyeUploadFunction` in the shared SAM template, because `GetAllPetsFunction` already owns that API Gateway path.
 - `/util/uploadImage` currently accepts exactly one uploaded file and does not require `petId`; this report and the API reference have been aligned to the implementation.

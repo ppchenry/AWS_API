@@ -2,61 +2,69 @@
 
 **Date:** 2026-04-15
 **Service:** `AuthRoute` Lambda (AWS SAM)
-**Test suite:** `__tests__/test-authroute.test.js`
+**Primary test suite:** `__tests__/test-authroute.test.js`
 **Result:** **22 / 22 tests passed ✅**
 
 ---
 
 ## 1. What Was Tested
 
-Tests are unit/integration tests using Jest with module mocking. The handler tests exercise the full lifecycle (OPTIONS → authJWT → guard → DB → router → service) by mocking the DB layer. The service tests call `refreshSession` directly with mocked Mongoose models. The authJWT middleware tests exercise every branch of the JWT verification module in isolation.
+Tests are unit/integration tests using Jest with module mocking. The handler tests exercise the full lifecycle (OPTIONS -> authJWT -> guard -> DB -> router -> service) by mocking the DB layer. The service tests call `refreshSession` directly with mocked Mongoose models. The authJWT middleware tests exercise every branch of the JWT verification module in isolation.
 
-### 1.1 Test Coverage
+Current status:
 
-| Suite | Tests |
-| --- | --- |
-| Token utilities | 3 |
-| Handler lifecycle | 5 |
-| authJWT middleware | 7 |
-| Refresh service | 7 |
-| **Total** | **22** |
+- Token issuance, cookie construction, and refresh-session rotation behavior are fully covered.
+- The public refresh route is validated through the handler path and directly at the service layer.
+- authJWT middleware behavior is explicitly covered for valid, malformed, expired, bypassed, and misconfigured-secret cases.
+- The deployed AuthRoute surface remains intentionally narrow: one refresh endpoint plus OPTIONS preflight.
+
+### 1.1 Endpoint Coverage
+
+| Endpoint / Area | Method | Tests |
+| --- | --- | --- |
+| Token utilities | — | 3 |
+| `/auth/refresh` handler lifecycle | OPTIONS / POST / PUT safety-net | 5 |
+| `authJWT` middleware | — | 7 |
+| `refreshSession` service | POST | 7 |
+| **Total** | | **22** |
 
 ### 1.2 Test Categories
 
-#### Token Utilities
+#### Happy-path flows
 
 - Access token issuance with modern claims (`userId`, `userEmail`, `userRole`) and 15-minute expiry
 - NGO access token issuance with preserved `ngoId` and `ngoName` claims
 - Refresh cookie construction with `HttpOnly`, `Secure`, `SameSite=Strict`, stage-scoped path, and `Max-Age`
 - Cookie parsing from `event.cookies` array format
+- POST `/auth/refresh` reaches the refresh service through the full handler path
+- Successful refresh rotates the refresh token, returns a new access token, and emits a new `Set-Cookie` header
 
-#### Handler Lifecycle
+#### Input validation and contract behavior
 
 - OPTIONS preflight returns 204 with CORS headers without opening a DB connection
-- Unmapped HTTP methods (PUT on `/auth/refresh`) return 405 as a Lambda safety net — not deployed in API Gateway
-- POST `/auth/refresh` reaches the refresh service through the full handler path (OPTIONS → authJWT → guard → DB → router)
-- POST `/auth/refresh` bypasses authJWT because it is in `PUBLIC_RESOURCES` — error comes from the service, not the auth layer
-- Non-public resources are blocked by authJWT before DB is opened → 401
+- Unmapped HTTP methods (PUT on `/auth/refresh`) return 405 as a Lambda safety net and are not production API Gateway routes
+- POST `/auth/refresh` bypasses authJWT because it is in `PUBLIC_RESOURCES`; failures come from the service rather than the auth layer
+- Missing refresh token cookie -> 401 with `authRefresh.missingRefreshToken`
+- Invalid refresh token cookie -> 401 with `authRefresh.invalidRefreshTokenCookie`
+- Stale or missing refresh session record -> 401 with `authRefresh.invalidSession`
 
-#### authJWT Middleware
+#### Authentication & authorisation
 
+- Non-public resources are blocked by authJWT before DB is opened -> 401
 - OPTIONS requests return null without inspecting headers
-- Valid Bearer token: verifies HS256, attaches `userId`, `userEmail`, `userRole`, `user`, and `requestContext.authorizer` to event
-- Malformed Bearer header (wrong prefix) → 401
-- Expired token → 401 (via `jwt.verify` catch)
-- Missing `JWT_SECRET` at request time → 500 with `others.internalError`
+- Valid Bearer token attaches `userId`, `userEmail`, `userRole`, `user`, and `requestContext.authorizer` to the event
+- Malformed Bearer header (wrong prefix) -> 401
+- Expired token -> 401
+- Missing `JWT_SECRET` at request time -> 500 with `others.internalError`
 - `JWT_BYPASS=true` in non-production attaches dev identity (`dev-user-id`) and returns null
-- `JWT_BYPASS=true` is ignored when `NODE_ENV=production` → 401
+- `JWT_BYPASS=true` is ignored when `NODE_ENV=production` -> 401
 
-#### Refresh Service
+#### Security hardening
 
-- Rate limiting enforced → 429 with `others.rateLimited`
-- Missing refresh token cookie → 401 with `authRefresh.missingRefreshToken`
-- Invalid refresh token cookie (present but wrong name) → 401 with `authRefresh.invalidRefreshTokenCookie`
-- Stale/missing token record in DB → 401 with `authRefresh.invalidSession`
-- Successful token rotation: old token consumed via `findOneAndDelete`, new refresh token issued, new access token returned with correct claims, `Set-Cookie` header with stage-scoped path and `SameSite=Strict`, replay of old token returns 401
-- NGO session refresh preserves `ngoId` and `ngoName` claims instead of downgrading the refreshed session to a plain user token
-- NGO session refresh returns 403 when the NGO is no longer approved (`!isActive || !isVerified`)
+- Rate limiting enforced on refresh -> 429 with `others.rateLimited`
+- Refresh token replay fails after the original token is consumed atomically via `findOneAndDelete`
+- NGO session refresh preserves `ngoId` and `ngoName` claims instead of downgrading the session to a plain user token
+- NGO session refresh returns 403 when NGO approval has been revoked (`!isActive || !isVerified`)
 
 ---
 
@@ -77,10 +85,17 @@ Every error response from AuthRoute follows a fixed shape:
 
 | Field | Type | Purpose |
 | --- | --- | --- |
-| `success` | `boolean` | Always `false` for errors. |
+| `success` | `boolean` | Always `false` for errors. Safe to check as a gate. |
 | `errorKey` | `string` | Machine-readable dot-notation key for frontend routing. |
-| `error` | `string` | Translated message (`zh` default, `en` with `?lang=en`). |
+| `error` | `string` | Human-readable translated message (`zh` default, `en` with `?lang=en`). |
 | `requestId` | `string` | AWS Lambda request ID for CloudWatch lookup. |
+
+### CloudWatch Log Lookup
+
+```text
+AWS Console -> CloudWatch -> Log Groups -> /aws/lambda/AuthRoute
+  -> Search by requestId value
+```
 
 ### Error Key Reference Table
 
@@ -101,10 +116,10 @@ Every error response from AuthRoute follows a fixed shape:
 
 | Attack | Mitigation | Verified |
 | --- | --- | --- |
-| Expired JWT | `jwt.verify()` rejects → 401 | ✅ |
-| Malformed Bearer header | Prefix check rejects → 401 | ✅ |
-| Missing Authorization on protected route | authJWT blocks before DB → 401 | ✅ |
-| `JWT_BYPASS` in production | Bypass condition requires `NODE_ENV !== "production"` → 401 | ✅ |
+| Expired JWT | `jwt.verify()` rejects -> 401 | ✅ |
+| Malformed Bearer header | Prefix check rejects -> 401 | ✅ |
+| Missing Authorization on protected route | authJWT blocks before DB -> 401 | ✅ |
+| `JWT_BYPASS` in production | Bypass condition requires `NODE_ENV !== "production"` -> 401 | ✅ |
 | Missing `JWT_SECRET` at runtime | Explicit check returns 500, does not leak stack | ✅ |
 | Refresh token replay | `findOneAndDelete` consumes token atomically; replay returns 401 | ✅ |
 | NGO session downgrade after refresh | Refresh rehydrates active NGO context and preserves NGO claims | ✅ |
@@ -117,7 +132,9 @@ Every error response from AuthRoute follows a fixed shape:
 
 ---
 
-## 4. Deployed Contract vs Test Coverage
+## 4. Additional Notes
+
+### Deployed Contract vs Test Coverage
 
 `template.yaml` deploys exactly two events for AuthRoute:
 
@@ -128,9 +145,7 @@ Every error response from AuthRoute follows a fixed shape:
 
 No other methods or paths are deployed. The PUT 405 test documents a Lambda-level safety net, not a production route.
 
----
-
-## 5. Test Environment
+### Test Environment
 
 | Item | Value |
 | --- | --- |

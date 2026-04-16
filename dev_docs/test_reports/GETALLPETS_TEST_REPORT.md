@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-14
 **Service:** `GetAllPets` Lambda (AWS SAM)
-**Test suite:** `__tests__/test-getallpets.test.js`
+**Primary test suite:** `__tests__/test-getallpets.test.js`
 **Result:** Latest verification now spans two local runs:
 
 - Baseline suite run: `49 passed, 2 skipped` with `TEST_NGO_ID`, `TEST_OWNER_USER_ID`, and `TEST_PET_ID` configured
@@ -17,6 +17,13 @@ This means all `51` non-lifecycle tests in the current `53`-test file have passi
 ## 1. What Was Tested
 
 Tests were run as end-to-end integration tests against a live SAM local environment connected to the production MongoDB cluster (`petpetclub`). Every test sent a real HTTP request and asserted on HTTP status code, response body fields, and machine-readable error keys.
+
+Current status:
+
+- All 51 non-lifecycle tests in the current file have passing evidence.
+- Two lifecycle tests remain intentionally env-gated on `TEST_DISPOSABLE_PET_ID` rather than failing noisily.
+- Public NGO listing, self-access user listing, and write-path mutation routes are all covered.
+- Recent work added deterministic write-path rate-limit verification for both delete and updatePetEye.
 
 ### 1.1 Endpoint Coverage
 
@@ -139,11 +146,20 @@ Every error response from GetAllPets follows the same fixed shape used across al
 }
 ```
 
+### Field Reference
+
+| Field | Type | Purpose |
+| --- | --- | --- |
+| `success` | `boolean` | Always `false` for errors. Safe to check as a gate. |
+| `errorKey` | `string` | Machine-readable dot-notation key for frontend routing. |
+| `error` | `string` | Human-readable translated message (`zh` default, `en` with `?lang=en`). |
+| `requestId` | `string` | AWS Lambda request ID for CloudWatch lookup. |
+
 ### CloudWatch Log Lookup
 
 ```text
-AWS Console → CloudWatch → Log Groups → /aws/lambda/GetAllPetsFunction
-  → Search by requestId value
+AWS Console -> CloudWatch -> Log Groups -> /aws/lambda/GetAllPetsFunction
+  -> Search by requestId value
 ```
 
 ### Error Key Reference Table
@@ -197,7 +213,9 @@ AWS Console → CloudWatch → Log Groups → /aws/lambda/GetAllPetsFunction
 
 ---
 
-## 4. Test Environment
+## 4. Additional Notes
+
+### Test Environment
 
 | Item | Value |
 | --- | --- |
