@@ -14,18 +14,20 @@ The first refactor stage of the monorepo modernization effort has now completed 
 
 This work sits inside the broader monorepo cleanup described in [README.md](README.md), follows the modernization baseline in [dev_docs/REFACTOR_CHECKLIST.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/REFACTOR_CHECKLIST.md), and is prioritized using [dev_docs/LAMBDA_REFACTOR_INVENTORY.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/LAMBDA_REFACTOR_INVENTORY.md).
 
-The current verified outcome is:
+The current test-file-based case inventory is:
 
-* `UserRoutes`: **106 / 106 integration tests passed** plus **6 / 6 SMS service unit tests passed**
-* `PetBasicInfo`: **36 passed, 1 skipped by fixture / 37 reachable**
-* `EmailVerification`: **30 / 30 tests passed**
-* `AuthRoute`: **22 / 22 tests passed**
-* `GetAllPets`: **49 passed, 2 skipped by environment / 51 reachable**
-* `PetLostandFound`: **59 / 59 integration tests passed**
-* `EyeUpload`: **94 / 94 integration tests passed**
-* Combined: **396 passed + 3 optional or env-gated tests skipped**
+* `UserRoutes`: **106 declared integration test cases** in `__tests__/test-userroutes.test.js` plus **6 declared SMS unit test cases** in `__tests__/test-sms-service.test.js`
+* `PetBasicInfo`: **37 declared integration test cases** in `__tests__/test-petbasicinfo.test.js`
+* `EmailVerification`: **30 declared integration test cases** in `__tests__/test-emailverification.test.js`
+* `AuthRoute`: **22 declared test cases** in `__tests__/test-authroute.test.js`
+* `GetAllPets`: **53 declared integration test cases** in `__tests__/test-getallpets.test.js`
+* `PetLostandFound`: **59 declared integration test cases** in `__tests__/test-petlostandfound.test.js`
+* `EyeUpload`: **94 declared integration test cases** in `__tests__/test-eyeupload.test.js`
+* Combined: **401 declared integration test cases across the 7 refactored lambdas + 6 declared SMS unit test cases**
 
-The current verified outcome now also includes live deployed checks for `EmailVerification`:
+These counts describe declared cases in test files. They are not, by themselves, a same-day execution transcript.
+
+The current verified outcome also includes live deployed spot checks for `EmailVerification`:
 
 * `POST /account/generate-email-code` succeeded against the deployed Dev API Gateway and delivered a real verification email
 * `POST /account/verify-email-code` succeeded against the deployed Dev API Gateway and returned JWT plus refresh-cookie contract fields
@@ -40,7 +42,7 @@ The core account auth flow is now also clearer at the monorepo level:
 
 `PetLostandFound` is the first non-auth, pet-domain Lambda to complete full modular separation. The original 1089-line monolith was decomposed into 20+ focused modules, underwent 4 audit rounds fixing 15 findings, and passed 59 integration tests. During testing, a critical `mime` v4 ESM-only compatibility bug was discovered and fixed.
 
-The biggest improvement so far is security hardening. This refactor stage did not just clean up code structure. It directly reduced exploitability in seven high-value Lambda surfaces already modernized.
+The biggest improvement so far is security hardening. This refactor stage did not just clean up code structure. It materially reduced known exploitability in seven high-value Lambda surfaces already modernized.
 
 For non-technical stakeholders, the important point is this: this work was not optional cleanup. It removed weaknesses that could have allowed unauthorized data access, unauthorized account or pet deletion, account takeover, sensitive data leakage, brute-force abuse, and route-level authorization bypass. In a startup environment, those are not theoretical engineering concerns. They are business risks that can turn into customer-impacting incidents, emergency hotfixes, support burden, reputational damage, and loss of trust.
 
@@ -58,9 +60,13 @@ As of 2026-04-16, the program now has:
 * integration-test-backed verification for the first completed targets
 * a repeatable refactor pattern for the remaining Lambdas
 
-The completed Lambdas now act as the implementation baseline for the remaining 25-Lambda refactor program.
+The completed Lambdas now act as the implementation baseline for the remaining inventory-scoped refactor program.
 
-By Lambda count, **7 of 25** Lambdas currently present in this workspace are now at the new hardened baseline. That is roughly **28%** of the Lambda fleet.
+Based on `dev_docs/LAMBDA_REFACTOR_INVENTORY.md`, the official refactor scope is **22** Lambdas (with `adoption_website`, `AuthorizerRoute`, `TestIPLambda`, and `WhatsappRoute` explicitly listed as out-of-plan).
+
+By inventory scope, **7 of 22** Lambdas are now at the new hardened baseline. That is roughly **32%** completed, with **15 of 22** (about **68%**) remaining in-plan work.
+
+For workspace context, there are currently 26 function folders total; using that denominator alone would understate progress because 4 are intentionally excluded from the refactor plan.
 
 That also means the completed work should be seen as high-leverage groundwork, not as isolated refactoring. These first 7 Lambdas establish the secure pattern, the test strategy, and the operational standard that the remaining Lambdas can now follow.
 
@@ -141,7 +147,7 @@ Compared with the earlier legacy state, this is a material improvement because r
 
 The strongest message from this refactor stage is this: the legacy monolith pattern is not only a maintainability problem. It is an active security risk.
 
-Based on the confirmed legacy findings in `UserRoutes`, `PetBasicInfo`, the strict re-audit of `EmailVerification`, the refresh-session hardening in `AuthRoute`, the ownership/auth hardening in `GetAllPets`, and the full modular separation of `PetLostandFound`, the kinds of cyberattacks that can occur at any time in unmodernized legacy Lambdas, where the same coding patterns still exist, include:
+Based on the confirmed legacy findings in `UserRoutes`, `PetBasicInfo`, the strict re-audit of `EmailVerification`, the refresh-session hardening in `AuthRoute`, the ownership/auth hardening in `GetAllPets`, and the full modular separation of `PetLostandFound`, the following attack classes remain plausible in unmodernized legacy Lambdas where similar coding patterns still exist:
 
 * broken authentication attacks, where protected routes can be reached without valid JWT verification
 * horizontal privilege escalation / IDOR attacks, where a caller reads or mutates another user's or pet's data by changing a path param or body field
@@ -158,9 +164,9 @@ Based on the confirmed legacy findings in `UserRoutes`, `PetBasicInfo`, the stri
 * cross-origin exposure, where permissive or inconsistent CORS behavior allows sensitive endpoints to be called from unintended origins
 * error-message intelligence leakage, where raw validation or exception text reveals implementation details useful for follow-on attacks
 
-These attack classes are not hypothetical. They are derived from vulnerabilities already confirmed in the legacy versions of the already-audited reference Lambdas.
+These attack classes are evidence-backed: they are derived from vulnerabilities confirmed in legacy versions of already-audited reference Lambdas. Whether each remaining Lambda is affected must still be verified route by route.
 
-Put simply: if similar legacy patterns exist in the remaining Lambdas, then the platform is exposed to exploitable weaknesses right now until each surface is reviewed and hardened.
+Put simply: if similar legacy patterns exist in remaining Lambdas, exploitable weaknesses may still be present until each surface is reviewed and hardened.
 
 ---
 
@@ -175,14 +181,14 @@ For the first completed reference Lambdas, the hardening coverage is high.
 * `UserRoutes` documented **19 legacy security findings**, and its changelog states those legacy findings were addressed in this refactor stage
 * `PetBasicInfo` documented **13 legacy security findings** across auth, ownership, destructive operations, route matching, sanitization, and error handling
 * `EmailVerification` completed strict re-audit, **30 / 30 passing** integration tests, and live deployed verification for generate/verify behavior
-* `AuthRoute` now has a dedicated **22 / 22 passing** suite covering handler lifecycle, public-resource bypass, JWT middleware branches, NGO-claim token issuance, NGO approval denial, replay rejection, and refresh rotation
-* `GetAllPets` now has a dedicated **49 passed, 2 env-gated skipped** integration report covering public NGO listing, JWT verification, self-access, ownership enforcement, validation, sanitization, and mutation safety
+* `AuthRoute` now has a dedicated **22-case** suite in `__tests__/test-authroute.test.js` covering handler lifecycle, public-resource bypass, JWT middleware branches, NGO-claim token issuance, NGO approval denial, replay rejection, and refresh rotation
+* `GetAllPets` now has a dedicated **53-case** integration suite in `__tests__/test-getallpets.test.js` covering public NGO listing, JWT verification, self-access, ownership enforcement, validation, sanitization, and mutation safety
 * `PetLostandFound` now has a dedicated **59 / 59 passing** integration suite covering pet-lost/pet-found CRUD, notifications CRUD, CORS preflight, JWT auth, guard validation, self-access enforcement, ownership-guarded delete, rate limiting, and response shape consistency
 * `EyeUpload` now has a dedicated **94 / 94 passing** integration suite covering CORS preflight, JWT auth, dead-route dispatch, schema validation, ownership enforcement, NGO authorization branches, upload validation, rate limiting, and fixture-backed pet access checks
 
 Taken together, that is **32 documented legacy security findings** directly addressed across the first 2 completed Lambdas, plus completed strict modernization and test-backed hardening for `EmailVerification`, `AuthRoute`, `GetAllPets`, `PetLostandFound`, and `EyeUpload` covering the public verification, refresh-session, pet-access-control, pet-domain CRUD, and pet-upload / analysis portions of the platform surface.
 
-A more defensible rough estimate is that **around 75% to 85% of the known code-owned attack surface identified in the first 2 audited Lambdas, plus the core public verification attack surface in `EmailVerification`, has now been meaningfully hardened**.
+A more accurate statement is qualitative rather than percentage-based: **a substantial portion of the known code-owned attack surface identified in the first 2 audited Lambdas, plus the core public verification attack surface in `EmailVerification`, has now been meaningfully hardened**.
 
 This is intentionally conservative and not stated as a hard 100%, because some residual risk is still outside pure handler hardening, for example:
 
@@ -195,9 +201,10 @@ This is intentionally conservative and not stated as a hard 100%, because some r
 
 At the monorepo level, the hardening is still early.
 
-* **7 of 25** Lambdas in the current workspace have been modernized to the new baseline
-* that means roughly **28%** of the Lambda fleet has received this full hardening treatment so far
-* roughly **72%** of Lambdas still require the same route-by-route security verification and refactor discipline
+* **7 of 22** inventory-scoped Lambdas have been modernized to the new baseline
+* that means roughly **32%** of the in-plan Lambda fleet has received this full hardening treatment so far
+* roughly **68%** of in-plan Lambdas still require the same route-by-route security verification and refactor discipline
+* plus **4 workspace Lambdas** are currently tracked as intentionally out-of-plan in the inventory
 
 So the correct interpretation is:
 
@@ -459,7 +466,7 @@ This is why the work may feel slower than surface-level coding changes: secure m
 
 ## Conclusion
 
-As of 2026-04-16, the monorepo refactor effort has already produced 7 strong reference implementations, 396 passed tests plus 3 optional or env-gated skipped tests, and a verified pattern for continuing the remaining Lambda modernization work.
+As of 2026-04-16, the monorepo refactor effort has produced 7 strong reference implementations, 401 declared integration test cases across those refactored lambdas plus 6 declared SMS unit test cases, and a verified pattern for continuing the remaining Lambda modernization work.
 
 The completed refactors show clear improvement across:
 
@@ -473,4 +480,4 @@ Most importantly, they demonstrate why in-situ modernization is the right first 
 
 This is not the end-state architecture yet, but it is the correct and necessary foundation for getting there safely.
 
-If the objective is to protect the business while continuing to ship, this 2026-04-16 report should be evaluated as early security risk reduction with compounding engineering payoff, not as time spent on cosmetic refactoring.
+If the objective is to protect the business while continuing to ship, this 2026-04-16 report should be evaluated as early security risk reduction with compounding engineering payoff, not as cosmetic refactoring.

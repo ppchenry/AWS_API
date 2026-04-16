@@ -104,6 +104,13 @@ These are smaller Lambdas. They should still meet the refactor checklist for val
 | `PetBasicInfo` | `index.js` | 4 | yes | already modularized |
 | `UserRoutes` | `index.js` | 4 | yes | already modularized |
 
+## Not in Refactoring Plan
+
+1. adoption_website: Not lambda
+2. AuthorizerRoute: Don't required in refactored auth cycle
+3. TestIPLambda: Internal testing lambda
+4. WhatsappRoute: hello world file
+
 ## Suggested Working Order
 
 If the goal is to reduce structural risk quickly, the best next candidates are:
