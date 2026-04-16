@@ -373,7 +373,7 @@ describe("OPTIONS preflight", () => {
     expect(res.status).toBe(204);
     expect(res.headers.get("access-control-allow-origin")).toBe(VALID_ORIGIN);
     expect(res.headers.get("access-control-allow-credentials")).toBe("true");
-  });
+  }, 60000);
 
   test("returns 403 for a disallowed origin", async () => {
     const res = await fetch(`${BASE_URL}/analysis/breed`, {

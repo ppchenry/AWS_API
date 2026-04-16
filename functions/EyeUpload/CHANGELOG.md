@@ -1,5 +1,23 @@
 # EyeUpload Lambda — CHANGELOG
 
+## v1.1.3 — Zod 4 Standardization
+
+### v1.1.3 Fixes
+
+| ID | Severity | Finding | Fix |
+| ---- | -------- | ------- | --- |
+| STD-EYE-1 | Medium | EyeUpload was the last refactored pet-upload Lambda still pinned to Zod 3.x, diverging from the UserRoutes baseline | Upgraded the package to `zod ^4.3.6` |
+| STD-EYE-2 | Medium | After the Zod 4 upgrade, required-field and unknown-field validation errors returned Zod default English strings instead of existing locale keys | Moved the error-key mapping into the EyeUpload schemas so required-field and allowlist violations still return the established `eyeUpload.*` keys |
+| TEST-EYE-1 | Low | The first preflight request in local SAM could occasionally exceed Jest's default 30s timeout during cold start | Increased the timeout only for the first allowed-origin preflight test to avoid false negatives under SAM local |
+
+### v1.1.3 Verification
+
+- `sam build EyeUploadFunction`
+- `npx jest --runInBand --testPathPattern=test-eyeupload --modulePathIgnorePatterns=".aws-sam" --no-coverage`
+- Result: `94 passed`
+
+---
+
 ## v1.1.2 — Template And Test Documentation Alignment
 
 ### v1.1.2 Fixes
@@ -172,8 +190,6 @@ Full Tier 1 refactor of the EyeUpload Lambda (~1160 lines monolithic `index.js`)
 | Item | Owner | Description |
 | ---- | ----- | ----------- |
 | I20 — Race-condition `ngoPetId` duplicate | `infra-owned` | Application-level check; only a DB unique index eliminates the race window |
-| L — Zod 3 vs Zod 4 | `code-owned` | Using Zod 3.x; monorepo should coordinate upgrade to Zod 4 when ready |
-| L — Split verification runs | `code-owned` | EyeUpload now has automated Jest + SAM coverage, but the current evidence is documented across a baseline run (`90 passed, 4 skipped`) plus a fixture-only rerun (`4 passed`) rather than one single all-green execution |
 
 ---
 

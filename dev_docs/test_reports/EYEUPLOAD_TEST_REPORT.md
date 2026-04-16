@@ -3,14 +3,11 @@
 **Date:** 2026-04-16
 **Service:** `EyeUpload` Lambda (AWS SAM)
 **Test suite:** `__tests__/test-eyeupload.test.js`
-**Result:** Latest verification spans two local runs:
+**Command:** `npx jest --runInBand --testPathPattern=test-eyeupload --modulePathIgnorePatterns=".aws-sam" --no-coverage`
+**Result:** **94 / 94 tests passed ✅**
+**Duration:** `93.58 s`
 
-- Baseline suite run: `90 passed, 4 skipped`
-- Fixture-only rerun after updating `TEST_PET_ID` and `TEST_OWNER_USER_ID`: `4 passed`
-
-This means all `94` tests in the current EyeUpload test file have passing evidence with the current implementation and fixture configuration.
-
-> **Fixture dependency:** 4 tests are gated behind `TEST_PET_ID` and `TEST_OWNER_USER_ID` in `env.json EyeUploadFunction`. Those tests were skipped in the baseline run and then explicitly re-verified after the fixture IDs were corrected.
+This report reflects the latest full rerun after standardizing EyeUpload on Zod 4 and restoring the existing `eyeUpload.*` validation-key contract.
 
 ---
 
@@ -102,15 +99,14 @@ These were validated through direct router dispatch in the test suite, not throu
 | Runtime | Node.js 22 (AWS SAM Local) |
 | Test framework | Jest 29.7 (`--runInBand`) |
 | Database | MongoDB Atlas UAT (`petpetclub_uat`) |
-| SAM setup used for focused fixture verification | Temporary EyeUpload-only local SAM API on `http://localhost:3000` |
-| Baseline suite command | `npx jest --testPathPattern=test-eyeupload --no-coverage` |
-| Fixture rerun command | `npx jest --runInBand --testPathPattern=test-eyeupload --testNamePattern="fixture:" --modulePathIgnorePatterns=".aws-sam" --no-coverage` |
+| SAM setup used for latest full verification | Fresh SAM local API on `http://localhost:3000` after `sam build EyeUploadFunction` |
+| Full suite command | `npx jest --runInBand --testPathPattern=test-eyeupload --modulePathIgnorePatterns=".aws-sam" --no-coverage` |
 | Fixture config | `env.json EyeUploadFunction`: `TEST_PET_ID`, `TEST_OWNER_USER_ID` |
 
 ### Notes
 
-- Fixture-only tests originally failed when the configured `TEST_OWNER_USER_ID` did not resolve to an active user in the connected DB. After updating the fixture IDs in `env.json`, all 4 fixture-backed tests passed.
-- Fixture-backed requests under local SAM are slow, commonly ~35–45 seconds each, so those tests use extended timeouts in the test file.
+- Fixture-backed requests under local SAM can still be slow, so those tests retain extended per-test timeouts in the suite.
+- The first allowed-origin preflight request may also pay a SAM-local cold-start penalty, so that single preflight test now uses a 60-second timeout to avoid false failures unrelated to application logic.
 
 ---
 
@@ -123,7 +119,7 @@ These were validated through direct router dispatch in the test suite, not throu
 | Cross-owner pet update | `loadAuthorizedPet` enforces owner / NGO ownership | ✅ Asserted |
 | Cross-owner eye analysis | `loadAuthorizedPet` enforces owner / NGO ownership | ✅ Asserted |
 | Client-supplied `userId` mass-assignment | Strict schemas reject `userId` in create flow; eye analysis uses JWT identity only | ✅ Asserted |
-| Unknown field mass-assignment | Zod `.strict()` rejects extra fields before DB writes | ✅ Asserted |
+| Unknown field mass-assignment | Schema-level allowlist validation rejects extra fields with `eyeUpload.unknownField` before DB writes | ✅ Asserted |
 | Invalid JSON body | Guard rejects malformed JSON before service execution | ✅ Asserted |
 | Folder traversal / arbitrary key injection | uploadPetBreedImage uses allowlisted top-level prefixes and rejects `.` / `..` segments | ✅ Asserted |
 | Upload validation mismatch | `/util/uploadImage` validates the actual uploaded file and restricts requests to one file | ✅ Asserted |

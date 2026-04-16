@@ -90,7 +90,7 @@ Update a pet's images and basic info fields.
 | ngoId | string | No | NGO-only — caller must have `ngo` role with JWT `ngoId` claim matching both the pet's current org AND the destination org |
 | ngoPetId | string | No | NGO-only — same restriction as ngoId; cross-org reassignment is blocked |
 
-Unknown fields are rejected with 400 via Zod `.strict()` schema validation.
+Unknown fields are rejected with `400 eyeUpload.unknownField` via schema-level allowlist validation.
 
 **Success (200):**
 
@@ -136,7 +136,7 @@ Create a new pet record with images.
 | position | string | No | Position |
 | breedimage | string | No | URL of existing breed image |
 
-Unknown fields are rejected with 400 via Zod `.strict()` schema validation.
+Unknown fields are rejected with `400 eyeUpload.unknownField` via schema-level allowlist validation.
 
 **Success (201):**
 
@@ -230,5 +230,4 @@ All routes enforce per-caller rate limiting via MongoDB TTL-based counters. When
 ## Known Constraints
 
 - **I20 — Race-condition duplicate creation**: The `ngoPetId` uniqueness check is application-level, not enforced by a DB unique index. A race window exists. Classified as `infra-owned`.
-- **Zod 3 vs 4**: Using Zod 3.x. Upgrade to Zod 4 is a monorepo-wide concern.
-- **Integration test runtime is slow under local SAM**: End-to-end EyeUpload tests commonly take ~35–45 seconds per fixture-backed request because each request starts a fresh local invocation path with Mongo + external dependency setup. The Jest fixture tests therefore use extended per-test timeouts.
+- **Integration test runtime is slow under local SAM**: End-to-end EyeUpload tests can pay a high first-request cold-start cost under SAM local on Windows. The first allowed-origin preflight test therefore uses a 60-second timeout, while the rest of the suite remains on the default test timeout.

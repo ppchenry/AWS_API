@@ -10,6 +10,62 @@ const MSG = {
   unknownField: "eyeUpload.unknownField",
 };
 
+const CREATE_ALLOWED_FIELDS = [
+  "name",
+  "animal",
+  "sex",
+  "breed",
+  "birthday",
+  "weight",
+  "sterilization",
+  "sterilizationDate",
+  "adoptionStatus",
+  "bloodType",
+  "features",
+  "info",
+  "status",
+  "owner",
+  "ngoId",
+  "ownerContact1",
+  "ownerContact2",
+  "contact1Show",
+  "contact2Show",
+  "receivedDate",
+  "location",
+  "position",
+  "breedimage",
+];
+
+const UPDATE_ALLOWED_FIELDS = [
+  "petId",
+  "removedIndices",
+  "name",
+  "animal",
+  "birthday",
+  "weight",
+  "sex",
+  "sterilization",
+  "sterilizationDate",
+  "adoptionStatus",
+  "breed",
+  "bloodType",
+  "features",
+  "info",
+  "status",
+  "owner",
+  "tagId",
+  "ownerContact1",
+  "ownerContact2",
+  "contact1Show",
+  "contact2Show",
+  "receivedDate",
+  "ngoId",
+  "ngoPetId",
+];
+
+const CREATE_ALLOWED_FIELD_SET = new Set(CREATE_ALLOWED_FIELDS);
+const UPDATE_ALLOWED_FIELD_SET = new Set(UPDATE_ALLOWED_FIELDS);
+
 /**
  * Zod schema for POST /pets/create-pet-basic-info-with-image multipart fields.
  *
@@ -19,9 +75,9 @@ const MSG = {
  */
 const createPetWithImageSchema = z
   .object({
-    name: z.string({ required_error: MSG.nameRequired }).min(1, MSG.nameRequired).max(200, MSG.tooLong),
-    animal: z.string({ required_error: MSG.animalRequired }).min(1, MSG.animalRequired).max(100, MSG.tooLong),
-    sex: z.string({ required_error: MSG.sexRequired }).min(1, MSG.sexRequired).max(20, MSG.tooLong),
+    name: z.string({ error: MSG.nameRequired }).min(1, MSG.nameRequired).max(200, MSG.tooLong),
+    animal: z.string({ error: MSG.animalRequired }).min(1, MSG.animalRequired).max(100, MSG.tooLong),
+    sex: z.string({ error: MSG.sexRequired }).min(1, MSG.sexRequired).max(20, MSG.tooLong),
     breed: z.string().max(200, MSG.tooLong).optional(),
     birthday: z.string().max(20, MSG.tooLong).optional(),
     weight: z.string().max(20, MSG.tooLong).optional(),
@@ -43,7 +99,27 @@ const createPetWithImageSchema = z
     position: z.string().max(500, MSG.tooLong).optional(),
     breedimage: z.string().url(MSG.invalidUrl).optional(),
   })
-  .strict({ message: MSG.unknownField });
+  .passthrough()
+  .superRefine((obj, ctx) => {
+    for (const key of Object.keys(obj)) {
+      if (!CREATE_ALLOWED_FIELD_SET.has(key)) {
+        ctx.addIssue({
+          code: "custom",
+          message: MSG.unknownField,
+          path: [key],
+        });
+      }
+    }
+  })
+  .transform((obj) => {
+    const sanitized = {};
+    for (const key of CREATE_ALLOWED_FIELDS) {
+      if (obj[key] !== undefined) {
+        sanitized[key] = obj[key];
+      }
+    }
+    return sanitized;
+  });
 
 /**
  * Zod schema for POST /pets/updatePetImage multipart fields.
@@ -55,7 +131,7 @@ const createPetWithImageSchema = z
  */
 const updatePetImageSchema = z
   .object({
-    petId: z.string({ required_error: MSG.petIdRequired }).min(1, MSG.petIdRequired),
+    petId: z.string({ error: MSG.petIdRequired }).min(1, MSG.petIdRequired),
     removedIndices: z.string().max(5000, MSG.tooLong).optional(),
     name: z.string().max(200, MSG.tooLong).optional(),
     animal: z.string().max(100, MSG.tooLong).optional(),
@@ -80,6 +156,26 @@ const updatePetImageSchema = z
     ngoId: z.string().max(100, MSG.tooLong).optional(),
     ngoPetId: z.string().max(100, MSG.tooLong).optional(),
   })
-  .strict({ message: MSG.unknownField });
+  .passthrough()
+  .superRefine((obj, ctx) => {
+    for (const key of Object.keys(obj)) {
+      if (!UPDATE_ALLOWED_FIELD_SET.has(key)) {
+        ctx.addIssue({
+          code: "custom",
+          message: MSG.unknownField,
+          path: [key],
+        });
+      }
+    }
+  })
+  .transform((obj) => {
+    const sanitized = {};
+    for (const key of UPDATE_ALLOWED_FIELDS) {
+      if (obj[key] !== undefined) {
+        sanitized[key] = obj[key];
+      }
+    }
+    return sanitized;
+  });
 
 module.exports = { createPetWithImageSchema, updatePetImageSchema };
