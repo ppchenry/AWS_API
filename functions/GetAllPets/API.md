@@ -22,9 +22,31 @@ Manages pet listing, soft-deletion, and pet eye image updates. Serves both user-
 
 `/pets`
 
+## Base URL
+
+Dev API Gateway base URL:
+
+`https://udnh87tari.execute-api.ap-southeast-1.amazonaws.com/Dev`
+
 ## Authentication
 
 All routes require JWT Bearer token unless marked as **Public**.
+
+## API Gateway Requirement
+
+The deployed dev API Gateway requires an API key for all routes in this document.
+
+Send this header on every request:
+
+```http
+x-api-key: <YOUR_API_GATEWAY_API_KEY>
+```
+
+Notes:
+- This requirement is enforced by API Gateway before the request reaches the Lambda
+- Missing or invalid API keys can return `{"message":"Forbidden"}`
+- Routes marked as **Public** are public at the Lambda level, meaning they do not require JWT, but they still require `x-api-key` at API Gateway
+- Routes marked as JWT-protected require both `x-api-key` and `Authorization: Bearer <token>`
 
 ---
 
@@ -32,8 +54,18 @@ All routes require JWT Bearer token unless marked as **Public**.
 
 ### GET /pets/pet-list-ngo/{ngoId}
 
-**Auth**: Public  
+**Auth**: Public at Lambda level, `x-api-key` required at API Gateway  
 **Description**: Paginated, searchable, sortable pet list for an NGO.
+
+**Full URL**:
+
+`GET https://udnh87tari.execute-api.ap-southeast-1.amazonaws.com/Dev/pets/pet-list-ngo/{ngoId}`
+
+**Required Headers**:
+
+```http
+x-api-key: <YOUR_API_GATEWAY_API_KEY>
+```
 
 **Behavior Notes**:
 - Fixed page size: `30`
@@ -87,8 +119,20 @@ All routes require JWT Bearer token unless marked as **Public**.
 
 ### POST /pets/deletePet
 
-**Auth**: JWT Required  
+**Auth**: JWT Required, `x-api-key` required at API Gateway  
 **Description**: Soft-deletes a pet by setting `deleted: true`. Caller must own the pet.
+
+**Full URL**:
+
+`POST https://udnh87tari.execute-api.ap-southeast-1.amazonaws.com/Dev/pets/deletePet`
+
+**Required Headers**:
+
+```http
+x-api-key: <YOUR_API_GATEWAY_API_KEY>
+Authorization: Bearer <JWT>
+Content-Type: application/json
+```
 
 **Request Body**:
 ```json
@@ -118,8 +162,20 @@ All routes require JWT Bearer token unless marked as **Public**.
 
 ### PUT /pets/updatePetEye
 
-**Auth**: JWT Required  
+**Auth**: JWT Required, `x-api-key` required at API Gateway  
 **Description**: Appends one eye image record to a pet. Caller must own the pet.
+
+**Full URL**:
+
+`PUT https://udnh87tari.execute-api.ap-southeast-1.amazonaws.com/Dev/pets/updatePetEye`
+
+**Required Headers**:
+
+```http
+x-api-key: <YOUR_API_GATEWAY_API_KEY>
+Authorization: Bearer <JWT>
+Content-Type: application/json
+```
 
 **Request Body**:
 ```json
@@ -161,8 +217,19 @@ All routes require JWT Bearer token unless marked as **Public**.
 
 ### GET /pets/pet-list/{userId}
 
-**Auth**: JWT Required  
+**Auth**: JWT Required, `x-api-key` required at API Gateway  
 **Description**: Paginated list of pets owned by a user. The JWT user id must match the path `userId`.
+
+**Full URL**:
+
+`GET https://udnh87tari.execute-api.ap-southeast-1.amazonaws.com/Dev/pets/pet-list/{userId}`
+
+**Required Headers**:
+
+```http
+x-api-key: <YOUR_API_GATEWAY_API_KEY>
+Authorization: Bearer <JWT>
+```
 
 **Behavior Notes**:
 - Fixed page size: `10`
