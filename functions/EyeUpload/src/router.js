@@ -27,10 +27,6 @@ async function routeRequest(routeContext) {
   const routeKey = `${event.httpMethod} ${event.resource}`;
   const routeAction = routes[routeKey];
 
-  if (routeAction === null) {
-    return createErrorResponse(405, "others.methodNotAllowed", event);
-  }
-
   if (!routeAction) {
     return createErrorResponse(405, "others.methodNotAllowed", event);
   }

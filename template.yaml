@@ -328,6 +328,155 @@ Resources:
           TEST_NGO_ID: ""
           NODE_ENV: "development"
 
+  purchaseConfirmationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 60
+      MemorySize: 512
+      CodeUri: functions/purchaseConfirmation/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Events:
+        PurchaseConfirmationPost:
+          Type: Api
+          Properties:
+            Path: /purchase/confirmation
+            Method: POST
+        PurchaseConfirmationOptions:
+          Type: Api
+          Properties:
+            Path: /purchase/confirmation
+            Method: OPTIONS
+        PurchaseConfirmationV2Post:
+          Type: Api
+          Properties:
+            Path: /v2/purchase/confirmation
+            Method: POST
+        PurchaseConfirmationV2Options:
+          Type: Api
+          Properties:
+            Path: /v2/purchase/confirmation
+            Method: OPTIONS
+        PurchaseShopInfoGet:
+          Type: Api
+          Properties:
+            Path: /purchase/shop-info
+            Method: GET
+        PurchaseShopInfoOptions:
+          Type: Api
+          Properties:
+            Path: /purchase/shop-info
+            Method: OPTIONS
+        PurchaseShopInfoV2Get:
+          Type: Api
+          Properties:
+            Path: /v2/purchase/shop-info
+            Method: GET
+        PurchaseShopInfoV2Options:
+          Type: Api
+          Properties:
+            Path: /v2/purchase/shop-info
+            Method: OPTIONS
+        PurchaseOrdersGet:
+          Type: Api
+          Properties:
+            Path: /purchase/orders
+            Method: GET
+        PurchaseOrdersOptions:
+          Type: Api
+          Properties:
+            Path: /purchase/orders
+            Method: OPTIONS
+        PurchaseOrdersV2Get:
+          Type: Api
+          Properties:
+            Path: /v2/purchase/orders
+            Method: GET
+        PurchaseOrdersV2Options:
+          Type: Api
+          Properties:
+            Path: /v2/purchase/orders
+            Method: OPTIONS
+        PurchaseOrderVerificationGet:
+          Type: Api
+          Properties:
+            Path: /purchase/order-verification
+            Method: GET
+        PurchaseOrderVerificationOptions:
+          Type: Api
+          Properties:
+            Path: /purchase/order-verification
+            Method: OPTIONS
+        PurchaseOrderVerificationDelete:
+          Type: Api
+          Properties:
+            Path: /purchase/order-verification/{orderVerificationId}
+            Method: DELETE
+        PurchaseOrderVerificationIdOptions:
+          Type: Api
+          Properties:
+            Path: /purchase/order-verification/{orderVerificationId}
+            Method: OPTIONS
+        PurchaseOrderVerificationV2Get:
+          Type: Api
+          Properties:
+            Path: /v2/purchase/order-verification
+            Method: GET
+        PurchaseOrderVerificationV2Options:
+          Type: Api
+          Properties:
+            Path: /v2/purchase/order-verification
+            Method: OPTIONS
+        PurchaseOrderVerificationV2Delete:
+          Type: Api
+          Properties:
+            Path: /v2/purchase/order-verification/{orderVerificationId}
+            Method: DELETE
+        PurchaseOrderVerificationV2IdOptions:
+          Type: Api
+          Properties:
+            Path: /v2/purchase/order-verification/{orderVerificationId}
+            Method: OPTIONS
+        PurchaseSendDetectionEmailPost:
+          Type: Api
+          Properties:
+            Path: /purchase/send-ptag-detection-email
+            Method: POST
+        PurchaseSendDetectionEmailOptions:
+          Type: Api
+          Properties:
+            Path: /purchase/send-ptag-detection-email
+            Method: OPTIONS
+        PurchaseSendDetectionEmailV2Post:
+          Type: Api
+          Properties:
+            Path: /v2/purchase/send-ptag-detection-email
+            Method: POST
+        PurchaseSendDetectionEmailV2Options:
+          Type: Api
+          Properties:
+            Path: /v2/purchase/send-ptag-detection-email
+            Method: OPTIONS
+      Environment:
+        Variables:
+          MONGODB_URI: ""
+          JWT_SECRET: ""
+          JWT_BYPASS: ""
+          ALLOWED_ORIGINS: ""
+          AWSACCESSID: ""
+          AWSSECRETKEY: ""
+          AWS_BUCKET_REGION: ""
+          AWS_BUCKET_BASE_URL: ""
+          AWS_BUCKET_NAME: ""
+          SMTP_HOST: ""
+          SMTP_PORT: ""
+          SMTP_USER: ""
+          SMTP_PASS: ""
+          SMTP_FROM: ""
+          WHATSAPP_BEARER_TOKEN: ""
+          CUTTLY_API_KEY: ""
+          NODE_ENV: "development"
+
   PetBasicInfoFunction:
     Type: AWS::Serverless::Function
     Properties:

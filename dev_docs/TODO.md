@@ -1,1 +1,2 @@
-- [ ] add location search to getNgoPetList in getallpets
+- [ ] understand whats purchase confirmation doing
+- [ ] add test cases and update docs

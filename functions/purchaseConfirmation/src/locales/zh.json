@@ -1,0 +1,38 @@
+{
+  "others": {
+    "unauthorized": "未經授權，請登入後再試。",
+    "internalError": "系統發生錯誤，請稍後再試。",
+    "invalidJSON": "請求內容格式錯誤。",
+    "missingParams": "缺少必填欄位。",
+    "methodNotAllowed": "此路由已不再使用。",
+    "notFound": "找不到所請求的資源。",
+    "invalidObjectId": "ID 格式無效。",
+    "rateLimited": "請求次數過多，請稍後再試。"
+  },
+  "purchase": {
+    "errors": {
+      "missingPhoneNumber": "提交訂單需要提供電話號碼。",
+      "invalidPhone": "電話號碼只能包含數字（7-15位）。",
+      "orderNotFound": "找不到訂單。",
+      "orderVerificationNotFound": "找不到訂單驗證記錄。",
+      "invalidOption": "所選產品選項無效。",
+      "missingRequiredFields": "缺少必填訂單欄位。",
+      "invalidTempId": "訂單參考格式無效。",
+      "invalidPrice": "價格格式無效。",
+      "duplicateOrder": "該參考編號的訂單已存在。",
+      "invalidShopCode": "提供的店舗代碼無法識別。",
+      "alreadyCancelled": "該訂單驗證記錄已被取消。",
+      "fileTooLarge": "上傳檔案超過 5 MB 大小限制。",
+      "invalidFileType": "不支援的檔案格式，接受格式：JPEG、PNG、WebP、GIF。",
+      "tooManyFiles": "單一欄位上傳檔案過多。"
+    }
+  },
+  "email": {
+    "errors": {
+      "missingFields": "缺少必填電郵欄位。",
+      "invalidEmail": "電郵地址格式無效。",
+      "invalidLocationURL": "位置連結必須是有效的 HTTPS 地址。",
+      "sendFailed": "電郵發送失敗，請稍後再試。"
+    }
+  }
+}
