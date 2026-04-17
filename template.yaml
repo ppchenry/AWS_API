@@ -323,6 +323,9 @@ Resources:
           JWT_SECRET: ""
           JWT_BYPASS: ""
           ALLOWED_ORIGINS: ""
+          TEST_PET_ID: ""
+          TEST_OWNER_USER_ID: ""
+          TEST_NGO_ID: ""
           NODE_ENV: "development"
 
   PetBasicInfoFunction:

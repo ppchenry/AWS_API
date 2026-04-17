@@ -1,8 +1,8 @@
-# Monorepo 重構進度報告（2026-04-16）
+# Monorepo 重構進度報告（2026-04-17）
 
 ## 概述 (Overview)
 
-在目前這一階段的 Monorepo 現代化工程中，已完成 7 個 Lambda 函式的原位 (in-place) 重構：
+在目前這一階段的 Monorepo 現代化工程中，已完成 8 個 Lambda 函式的原位 (in-place) 重構：
 
 * `functions/UserRoutes`
 * `functions/PetBasicInfo`
@@ -11,10 +11,11 @@
 * `functions/GetAllPets`
 * `functions/PetLostandFound`
 * `functions/EyeUpload`
+* `functions/PetDetailInfo`
 
-此項工作隸屬於 [README.md](README.md) 中定義的 Monorepo 清理計畫，嚴格遵循 [dev\_docs/REFACTOR\_CHECKLIST.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/REFACTOR_CHECKLIST.md) 的現代化基準，並依據 [dev\_docs/LAMBDA\_REFACTOR\_INVENTORY.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/LAMBDA_REFACTOR_INVENTORY.md) 的優先順序執行。
+此項工作隸屬於 [README.md](README.md) 中定義的 Monorepo 清理計劃，遵循 [dev_docs/REFACTOR_CHECKLIST.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/REFACTOR_CHECKLIST.md) 的現代化基準，並依據 [dev_docs/LAMBDA_REFACTOR_INVENTORY.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/LAMBDA_REFACTOR_INVENTORY.md) 的優先順序執行。
 
-**目前依 `__tests__` 測試檔統計的測試案例數：**
+目前依 `__tests__` 測試檔統計的測試案例數：
 
 * `UserRoutes`：`__tests__/test-userroutes.test.js` 內 **106 項整合測試案例**，另有 `__tests__/test-sms-service.test.js` 內 **6 項 SMS service 單元測試案例**
 * `PetBasicInfo`：`__tests__/test-petbasicinfo.test.js` 內 **37 項整合測試案例**
@@ -23,72 +24,72 @@
 * `GetAllPets`：`__tests__/test-getallpets.test.js` 內 **53 項整合測試案例**
 * `PetLostandFound`：`__tests__/test-petlostandfound.test.js` 內 **59 項整合測試案例**
 * `EyeUpload`：`__tests__/test-eyeupload.test.js` 內 **94 項整合測試案例**
-* **綜合總計：7 個已重構 Lambda 共 401 項整合測試案例 + 6 項 SMS service 單元測試案例**
+* `PetDetailInfo`：`__tests__/test-petdetailinfo.test.js` 內 **82 項整合測試案例**
+* 綜合總計：**8 個已重構 Lambda 共 483 項整合測試案例 + 6 項 SMS service 單元測試案例**
 
-以上數字為測試檔中「宣告的案例數」，本身不等同於同日完整執行結果報表。
+以上數字為測試檔中「宣告的案例數」，本身不等同於同日完整執行紀錄。已完成的個別測試結果請參考 `dev_docs/test_reports/` 內各 Lambda 的測試報告。
 
-另外，`EmailVerification` 已完成部署後的實機抽樣驗證：
+目前已知的實機驗證也包括 `EmailVerification` 的 Dev API Gateway 抽樣測試：
 
 * `POST /account/generate-email-code` 已在 Dev API Gateway 成功觸發並送達真實驗證郵件
 * `POST /account/verify-email-code` 已在 Dev API Gateway 成功回傳 JWT 與 refresh cookie 合約欄位
 
-這代表重構工作已在不變動前端合約 (Contract) 的前提下，於安全性、正確性、可維護性及運行行為方面產生了可衡量的進步。
+核心帳戶驗證循環目前已拆分成 3 個更清楚的 Lambda 職責：
 
-其中一個最重要的架構成果，是核心帳戶驗證循環現在已被拆分成 3 個更清晰的 Lambda 職責：
+* `UserRoutes` 負責主要登入入口、register-first 帳戶建立、SMS 驗證登入、NGO auth 與受保護的帳戶操作
+* `EmailVerification` 負責公開的 Email 身分證明流程，並可為已註冊使用者建立已驗證 session
+* `AuthRoute` 負責 refresh token 輪替與短效 access token 更新
 
-* `UserRoutes`：負責主要登入入口、register-first 帳戶建立、SMS 驗證登入、NGO auth 與受保護的帳戶操作
-* `EmailVerification`：負責公開的 Email 身分證明流程，並可為已註冊使用者建立已驗證 session
-* `AuthRoute`：負責 refresh token 輪替與短效 access token 更新
+`PetLostandFound` 是首個非 auth 類別、以寵物領域為核心的大型 Lambda 完成全面模組化拆分。原始 1089 行單體檔案拆成 20+ focused modules，經過多輪審計修復並通過 59 項整合測試。測試過程也發現並修復 `mime` v4 ESM-only 相容性問題。
 
-此外，`PetLostandFound` 是首個非 auth 類別、以寵物領域為核心的大型 Lambda 完成全面模組化拆分（原始 1089 行單體拆分為 20+ 模組），並在測試過程中發現並修復了 `mime` v4 ESM-only 相容性問題。
+`PetDetailInfo` 也已完成完整模組化拆分，並通過 82 項整合測試，覆蓋 CORS、JWT、guard validation、ownership、detail-info 更新、transfer lifecycle、NGO transfer RBAC、source/adoption lifecycle、duplicate handling、response shape、NoSQL injection guard 與 cleanup。
 
-**核心進展：安全性加固**
-這一階段的工作並非單純的程式碼整潔化。我們已在 7 個已重構的高價值 Lambda 介面上，實質降低「已知」受攻擊風險。這不是「可有可無」的清理，而是移除可能導致未經授權的數據訪問、帳戶/寵物刪除、帳號奪取、敏感數據外洩、暴力破解及授權繞過的弱點。在初創環境中，這些不僅是技術問題，更是重大的**商業風險**。
+核心進展是安全性加固。這一階段的工作並非單純的程式碼整潔化，而是在 8 個已重構的高價值 Lambda 介面上，實質降低已知受攻擊風險。這些風險包含未經授權的資料存取、帳戶或寵物刪除、帳號奪取、敏感資料外洩、暴力破解、水平越權與授權繞過。
 
------
+---
 
-## 截至 2026-04-16 的 Monorepo 現況 (Status)
+## 截至 2026-04-17 的 Monorepo 現況 (Status)
 
-專案初期處於遺留 (Legacy) 狀態，Lambda 之間存在大量重複代碼，且業務邏輯與路由邏輯混雜。目前的策略是**受控的原位現代化 (In-situ Modernization)**，逐一穩定每個 Lambda。
+專案初期處於 legacy 狀態，Lambda 之間存在大量重複 helper、混合 routing 與 business logic 的單體檔案，以及難以安全演進的隱性合約。
 
-**目前進度：**
+目前策略不是立即進行全面 DDD 重寫，而是受控的原位現代化 (in-situ modernization)：逐一穩定每個 Lambda，保留現有 API 合約，同時提升安全性、可測試性與可維護性。
 
-* 7 個模組化的參考基準 Lambda
-* 一套完整的現代化執行標準
-* 基於程式碼行數與風險的 Lambda 盤點清單
-* 基於整合測試 (Integration Test) 的驗證機制
-* 可重複運用的重構模式（適用於剩餘 Lambda）
+目前進度：
 
-依據 `dev_docs/LAMBDA_REFACTOR_INVENTORY.md`，目前正式納入重構統計範圍的是 **22 個** Lambda（`adoption_website`、`AuthorizerRoute`、`TestIPLambda`、`WhatsappRoute` 目前列為 not in refactoring plan）。
+* 8 個模組化參考基準 Lambda
+* 一套書面現代化標準
+* 一份以行數與風險為基礎的 Lambda 盤點清單
+* 已完成目標具備整合測試支撐
+* 可重複套用到剩餘 Lambda 的重構模式
 
-在此統計口徑下，已有 **7 / 22** 完成加固，約為 **32%**；仍有 **15 / 22**（約 **68%**）屬於 in-plan 待重構範圍。這意味著雖然我們已證明加固方案的可行性，但整個 Monorepo 仍處於現代化曲線的早期階段。
+依據 `dev_docs/LAMBDA_REFACTOR_INVENTORY.md`，目前正式納入重構統計範圍的是 **22 個** Lambda。`adoption_website`、`AuthorizerRoute`、`TestIPLambda`、`WhatsappRoute` 目前列為 out-of-plan。
 
-補充：若以工作區全部 function folder 計算，目前是 26 個；其中 4 個屬於刻意排除項目，不應與主重構計畫進度混算。
+在此統計口徑下，已有 **8 / 22** 完成加固，約為 **36%**；仍有 **14 / 22**（約 **64%**）屬於 in-plan 待重構範圍。
 
------
+若以工作區全部 function folder 計算，目前共有 26 個 function folders；其中 4 個刻意排除於主要重構計劃之外，因此不應與主進度混算。
+
+---
 
 ## 重構後的 Auth Flow
 
-目前帳戶 session 生命週期已被拆分到 3 個 Lambda，責任邊界比舊系統清楚得多，也減少了隱性副作用。
+目前帳戶 session 生命週期已拆分到 3 個 Lambda，責任邊界比舊系統清楚，也減少隱性副作用。
 
 ### 1. `UserRoutes` 負責註冊、主要登入，以及 SMS 建立 Session
 
-`UserRoutes` 現在是主要的帳戶入口 Lambda。它處理一般註冊、NGO 註冊、email/password login、SMS verification login，以及已登入後的帳戶操作。
-
-這次最重要的改動之一，是把一般使用者的註冊與 session 發放正式拆開。
+`UserRoutes` 現在是主要帳戶入口 Lambda。它處理一般註冊、NGO 註冊、email/password login、SMS verification login，以及已登入後的帳戶操作。
 
 對一般使用者來說：
 
 * `POST /account/register` 現在只負責建立帳號
-* 註冊可以先建立 pending identity，但不直接發 token
-* session 會在後續的 `POST /account/login`、`POST /account/verify-sms-code` 或 `POST /account/verify-email-code` 成功後才建立
+* 註冊可先建立 pending identity，但不直接發 token
+* session 會在後續 `POST /account/login`、`POST /account/verify-sms-code` 或 `POST /account/verify-email-code` 成功後才建立
 
 對 NGO 來說：
 
 * `POST /account/register-ngo` 會建立 NGO 使用者上下文，並立即發出 NGO session
-* 後續 NGO login 會先檢查目前的 NGO approval 狀態，才決定是否發出 session
+* 後續 NGO login 會先檢查目前 NGO approval 狀態，才決定是否發出 session
 
-只要是由 `UserRoutes` 成功建立 session，目前合約已經趨於一致：
+由 `UserRoutes` 成功建立 session 時，目前合約趨於一致：
 
 * 一個短效 Bearer JWT access token
 * 一個以 `HttpOnly` cookie 保存的 refresh token
@@ -97,128 +98,179 @@
 
 `EmailVerification` 現在專注於公開的 email code 產生，以及註冊之後的 email 驗證。
 
-相較於舊流程，它的責任更窄，也更安全：
+相較於舊流程，它的責任更窄也更安全：
 
 * generate 保持公開，並具備 anti-enumeration 保護
-* verify 會以原子方式消耗驗證碼，避免 replay
+* verify 以原子方式消耗驗證碼，避免 replay
 * verify 不會建立新的 user account
 * verify 只有在對應帳號已存在且未被刪除時才會成功
-* 驗證成功後，會把該帳號標記為 verified，並發出與主要 login flow 相同的 session 材料
-
-這代表 `EmailVerification` 已不再是帳號建立機制，而是註冊後的 email proof 流程。只有既有 user record 存在時，它才會 bootstrap 一個 session。
+* 驗證成功後，會將該帳號標記為 verified，並發出與主要 login flow 相同的 session 材料
 
 ### 3. `AuthRoute` 負責 Refresh Rotation 與 Renewal Policy
 
-`AuthRoute` 現在是專門處理 refresh token 的 Lambda。它的公開路由 `/auth/refresh` 不是靠 Bearer token，而是靠 refresh-token cookie 驗證。
+`AuthRoute` 是專門處理 refresh token 的 Lambda。它的公開路由 `/auth/refresh` 不靠 Bearer token，而是靠 refresh-token cookie 驗證。
 
-在 refresh 流程中，它現在會執行更嚴格的 renewal 步驟：
+refresh 流程會：
 
 * 從 cookie 讀取 refresh token
-* 將 token hash 後，消耗對應的 refresh-token 記錄
+* 將 token hash 後消耗對應的 refresh-token 記錄
 * 拒絕 missing、malformed、expired 或 replayed refresh token
 * 發出新的短效 access token
-* 輪替 refresh cookie，重新簽發新的 refresh token
+* 重新簽發並輪替 refresh cookie
 
-對 NGO 使用者來說，refresh 還會同時保留 session context 並執行目前的策略檢查：
+對 NGO 使用者，refresh 還會保留 `ngoId`、`ngoName` 等 NGO claims，並在 NGO 不再 approved 或 active 時拒絕 refresh。
 
-* 新 access token 會保留 `ngoId`、`ngoName` 等 NGO claims
-* 若 NGO 已經不再 approved 或 active，refresh 會被拒絕
-
-### 4. 端到端 Session Model
-
-目前加固後的 session lifecycle 可以整理成：
-
-1. 使用者先透過明確的 bootstrap path 建立身分：一般 login、SMS verification、email verification，或 NGO register / login。
-2. 只要 bootstrap path 成功，就會回傳短效 access token 與 `HttpOnly` refresh-token cookie。
-3. 後續受保護路由再透過 JWT middleware 驗證 access token。
-4. 當 access token 過期時，client 呼叫 `AuthRoute` 進行 refresh rotation，取得新的 access token。
-
-相較於舊有遺留狀態，這是實質改善，因為 registration、verification、login 與 refresh 現在都被拆成獨立責任，token 語意更一致，而且具備測試支撐，能作為一個完整的 auth system 被審計與維護。
-
------
+---
 
 ## 安全風險快照 (Security Risk Snapshot)
 
-根據在 `UserRoutes`、`PetBasicInfo`、`EmailVerification` 的嚴格複審，以及 `AuthRoute` 對 refresh session 流程與 `GetAllPets` 對 pet 存取控制流程的專項加固中所確認的發現，未經重構的遺留 Lambda 可能面臨以下攻擊類別：
+根據已完成 Lambda 的審計與修復，未重構的 legacy Lambda 若仍有相似 coding pattern，仍可能面臨以下攻擊類別：
 
-* **身分驗證破碎 (Broken Auth)**：受保護路由可在無有效 JWT 驗證下訪問。
-* **越權攻擊 (IDOR)**：攻擊者可透過修改參數讀取或篡改他人數據。
-* **未授權刪除**：任意帳號或寵物數據可能在無權限檢查下被刪除。
-* **帳號奪取 (Account Takeover)**：不安全的註冊流程或棄用的驗證變體可能發放錯誤憑證。
-* **列舉攻擊 (Enumeration)**：公開端點洩漏用戶或電話是否存在。
-* **暴力破解與自動化濫用**：登入與簡訊接口缺乏頻率限制 (Rate Limiting)。
-* **JWT 竄改**：簽名驗證薄弱導致的過期回放或算法繞過。
-* **批量賦值 (Mass-assignment)**：調用者可寫入 `role`、`deleted` 等內部治理欄位。
-* **敏感數據外洩**：資料庫原始文件洩漏密碼雜湊值 (Hash) 或內部標記。
-* **NoSQL 注入/負載濫用**：邏輯誤收非預期的操作符物件。
-* **路由混淆 (Route Confusion)**：模糊匹配導致請求進入錯誤的路徑。
+* broken authentication：受保護路由可在無有效 JWT 驗證下訪問
+* IDOR / horizontal privilege escalation：透過改 path param 或 body field 讀寫他人資料
+* unauthorized delete：任意帳戶或寵物資料在無 ownership check 下被刪除
+* account takeover：不安全的 upsert-style registration 或 deprecated auth variant 發出錯誤 token
+* enumeration：公開端點洩漏使用者、電話或 entity 是否存在
+* brute-force / automation abuse：login、registration、SMS 或 destructive routes 缺乏 rate limiting
+* JWT tampering：過期 token replay、signature tampering、`alg:none` 攻擊
+* mass assignment：呼叫者寫入 `role`、`deleted`、`owner`、`ngoId`、`tagId` 等治理欄位
+* sensitive data exposure：原始 DB document 洩漏 password hash、deleted flag 或內部狀態
+* NoSQL-style payload abuse：operator-like object 進入本應只接受 scalar value 的邏輯
+* session persistence after delete：刪除帳號後 token 未撤銷
+* route confusion：模糊 `includes()` route matching 進入錯誤分支
+* cross-origin exposure：CORS 過寬或不一致
+* raw error leakage：內部 exception 或 validation detail 洩漏給外部
 
------
+這些類別不是純理論風險，而是從已審計的 legacy Lambda pattern 推導出的實際風險類型。剩餘 Lambda 是否受影響仍需逐路由驗證。
+
+---
 
 ## 重構覆蓋率評估
 
-### 1\. 已重構 Lambda 的加固程度
+### 1. 已重構 Lambda 的加固程度
 
-在已完成的參考 Lambda 中，加固覆蓋率相對較高：
+在已完成的參考 Lambda 中，加固覆蓋率相對高：
 
-* **`UserRoutes`**：解決了 **19 項**遺留安全發現。
-* **`PetBasicInfo`**：解決了 **13 項**涵蓋權限、刪除操作與路徑匹配的發現。
-* **`EmailVerification`**：完成公開驗證流程的重構、嚴格複審、30/30 整合測試與部署後實機驗證。
-* **`AuthRoute`**：完成 refresh session 流程的生命週期重構，`__tests__/test-authroute.test.js` 共 **22 項** 測試案例，覆蓋 handler、authJWT、NGO claim preservation、NGO approval denial 與 refresh rotation/replay rejection。
-* **`GetAllPets`**：完成寵物讀寫與權限控制流程的重構，`__tests__/test-getallpets.test.js` 共 **53 項** 整合測試案例，覆蓋公開 NGO 查詢、JWT 驗證、自身存取、ownership enforcement、delete 與 update 路徑。
-* **`PetLostandFound`**：完成 1089 行單體的全面拆分（20+ 模組），4 輪審計修復 15 項發現，並以 **59 / 59** 整合測試覆蓋 pet-lost/pet-found CRUD、notifications CRUD、CORS、auth、guard、rate limiting 與 response shape。測試過程中發現並修復 `mime` v4 ESM-only 相容性問題。
-* **`EyeUpload`**：完成 1000+ 行單體的全面拆分，並在 Zod 4 標準化後以 **94 / 94** 整合測試覆蓋 CORS、JWT auth、dead routes、schema validation、ownership enforcement、NGO authorization、upload flows、rate limiting 與 fixture-backed pet access。
-* **評估**：更準確的說法是「定性評估」而非固定百分比：在已審計且已重構的這些介面中，已知核心攻擊面已有相當比例得到實質強化。
+* `UserRoutes` 記錄並處理了 **19 項** legacy security findings
+* `PetBasicInfo` 記錄並處理了 **13 項**涵蓋 auth、ownership、destructive operation、route matching、sanitization 與 error handling 的 findings
+* `EmailVerification` 完成公開驗證流程重構、嚴格複審、30/30 整合測試與部署後實機驗證
+* `AuthRoute` 具備 22-case suite，覆蓋 handler lifecycle、public-resource bypass、JWT middleware branches、NGO claim preservation、NGO approval denial、replay rejection 與 refresh rotation
+* `GetAllPets` 具備 53-case integration suite，覆蓋 public NGO listing、JWT verification、self-access、ownership enforcement、validation、sanitization 與 mutation safety
+* `PetLostandFound` 具備 59/59 passing integration suite，覆蓋 pet-lost/pet-found CRUD、notifications CRUD、CORS、JWT auth、guard validation、self-access enforcement、ownership-guarded delete、rate limiting 與 response shape
+* `EyeUpload` 具備 94/94 passing integration suite，覆蓋 CORS、JWT auth、dead-route dispatch、schema validation、ownership enforcement、NGO authorization branches、upload validation、rate limiting 與 fixture-backed pet access checks
+* `PetDetailInfo` 具備 82/82 passing integration suite，覆蓋 CORS、JWT auth、guard validation、ownership、detail-info、transfer lifecycle、NGO transfer、source/adoption lifecycle、duplicate handling、response shape、NoSQL injection prevention 與 cleanup
 
-### 2\. 整體 Monorepo 的覆蓋程度
+合併來看，前 2 個完成審計的 Lambda 直接處理了 **32 項 documented legacy security findings**，另外 `EmailVerification`、`AuthRoute`、`GetAllPets`、`PetLostandFound`、`EyeUpload`、`PetDetailInfo` 也已完成嚴格現代化與測試支撐的安全加固。
 
-* 目前（inventory in-plan）**7 / 22** 已完成。
-* 約 **32%** 的 in-plan Lambda 隊列已達新標準，**68%** 仍需進行相同的審查與重構。
-* 另有 **4 個** Lambda 目前列為 out-of-plan，已在 inventory 中單獨註記。
+更準確的說法是定性評估，而不是宣稱固定百分比：已完成的 8 個 Lambda 在其自身 route surface 上，已大幅降低已知 code-owned attack classes。
 
------
+### 2. 整體 Monorepo 的覆蓋程度
 
-## 核心改進項目
+在整個 monorepo 層級，現代化仍屬早期到中期階段：
 
-### 1\. 安全漏洞修補
+* inventory in-plan 目前 **8 / 22** 已完成
+* 約 **36%** 的 in-plan Lambda 已達新標準
+* 約 **64%** 仍需進行相同 route-by-route security verification 與 refactor discipline
+* 另有 **4 個** workspace Lambdas 目前列為 out-of-plan
 
-關閉了記錄在各 Lambda `SECURITY.md` 中的具體風險。這雖然短期內比開發新功能慢，但能避免未來因安全事故導致的緊急修補與信譽損失。
+正確解讀是：已完成的 8 個 Lambda 內，大部分已知 code-owned attack classes 已被處理；但整個 monorepo 仍有廣泛 residual risk，直到更多 Lambda 完成重構。
 
-### 2\. 性能優化 (Performance)
+---
 
-* **冷啟動優化**：縮減 `index.js` 入口體積。
-* **延遲加載 (Lazy Loading)**：避免在每次調用時加載無關服務。
-* **連線池管理**：複用 MongoDB 連線並優化連線池大小。
-* **提早拒絕 (Fail-Fast)**：在進行資料庫操作前先驗證非法請求。
+## 已完成參考 Lambda 的核心改進
 
-### 3\. 可維護性 (Maintainability)
+### 1. 安全漏洞修補
 
-建立了統一的生命週期：**處理程序編排 -\> CORS 預檢 -\> JWT 驗證 -\> Guard 校驗 -\> 資料庫啟動 -\> 精確路由派發 -\> 服務執行 -\> 統一響應構建**。這降低了工程師修改程式碼時造成迴歸錯誤 (Regression) 的風險。
+已完成的 refactor 關閉了記錄在各 Lambda `SECURITY.md` 與 test report 中的具體風險。實際效果是讓這些參考 Lambda 更難被常見 API attack path 利用，包括 broken auth、ownership bypass、mass assignment、route confusion、brute-force abuse、enumeration 與 sensitive data leakage。
 
-### 4\. 擴展性與穩定性 (Scalability & Stability)
+`PetDetailInfo` 的加固項目包含：
 
-* 建立了可重複使用的 Lambda 模板。
-* 結構化日誌輸出，方便生產環境排錯。
-* 規範化的 HTTP 狀態碼使用 (400, 401, 403, 429 等)。
-* 使用 SAM local 與 UAT MongoDB 進行集成測試驗證。
+* 13 條 active routes 全部受 JWT 保護，`PUBLIC_RESOURCES = []`
+* detail-info、transfer、source、adoption route 全部使用 DB-backed ownership enforcement
+* NGO transfer 在 guard layer 執行 NGO RBAC
+* target user lookup 使用 anti-enumeration neutral error
+* email/phone 必須 cross-validate 到同一個 target user `_id`
+* DD/MM/YYYY、YYYY-MM-DD、ISO timestamp 執行 calendar-strict validation
+* source/adoption create 使用 `checkDuplicates()` 並返回 `409`
+* Pet write predicate 包含 `deleted:false`
+* transfer update/delete 包含 embedded transfer id predicate 與 matched-count verification
+* source/adoption update/delete 使用 `_id + petId` write scoping
+* response 使用 projection 與 sanitizer，避免 raw document leakage
 
------
+這些安全修復已由以下測試報告支撐：
 
-## 為什麼選擇「原位現代化」而非「全面重構」？
+* [dev_docs/test_reports/USERROUTES_TEST_REPORT.md](dev_docs/test_reports/USERROUTES_TEST_REPORT.md)
+* [dev_docs/test_reports/PETBASICINFO_TEST_REPORT.md](dev_docs/test_reports/PETBASICINFO_TEST_REPORT.md)
+* [dev_docs/test_reports/EMAIL_VERIFICATION_TEST_REPORT.md](dev_docs/test_reports/EMAIL_VERIFICATION_TEST_REPORT.md)
+* [dev_docs/test_reports/PETLOSTANDFOUND_TEST_REPORT.md](dev_docs/test_reports/PETLOSTANDFOUND_TEST_REPORT.md)
+* [dev_docs/test_reports/EYEUPLOAD_TEST_REPORT.md](dev_docs/test_reports/EYEUPLOAD_TEST_REPORT.md)
+* [dev_docs/test_reports/PETDETAILINFO_TEST_REPORT.md](dev_docs/test_reports/PETDETAILINFO_TEST_REPORT.md)
 
-目前的策略是在不進行大規模架構翻新 (DDD) 的情況下，逐一現代化 Lambda。這是最務實的做法，因為它能：
+### 2. 性能改善 (Performance)
 
-1. **降低風險**：逐一替換而非大爆炸式的全面更換。
-2. **零停機**：不需要大規模遷移服務。
-3. **前端相容**：不破壞現有的 API 合約。
-4. **即時價值**：在不停止業務開發的前提下，持續降低 Live Risk。
+已完成 refactor 帶來實用的 Lambda runtime 改善：
 
-這是連接「脆弱遺留代碼」與「未來領域驅動架構 (DDD)」之間的橋樑。
+* thin `index.js` entrypoints 降低入口檔負擔
+* lazy route loading 避免每次 invocation 載入無關服務
+* singleton MongoDB connection reuse 避免重複連線成本
+* 較小的 MongoDB pool sizing 減少 Lambda 側連線浪費
+* malformed requests 提早拒絕，避免不必要 DB work
+* `.lean()` reads 與 focused projections 減少 Mongoose 與 payload overhead
 
------
+### 3. 可維護性 (Maintainability)
+
+已完成 Lambda 目前遵循一致生命週期：
+
+* handler orchestration
+* CORS preflight
+* JWT auth
+* guard validation
+* DB bootstrap
+* ownership / self-access / role checks
+* exact router dispatch
+* service execution
+* centralized response building
+
+這讓工程師在不同 Lambda 間有可預期的檔案結構與責任邊界，降低修改單一路由時造成非預期 regression 的風險。
+
+### 4. 擴展性與穩定性 (Scalability & Stability)
+
+目前的 refactor 改善包括：
+
+* 建立可重複套用的 Lambda shape
+* standardized validation、response、logging、auth、CORS、DB reuse pattern
+* route-level logic 更容易擴充，不再膨脹單一 god file
+* 結構化錯誤回應讓 frontend、測試與 LLM automation 更穩定
+* SAM local + MongoDB integration tests 覆蓋真實 request path
+
+---
+
+## 為什麼先選擇原位現代化
+
+目前策略是在不進行大規模 DDD 重寫的情況下，逐一現代化 Lambda。這是此 legacy monorepo 目前最務實的做法，因為它能：
+
+* 逐一替換，避免 big-bang rewrite
+* 避免停機或大規模 service migration
+* 避免破壞前端既有 API contract
+* 立即降低 security、validation、observability、maintainability 風險
+* 為未來更深入的架構調整建立安全基線
+
+如果太早進行全面 DDD redesign，團隊會同時面對 legacy ambiguity、hidden contract dependencies、domain decomposition、migration strategy 與 regression prevention，風險會被放大。
+
+目前做法先讓 Lambda 可理解、可測試、可安全修改。完成這個階段後，未來 deeper DDD re-architecture 才更現實。
+
+---
 
 ## 結語
 
-截至 2026-04-16，Monorepo 重構工作已產出 7 個可作為基準的參考實作，並累積 **401 項整合測試案例 + 6 項 SMS service 單元測試案例**（依 `__tests__` 測試檔統計）。這份報告應被視為某一日期節點的進度快照，而不是以「第幾天」為主的階段命名。
+截至 2026-04-17，Monorepo 重構工作已產出 8 個可作為基準的參考實作，並累積 **483 項整合測試案例 + 6 項 SMS service 單元測試案例**（依 `__tests__` 測試檔統計）。
 
-目前這一階段的努力不僅產出了 7 個強大的參考實現，更透過上述測試案例規模，證明了這套模式的可行性。這不是單純的「美容工程」，而是具備高度複利效應的工程實踐。在初創企業中，這種能平衡業務交付與風險控制的工作，應被視為保護公司資產的核心貢獻。
+已完成 refactor 顯示出明確改善：
+
+* 安全性
+* 性能
+* 可維護性
+* 擴展性
+* 穩定性
+
+這不是最終架構，但它是通往最終架構前必要且正確的基礎。如果目標是在持續交付的同時保護業務，這份 2026-04-17 報告應被視為早期安全風險退場與工程複利累積，而不是 cosmetic refactoring。
