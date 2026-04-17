@@ -54,6 +54,7 @@ async function getNgoPetList({ event }) {
         { animal: { $regex: safeSearch, $options: "i" } },
         { breed: { $regex: safeSearch, $options: "i" } },
         { ngoPetId: { $regex: safeSearch, $options: "i" } },
+        { locationName: { $regex: safeSearch, $options: "i" } },
         { owner: { $regex: safeSearch, $options: "i" } },
       ];
     }

@@ -45,7 +45,7 @@ Suggested target shape:
 | 3 | `PetMedicalRecord` | `index.js` | 784 | strong candidate for full modular split |
 | 4 | `SFExpressRoutes` | `index.js` | 603 | strong candidate for full modular split |
 | 5 | `OrderVerification` | `index.js` | 582 | strong candidate for full modular split |
-| 6 | `PetBiometricRoutes` | `index.js` | 511 | strong candidate for full modular split |
+| 7 | `PetBiometricRoutes` | `index.js` | 511 | strong candidate for full modular split |
 
 ## Partial Separation Recommended
 
@@ -60,10 +60,10 @@ Suggested target shape:
 
 | Priority Tier | Lambda | Entry file | Lines | Recommendation |
 | --- | --- | --- | ---: | --- |
-| medium | `AIChatBot` | `index.js` | 359 | partial separation likely enough unless logic is more coupled than size suggests |
-| medium | `PetVaccineRecords` | `index.js` | 326 | partial separation likely enough |
-| medium | `CreatePetBasicInfo` | `index.js` | 282 | partial separation likely enough |
-| medium | `GetBreed` | `index.js` | 272 | partial separation likely enough |
+|x medium | `AIChatBot` | `index.js` | 359 | partial separation likely enough unless logic is more coupled than size suggests |
+|2 medium | `PetVaccineRecords` | `index.js` | 326 | partial separation likely enough |
+|1 medium | `CreatePetBasicInfo` | `index.js` | 282 | partial separation likely enough |
+|x medium | `GetBreed` | `index.js` | 272 | partial separation likely enough |
 
 ## Keep Simple Unless Risk Proves Otherwise
 
@@ -71,11 +71,11 @@ These are smaller Lambdas. They should still meet the refactor checklist for val
 
 | Size Tier | Lambda | Entry file | Lines | Recommendation |
 | --- | --- | --- | ---: | --- |
-| small | `LambdaProxyRoute` | `index.js` | 210 | keep simple unless control flow is unusually messy |
-| small | `GetAdoption` | `index.js` | 195 | keep simple unless auth or branching is riskier than expected |
-| small | `PetInfoByPetNumber` | `index.js` | 134 | keep simple |
-| small | `PublicRoutes` | `index.js` | 117 | keep simple |
-| small | `CreateFeedback` | `index.js` | 106 | keep simple |
+| 6 small | `LambdaProxyRoute` | `index.js` | 210 | keep simple unless control flow is unusually messy |
+| 5 small | `GetAdoption` | `index.js` | 195 | keep simple unless auth or branching is riskier than expected |
+| 4 small | `PetInfoByPetNumber` | `index.js` | 134 | keep simple |
+| x small | `PublicRoutes` | `index.js` | 117 | keep simple |
+| x small | `CreateFeedback` | `index.js` | 106 | keep simple |
 
 ## Full Inventory
 
