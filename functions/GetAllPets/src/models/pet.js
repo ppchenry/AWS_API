@@ -211,6 +211,14 @@ const PetSchema = new mongoose.Schema(
     ngoPetId: {
       type: String,
     },
+    locationName: {
+      type: String,
+      default: "",
+    },
+    position: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true }
 ); // Automatically manages createdAt and updatedAt

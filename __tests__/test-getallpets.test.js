@@ -548,12 +548,12 @@ describe("GET /pets/pet-list-ngo/{ngoId} — Tier 2", () => {
     expect(res.body.errorKey).toBe("ngoPath.noPetsFound");
   });
 
-  ngoTest("search=dog filters results to matching animals", async () => {
+  ngoTest("search=dog filters results to matching searchable fields", async () => {
     const res = await req("GET", `/pets/pet-list-ngo/${TEST_NGO_ID}?search=dog`);
     expect(res.status).toBe(200);
     expect(res.body.pets.length).toBeGreaterThan(0);
     // Every returned pet must contain the search token in at least one searchable field
-    const SEARCH_FIELDS = ["name", "animal", "breed", "ngoPetId", "owner"];
+    const SEARCH_FIELDS = ["name", "animal", "breed", "ngoPetId", "locationName", "owner"];
     for (const pet of res.body.pets) {
       const matchesAny = SEARCH_FIELDS.some(
         (f) => typeof pet[f] === "string" && pet[f].toLowerCase().includes("dog")
@@ -563,6 +563,38 @@ describe("GET /pets/pet-list-ngo/{ngoId} — Tier 2", () => {
     // Filtered total must be less than unfiltered total
     const unfilteredRes = await req("GET", `/pets/pet-list-ngo/${TEST_NGO_ID}`);
     expect(res.body.total).toBeLessThan(unfilteredRes.body.total);
+  });
+
+  ngoTest("search matches pets by locationName", async () => {
+    const unfilteredRes = await req("GET", `/pets/pet-list-ngo/${TEST_NGO_ID}`);
+    expect(unfilteredRes.status).toBe(200);
+
+    const petWithLocation = unfilteredRes.body.pets.find(
+      (pet) => typeof pet.locationName === "string" && pet.locationName.trim().length > 0
+    );
+    expect(petWithLocation).toBeDefined();
+
+    const locationToken = petWithLocation.locationName.trim().split(/\s+/)[0];
+    expect(locationToken.length).toBeGreaterThan(0);
+
+    const res = await req(
+      "GET",
+      `/pets/pet-list-ngo/${TEST_NGO_ID}?search=${encodeURIComponent(locationToken)}`
+    );
+    expect(res.status).toBe(200);
+    expect(res.body.pets.length).toBeGreaterThan(0);
+
+    for (const pet of res.body.pets) {
+      const matchesAny = ["name", "animal", "breed", "ngoPetId", "locationName", "owner"].some(
+        (field) =>
+          typeof pet[field] === "string" &&
+          pet[field].toLowerCase().includes(locationToken.toLowerCase())
+      );
+      expect(matchesAny).toBe(true);
+    }
+
+    const returnedIds = new Set(res.body.pets.map((pet) => pet._id));
+    expect(returnedIds.has(petWithLocation._id)).toBe(true);
   });
 
   ngoTest("sortBy=createdAt&sortOrder=asc returns monotonically ascending dates", async () => {

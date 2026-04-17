@@ -1,10 +1,13 @@
 {
     "others": {
         "unauthorized": "Unauthorized",
+        "forbidden": "You do not have permission to access this pet",
+        "ngoOnly": "This operation is restricted to NGO accounts",
         "internalError": "Internal Server Error",
         "methodNotAllowed": "Method Not Allowed",
         "missingParams": "Missing required parameters",
-        "invalidJSON": "Invalid JSON format"
+        "invalidJSON": "Invalid JSON format",
+        "noFieldsToUpdate": "No valid fields to update"
     },
     "common": {
         "invalidJSON": "Invalid JSON format"
@@ -31,13 +34,16 @@
         "invalidPhoneFormat": "Invalid phone number format",
         "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
         "userEmailNotFound": "User with this email does not exist",
-        "userPhoneNotFound": "User with this phone number does not exist"
+        "userPhoneNotFound": "User with this phone number does not exist",
+        "userIdentityMismatch": "The email and phone number do not belong to the same user",
+        "targetUserNotFound": "Target user not found"
     },
     "petDetailInfo": {
         "getDetailNotFound": "Pet detail info not found",
         "getDetailSuccess": "Pet detail info retrieved successfully",
         "postDetailSuccess": "Pet detail info updated successfully",
-        "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format"
+        "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
+        "invalidMotherParity": "Mother parity must be a valid number"
     },
     "petSource": {
         "getNotFound": "No rescue/origin information found for this pet",
@@ -48,7 +54,8 @@
         "recordNotFound": "Rescue/origin record not found",
         "putSuccess": "Rescue/origin record updated successfully",
         "noFieldsToUpdate": "No fields provided to update",
-        "missingRequiredFields": "At least one of place of origin or channel is required"
+        "missingRequiredFields": "At least one of place of origin or channel is required",
+        "duplicateRecord": "A source record already exists for this pet"
     },
     "petAdoption": {
         "getNotFound": "No post-adoption record found",
@@ -61,6 +68,7 @@
         "noFieldsToUpdate": "No fields provided to update",
         "putSuccess": "Post-adoption record updated successfully",
         "deleteMissingAdoptionId": "Adoption ID is required",
-        "deleteSuccess": "Post-adoption record deleted successfully"
+        "deleteSuccess": "Post-adoption record deleted successfully",
+        "duplicateRecord": "An adoption record already exists for this pet"
     }
 }
