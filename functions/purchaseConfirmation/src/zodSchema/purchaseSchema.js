@@ -11,7 +11,7 @@ const purchaseConfirmationSchema = z.object({
   email: z
     .string({ error: "purchase.errors.missingRequiredFields" })
     .min(1, "purchase.errors.missingRequiredFields")
-    .email("email.errors.invalidEmail"),
+    .email("purchase.errors.invalidEmail"),
   address: z
     .string({ error: "purchase.errors.missingRequiredFields" })
     .min(1, "purchase.errors.missingRequiredFields"),

@@ -1,2 +1,1 @@
-- [ ] understand whats purchase confirmation doing
-- [ ] add test cases and update docs
+- [ ] add location param to ngo pet list query

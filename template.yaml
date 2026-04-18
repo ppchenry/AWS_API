@@ -2,331 +2,331 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 
 Resources:
-  PetLostandFoundFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 60
-      MemorySize: 512
-      CodeUri: functions/PetLostandFound/
-      Handler: index.handler
-      Runtime: nodejs22.x
-      Events:
-        PetLostGet:
-          Type: Api
-          Properties:
-            Path: /pets/pet-lost
-            Method: GET
-        PetLostPost:
-          Type: Api
-          Properties:
-            Path: /pets/pet-lost
-            Method: POST
-        PetLostDelete:
-          Type: Api
-          Properties:
-            Path: /pets/pet-lost/{petLostID}
-            Method: DELETE
-        PetFoundGet:
-          Type: Api
-          Properties:
-            Path: /pets/pet-found
-            Method: GET
-        PetFoundPost:
-          Type: Api
-          Properties:
-            Path: /pets/pet-found
-            Method: POST
-        PetFoundDelete:
-          Type: Api
-          Properties:
-            Path: /pets/pet-found/{petFoundID}
-            Method: DELETE
-        NotificationsGet:
-          Type: Api
-          Properties:
-            Path: /v2/account/{userId}/notifications
-            Method: GET
-        NotificationsPost:
-          Type: Api
-          Properties:
-            Path: /v2/account/{userId}/notifications
-            Method: POST
-        NotificationsPut:
-          Type: Api
-          Properties:
-            Path: /v2/account/{userId}/notifications/{notificationId}
-            Method: PUT
-        PetLostOptions:
-          Type: Api
-          Properties:
-            Path: /pets/pet-lost
-            Method: OPTIONS
-        PetLostIdOptions:
-          Type: Api
-          Properties:
-            Path: /pets/pet-lost/{petLostID}
-            Method: OPTIONS
-        PetFoundOptions:
-          Type: Api
-          Properties:
-            Path: /pets/pet-found
-            Method: OPTIONS
-        PetFoundIdOptions:
-          Type: Api
-          Properties:
-            Path: /pets/pet-found/{petFoundID}
-            Method: OPTIONS
-        NotificationsOptions:
-          Type: Api
-          Properties:
-            Path: /v2/account/{userId}/notifications
-            Method: OPTIONS
-        NotificationsIdOptions:
-          Type: Api
-          Properties:
-            Path: /v2/account/{userId}/notifications/{notificationId}
-            Method: OPTIONS
-      Environment:
-        Variables:
-          JWT_SECRET: ""
-          JWT_BYPASS: ""
-          ALLOWED_ORIGINS: ""
-          MONGODB_URI: ""
-          AWSACCESSID: ""
-          AWSSECRETKEY: ""
-          AWS_BUCKET_NAME: ""
-          AWS_BUCKET_BASE_URL: ""
-          AWS_BUCKET_REGION: ""
-          NODE_ENV: "development"
+  # PetLostandFoundFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Timeout: 60
+  #     MemorySize: 512
+  #     CodeUri: functions/PetLostandFound/
+  #     Handler: index.handler
+  #     Runtime: nodejs22.x
+  #     Events:
+  #       PetLostGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/pet-lost
+  #           Method: GET
+  #       PetLostPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/pet-lost
+  #           Method: POST
+  #       PetLostDelete:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/pet-lost/{petLostID}
+  #           Method: DELETE
+  #       PetFoundGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/pet-found
+  #           Method: GET
+  #       PetFoundPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/pet-found
+  #           Method: POST
+  #       PetFoundDelete:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/pet-found/{petFoundID}
+  #           Method: DELETE
+  #       NotificationsGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/account/{userId}/notifications
+  #           Method: GET
+  #       NotificationsPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/account/{userId}/notifications
+  #           Method: POST
+  #       NotificationsPut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/account/{userId}/notifications/{notificationId}
+  #           Method: PUT
+  #       PetLostOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/pet-lost
+  #           Method: OPTIONS
+  #       PetLostIdOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/pet-lost/{petLostID}
+  #           Method: OPTIONS
+  #       PetFoundOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/pet-found
+  #           Method: OPTIONS
+  #       PetFoundIdOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/pet-found/{petFoundID}
+  #           Method: OPTIONS
+  #       NotificationsOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/account/{userId}/notifications
+  #           Method: OPTIONS
+  #       NotificationsIdOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/account/{userId}/notifications/{notificationId}
+  #           Method: OPTIONS
+  #     Environment:
+  #       Variables:
+  #         JWT_SECRET: ""
+  #         JWT_BYPASS: ""
+  #         ALLOWED_ORIGINS: ""
+  #         MONGODB_URI: ""
+  #         AWSACCESSID: ""
+  #         AWSSECRETKEY: ""
+  #         AWS_BUCKET_NAME: ""
+  #         AWS_BUCKET_BASE_URL: ""
+  #         AWS_BUCKET_REGION: ""
+  #         NODE_ENV: "development"
 
-  EyeUploadFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 60
-      MemorySize: 512
-      CodeUri: functions/EyeUpload/
-      Handler: index.handler
-      Runtime: nodejs22.x
-      Events:
-        UtilUploadImagePost:
-          Type: Api
-          Properties:
-            Path: /util/uploadImage
-            Method: POST
-        UtilUploadImageOptions:
-          Type: Api
-          Properties:
-            Path: /util/uploadImage
-            Method: OPTIONS
-        UtilUploadPetBreedImagePost:
-          Type: Api
-          Properties:
-            Path: /util/uploadPetBreedImage
-            Method: POST
-        UtilUploadPetBreedImageOptions:
-          Type: Api
-          Properties:
-            Path: /util/uploadPetBreedImage
-            Method: OPTIONS
-        UpdatePetImagePost:
-          Type: Api
-          Properties:
-            Path: /pets/updatePetImage
-            Method: POST
-        UpdatePetImagePut:
-          Type: Api
-          Properties:
-            Path: /pets/updatePetImage
-            Method: PUT
-        UpdatePetImageOptions:
-          Type: Api
-          Properties:
-            Path: /pets/updatePetImage
-            Method: OPTIONS
-        GetS3ImageGet:
-          Type: Api
-          Properties:
-            Path: /pets/gets3Image
-            Method: GET
-        CreatePetBasicInfoWithImagePost:
-          Type: Api
-          Properties:
-            Path: /pets/create-pet-basic-info-with-image
-            Method: POST
-        CreatePetBasicInfoPost:
-          Type: Api
-          Properties:
-            Path: /pets/create-pet-basic-info
-            Method: POST
-        CreatePetBasicInfoWithImageOptions:
-          Type: Api
-          Properties:
-            Path: /pets/create-pet-basic-info-with-image
-            Method: OPTIONS
-        EyeAnalysisPost:
-          Type: Api
-          Properties:
-            Path: /analysis/eye-upload/{petId}
-            Method: POST
-        EyeAnalysisOptions:
-          Type: Api
-          Properties:
-            Path: /analysis/eye-upload/{petId}
-            Method: OPTIONS
-        BreedAnalysisPost:
-          Type: Api
-          Properties:
-            Path: /analysis/breed
-            Method: POST
-        BreedAnalysisOptions:
-          Type: Api
-          Properties:
-            Path: /analysis/breed
-            Method: OPTIONS
-      Environment:
-        Variables:
-          MONGODB_URI: ""
-          AWS_BUCKET_NAME: ""
-          AWS_BUCKET_BASE_URL: ""
-          AWS_BUCKET_REGION: ""
-          AWSACCESSID: ""
-          AWSSECRETKEY: ""
-          VM_PUBLIC_IP: ""
-          DOCKER_IMAGE: ""
-          HEATMAP: ""
-          VM_BREED_PUBLIC_IP: ""
-          BREED_DOCKER_IMAGE: ""
-          JWT_SECRET: ""
-          JWT_BYPASS: ""
-          ALLOWED_ORIGINS: ""
-          TEST_PET_ID: ""
-          TEST_OWNER_USER_ID: ""
-          NODE_ENV: "development"
+  # EyeUploadFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Timeout: 60
+  #     MemorySize: 512
+  #     CodeUri: functions/EyeUpload/
+  #     Handler: index.handler
+  #     Runtime: nodejs22.x
+  #     Events:
+  #       UtilUploadImagePost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /util/uploadImage
+  #           Method: POST
+  #       UtilUploadImageOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /util/uploadImage
+  #           Method: OPTIONS
+  #       UtilUploadPetBreedImagePost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /util/uploadPetBreedImage
+  #           Method: POST
+  #       UtilUploadPetBreedImageOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /util/uploadPetBreedImage
+  #           Method: OPTIONS
+  #       UpdatePetImagePost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/updatePetImage
+  #           Method: POST
+  #       UpdatePetImagePut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/updatePetImage
+  #           Method: PUT
+  #       UpdatePetImageOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/updatePetImage
+  #           Method: OPTIONS
+  #       GetS3ImageGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/gets3Image
+  #           Method: GET
+  #       CreatePetBasicInfoWithImagePost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/create-pet-basic-info-with-image
+  #           Method: POST
+  #       CreatePetBasicInfoPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/create-pet-basic-info
+  #           Method: POST
+  #       CreatePetBasicInfoWithImageOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/create-pet-basic-info-with-image
+  #           Method: OPTIONS
+  #       EyeAnalysisPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /analysis/eye-upload/{petId}
+  #           Method: POST
+  #       EyeAnalysisOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /analysis/eye-upload/{petId}
+  #           Method: OPTIONS
+  #       BreedAnalysisPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /analysis/breed
+  #           Method: POST
+  #       BreedAnalysisOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /analysis/breed
+  #           Method: OPTIONS
+  #     Environment:
+  #       Variables:
+  #         MONGODB_URI: ""
+  #         AWS_BUCKET_NAME: ""
+  #         AWS_BUCKET_BASE_URL: ""
+  #         AWS_BUCKET_REGION: ""
+  #         AWSACCESSID: ""
+  #         AWSSECRETKEY: ""
+  #         VM_PUBLIC_IP: ""
+  #         DOCKER_IMAGE: ""
+  #         HEATMAP: ""
+  #         VM_BREED_PUBLIC_IP: ""
+  #         BREED_DOCKER_IMAGE: ""
+  #         JWT_SECRET: ""
+  #         JWT_BYPASS: ""
+  #         ALLOWED_ORIGINS: ""
+  #         TEST_PET_ID: ""
+  #         TEST_OWNER_USER_ID: ""
+  #         NODE_ENV: "development"
 
-  PetDetailInfoFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 60
-      MemorySize: 512
-      CodeUri: functions/PetDetailInfo/
-      Handler: index.handler
-      Runtime: nodejs22.x
-      Events:
-        PetDetailInfoGet:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/detail-info
-            Method: GET
-        PetDetailInfoPost:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/detail-info
-            Method: POST
-        PetDetailInfoOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/detail-info
-            Method: OPTIONS
-        PetDetailTransferPost:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/detail-info/transfer
-            Method: POST
-        PetDetailTransferOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/detail-info/transfer
-            Method: OPTIONS
-        PetDetailTransferPut:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/detail-info/transfer/{transferId}
-            Method: PUT
-        PetDetailTransferDelete:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/detail-info/transfer/{transferId}
-            Method: DELETE
-        PetDetailTransferIdOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/detail-info/transfer/{transferId}
-            Method: OPTIONS
-        PetDetailNGOTransferPut:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/detail-info/NGOtransfer
-            Method: PUT
-        PetDetailNGOTransferOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/detail-info/NGOtransfer
-            Method: OPTIONS
-        PetDetailSourceGet:
-          Type: Api
-          Properties:
-            Path: /v2/pets/{petID}/detail-info/source
-            Method: GET
-        PetDetailSourcePost:
-          Type: Api
-          Properties:
-            Path: /v2/pets/{petID}/detail-info/source
-            Method: POST
-        PetDetailSourceOptions:
-          Type: Api
-          Properties:
-            Path: /v2/pets/{petID}/detail-info/source
-            Method: OPTIONS
-        PetDetailSourcePut:
-          Type: Api
-          Properties:
-            Path: /v2/pets/{petID}/detail-info/source/{sourceId}
-            Method: PUT
-        PetDetailSourceIdOptions:
-          Type: Api
-          Properties:
-            Path: /v2/pets/{petID}/detail-info/source/{sourceId}
-            Method: OPTIONS
-        PetDetailAdoptionGet:
-          Type: Api
-          Properties:
-            Path: /v2/pets/{petID}/pet-adoption
-            Method: GET
-        PetDetailAdoptionPost:
-          Type: Api
-          Properties:
-            Path: /v2/pets/{petID}/pet-adoption
-            Method: POST
-        PetDetailAdoptionOptions:
-          Type: Api
-          Properties:
-            Path: /v2/pets/{petID}/pet-adoption
-            Method: OPTIONS
-        PetDetailAdoptionPut:
-          Type: Api
-          Properties:
-            Path: /v2/pets/{petID}/pet-adoption/{adoptionId}
-            Method: PUT
-        PetDetailAdoptionDelete:
-          Type: Api
-          Properties:
-            Path: /v2/pets/{petID}/pet-adoption/{adoptionId}
-            Method: DELETE
-        PetDetailAdoptionIdOptions:
-          Type: Api
-          Properties:
-            Path: /v2/pets/{petID}/pet-adoption/{adoptionId}
-            Method: OPTIONS
-      Environment:
-        Variables:
-          MONGODB_URI: ""
-          JWT_SECRET: ""
-          JWT_BYPASS: ""
-          ALLOWED_ORIGINS: ""
-          TEST_PET_ID: ""
-          TEST_OWNER_USER_ID: ""
-          TEST_NGO_ID: ""
-          NODE_ENV: "development"
+  # PetDetailInfoFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Timeout: 60
+  #     MemorySize: 512
+  #     CodeUri: functions/PetDetailInfo/
+  #     Handler: index.handler
+  #     Runtime: nodejs22.x
+  #     Events:
+  #       PetDetailInfoGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/detail-info
+  #           Method: GET
+  #       PetDetailInfoPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/detail-info
+  #           Method: POST
+  #       PetDetailInfoOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/detail-info
+  #           Method: OPTIONS
+  #       PetDetailTransferPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/detail-info/transfer
+  #           Method: POST
+  #       PetDetailTransferOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/detail-info/transfer
+  #           Method: OPTIONS
+  #       PetDetailTransferPut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/detail-info/transfer/{transferId}
+  #           Method: PUT
+  #       PetDetailTransferDelete:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/detail-info/transfer/{transferId}
+  #           Method: DELETE
+  #       PetDetailTransferIdOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/detail-info/transfer/{transferId}
+  #           Method: OPTIONS
+  #       PetDetailNGOTransferPut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/detail-info/NGOtransfer
+  #           Method: PUT
+  #       PetDetailNGOTransferOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/detail-info/NGOtransfer
+  #           Method: OPTIONS
+  #       PetDetailSourceGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/pets/{petID}/detail-info/source
+  #           Method: GET
+  #       PetDetailSourcePost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/pets/{petID}/detail-info/source
+  #           Method: POST
+  #       PetDetailSourceOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/pets/{petID}/detail-info/source
+  #           Method: OPTIONS
+  #       PetDetailSourcePut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/pets/{petID}/detail-info/source/{sourceId}
+  #           Method: PUT
+  #       PetDetailSourceIdOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/pets/{petID}/detail-info/source/{sourceId}
+  #           Method: OPTIONS
+  #       PetDetailAdoptionGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/pets/{petID}/pet-adoption
+  #           Method: GET
+  #       PetDetailAdoptionPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/pets/{petID}/pet-adoption
+  #           Method: POST
+  #       PetDetailAdoptionOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/pets/{petID}/pet-adoption
+  #           Method: OPTIONS
+  #       PetDetailAdoptionPut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/pets/{petID}/pet-adoption/{adoptionId}
+  #           Method: PUT
+  #       PetDetailAdoptionDelete:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/pets/{petID}/pet-adoption/{adoptionId}
+  #           Method: DELETE
+  #       PetDetailAdoptionIdOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/pets/{petID}/pet-adoption/{adoptionId}
+  #           Method: OPTIONS
+  #     Environment:
+  #       Variables:
+  #         MONGODB_URI: ""
+  #         JWT_SECRET: ""
+  #         JWT_BYPASS: ""
+  #         ALLOWED_ORIGINS: ""
+  #         TEST_PET_ID: ""
+  #         TEST_OWNER_USER_ID: ""
+  #         TEST_NGO_ID: ""
+  #         NODE_ENV: "development"
 
   purchaseConfirmationFunction:
     Type: AWS::Serverless::Function
@@ -474,357 +474,359 @@ Resources:
           SMTP_PASS: ""
           SMTP_FROM: ""
           WHATSAPP_BEARER_TOKEN: ""
+          WHATSAPP_PHONE_NUMBER_ID: ""
           CUTTLY_API_KEY: ""
           NODE_ENV: "development"
 
-  PetBasicInfoFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 60
-      MemorySize: 512
-      CodeUri: functions/PetBasicInfo/
-      Handler: index.handler
-      Runtime: nodejs22.x
-      Events:
-        PetDelete:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}
-            Method: DELETE
+  # PetBasicInfoFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Timeout: 60
+  #     MemorySize: 512
+  #     CodeUri: functions/PetBasicInfo/
+  #     Handler: index.handler
+  #     Runtime: nodejs22.x
+  #     Events:
+  #       PetDelete:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}
+  #           Method: DELETE
 
-        PetDeleteOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}
-            Method: OPTIONS
+  #       PetDeleteOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}
+  #           Method: OPTIONS
 
-        PetBasicInfoGet:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/basic-info
-            Method: GET
+  #       PetBasicInfoGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/basic-info
+  #           Method: GET
 
-        PetBasicInfoPut:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/basic-info
-            Method: PUT
+  #       PetBasicInfoPut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/basic-info
+  #           Method: PUT
 
-        PetBasicInfoPost:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/basic-info
-            Method: POST
+  #       PetBasicInfoPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/basic-info
+  #           Method: POST
 
-        PetBasicInfoOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/basic-info
-            Method: OPTIONS
+  #       PetBasicInfoOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/basic-info
+  #           Method: OPTIONS
 
-        PetEyeLogGet:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/eyeLog
-            Method: GET
+  #       PetEyeLogGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/eyeLog
+  #           Method: GET
 
-        PetEyeLogOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/eyeLog
-            Method: OPTIONS
-      Environment:
-        Variables:
-          JWT_SECRET: ""
-          JWT_BYPASS: ""
-          MONGODB_URI: ""
-          ALLOWED_ORIGINS: ""
-          NODE_ENV: "development"
+  #       PetEyeLogOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/eyeLog
+  #           Method: OPTIONS
+  #     Environment:
+  #       Variables:
+  #         JWT_SECRET: ""
+  #         JWT_BYPASS: ""
+  #         MONGODB_URI: ""
+  #         ALLOWED_ORIGINS: ""
+  #         NODE_ENV: "development"
 
-  AuthRouteFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 60
-      MemorySize: 512
-      CodeUri: functions/AuthRoute/
-      Handler: index.handler
-      Runtime: nodejs22.x
-      Events:
-        RefreshOptions:
-          Type: Api
-          Properties:
-            Path: /auth/refresh
-            Method: OPTIONS
+  # AuthRouteFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Timeout: 60
+  #     MemorySize: 512
+  #     CodeUri: functions/AuthRoute/
+  #     Handler: index.handler
+  #     Runtime: nodejs22.x
+  #     Events:
+  #       RefreshOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /auth/refresh
+  #           Method: OPTIONS
 
-        Refresh:
-          Type: Api
-          Properties:
-            Path: /auth/refresh
-            Method: POST
-      Environment:
-        Variables:
-          JWT_SECRET: ""
-          JWT_BYPASS: ""
-          MONGODB_URI: ""
-          ALLOWED_ORIGINS: ""
-          NODE_ENV: "development"
+  #       Refresh:
+  #         Type: Api
+  #         Properties:
+  #           Path: /auth/refresh
+  #           Method: POST
+  #     Environment:
+  #       Variables:
+  #         JWT_SECRET: ""
+  #         JWT_BYPASS: ""
+  #         MONGODB_URI: ""
+  #         ALLOWED_ORIGINS: ""
+  #         NODE_ENV: "development"
 
-  GetAllPetsFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 60
-      MemorySize: 512
-      CodeUri: functions/GetAllPets/
-      Handler: index.handler
-      Runtime: nodejs22.x
-      Events:
-        PetListNGOOptions:
-          Type: Api
-          Properties:
-            Path: /pets/pet-list-ngo/{ngoId}
-            Method: OPTIONS
+  # GetAllPetsFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Timeout: 60
+  #     MemorySize: 512
+  #     CodeUri: functions/GetAllPets/
+  #     Handler: index.handler
+  #     Runtime: nodejs22.x
+  #     Events:
+  #       PetListNGOOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/pet-list-ngo/{ngoId}
+  #           Method: OPTIONS
         
-        DeletePetOptions:
-          Type: Api
-          Properties:
-            Path: /pets/deletePet
-            Method: OPTIONS
+  #       DeletePetOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/deletePet
+  #           Method: OPTIONS
           
-        UpdatePetEyeOptions:
-          Type: Api
-          Properties:
-            Path: /pets/updatePetEye
-            Method: OPTIONS
+  #       UpdatePetEyeOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/updatePetEye
+  #           Method: OPTIONS
         
-        PetListOptions:
-          Type: Api
-          Properties:
-            Path: /pets/pet-list/{userId}
-            Method: OPTIONS
+  #       PetListOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/pet-list/{userId}
+  #           Method: OPTIONS
 
-        PetListNGO:
-          Type: Api
-          Properties:
-            Path: /pets/pet-list-ngo/{ngoId}
-            Method: GET
+  #       PetListNGO:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/pet-list-ngo/{ngoId}
+  #           Method: GET
         
-        DeletePet:
-          Type: Api
-          Properties:
-            Path: /pets/deletePet
-            Method: POST
+  #       DeletePet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/deletePet
+  #           Method: POST
           
-        UpdatePetEye:
-          Type: Api
-          Properties:
-            Path: /pets/updatePetEye
-            Method: PUT
+  #       UpdatePetEye:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/updatePetEye
+  #           Method: PUT
         
-        PetList:
-          Type: Api
-          Properties:
-            Path: /pets/pet-list/{userId}
-            Method: GET
-      Environment:
-        Variables:
-          JWT_SECRET: ""
-          JWT_BYPASS: ""
-          MONGODB_URI: ""
-          ALLOWED_ORIGINS: ""
-          NODE_ENV: "development"
+  #       PetList:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/pet-list/{userId}
+  #           Method: GET
+  #     Environment:
+  #       Variables:
+  #         JWT_SECRET: ""
+  #         JWT_BYPASS: ""
+  #         MONGODB_URI: ""
+  #         ALLOWED_ORIGINS: ""
+  #         NODE_ENV: "development"
 
-  EmailVerificationFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 60
-      MemorySize: 512
-      CodeUri: functions/EmailVerification/
-      Handler: index.handler
-      Runtime: nodejs22.x
-      Events:
-        GenerateEmailCode:
-          Type: Api
-          Properties:
-            Path: /account/generate-email-code
-            Method: POST
+  # EmailVerificationFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Timeout: 60
+  #     MemorySize: 512
+  #     CodeUri: functions/EmailVerification/
+  #     Handler: index.handler
+  #     Runtime: nodejs22.x
+  #     Events:
+  #       GenerateEmailCode:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/generate-email-code
+  #           Method: POST
 
-        GenerateEmailCodeOptions:
-          Type: Api
-          Properties:
-            Path: /account/generate-email-code
-            Method: OPTIONS
+  #       GenerateEmailCodeOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/generate-email-code
+  #           Method: OPTIONS
 
-        VerifyEmailCode:
-          Type: Api
-          Properties:
-            Path: /account/verify-email-code
-            Method: POST
+  #       VerifyEmailCode:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/verify-email-code
+  #           Method: POST
 
-        VerifyEmailCodeOptions:
-          Type: Api
-          Properties:
-            Path: /account/verify-email-code
-            Method: OPTIONS
+  #       VerifyEmailCodeOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/verify-email-code
+  #           Method: OPTIONS
 
-        GenerateEmailCode2:
-          Type: Api
-          Properties:
-            Path: /account/generate-email-code-2
-            Method: POST
-      Environment:
-        Variables:
-          ALLOWED_ORIGINS: ""
-          JWT_SECRET: ""
-          JWT_BYPASS: ""
-          MONGODB_URI: ""
-          SMTP_HOST: ""
-          SMTP_PASS: ""
-          SMTP_USER: ""
-          REFRESH_TOKEN_MAX_AGE_SEC: "1209600"
-          NODE_ENV: "development"
+  #       GenerateEmailCode2:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/generate-email-code-2
+  #           Method: POST
+  #     Environment:
+  #       Variables:
+  #         ALLOWED_ORIGINS: ""
+  #         JWT_SECRET: ""
+  #         JWT_BYPASS: ""
+  #         MONGODB_URI: ""
+  #         SMTP_HOST: ""
+  #         SMTP_PASS: ""
+  #         SMTP_USER: ""
+  #         REFRESH_TOKEN_MAX_AGE_SEC: "1209600"
+  #         NODE_ENV: "development"
 
-  UserRoutesFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 60
-      MemorySize: 512
-      CodeUri: functions/UserRoutes/
-      Handler: index.handler
-      Runtime: nodejs22.x
-      Events:
-        AccountRootOptions:
-          Type: Api
-          Properties:
-            Path: /account
-            Method: OPTIONS
+  # UserRoutesFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Timeout: 60
+  #     MemorySize: 512
+  #     CodeUri: functions/UserRoutes/
+  #     Handler: index.handler
+  #     Runtime: nodejs22.x
+  #     Events:
+  #       AccountRootOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account
+  #           Method: OPTIONS
 
-        AccountRootPut:
-          Type: Api
-          Properties:
-            Path: /account
-            Method: PUT
+  #       AccountRootPut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account
+  #           Method: PUT
 
-        UserList:
-          Type: Api
-          Properties:
-            Path: /account/user-list
-            Method: GET
+  #       UserList:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/user-list
+  #           Method: GET
 
-        EditNgoGet:
-          Type: Api
-          Properties:
-            Path: /account/edit-ngo/{ngoId}
-            Method: GET
+  #       EditNgoGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/edit-ngo/{ngoId}
+  #           Method: GET
 
-        EditNgoPut:
-          Type: Api
-          Properties:
-            Path: /account/edit-ngo/{ngoId}
-            Method: PUT
+  #       EditNgoPut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/edit-ngo/{ngoId}
+  #           Method: PUT
 
-        EditNgoPetPlacementOptionsGet:
-          Type: Api
-          Properties:
-            Path: /account/edit-ngo/{ngoId}/pet-placement-options
-            Method: GET
+  #       EditNgoPetPlacementOptionsGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/edit-ngo/{ngoId}/pet-placement-options
+  #           Method: GET
 
-        AccountUserIdDelete:
-          Type: Api
-          Properties:
-            Path: /account/{userId}
-            Method: DELETE
-        AccountUserIdGet:
-          Type: Api
-          Properties:
-            Path: /account/{userId}
-            Method: GET
+  #       AccountUserIdDelete:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/{userId}
+  #           Method: DELETE
+  #       AccountUserIdGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/{userId}
+  #           Method: GET
 
-        AccountUserIdOptions:
-          Type: Api
-          Properties:
-            Path: /account/{userId}
-            Method: OPTIONS
+  #       AccountUserIdOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/{userId}
+  #           Method: OPTIONS
 
-        DeleteUserWithEmail:
-          Type: Api
-          Properties:
-            Path: /account/delete-user-with-email
-            Method: POST
+  #       DeleteUserWithEmail:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/delete-user-with-email
+  #           Method: POST
 
-        GenerateSmsCode:
-          Type: Api
-          Properties:
-            Path: /account/generate-sms-code
-            Method: POST
+  #       GenerateSmsCode:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/generate-sms-code
+  #           Method: POST
 
-        Login:
-          Type: Api
-          Properties:
-            Path: /account/login
-            Method: POST
+  #       Login:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/login
+  #           Method: POST
 
-        Login2:
-          Type: Api
-          Properties:
-            Path: /account/login-2
-            Method: POST
+  #       Login2:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/login-2
+  #           Method: POST
 
-        Register:
-          Type: Api
-          Properties:
-            Path: /account/register
-            Method: POST
+  #       Register:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/register
+  #           Method: POST
 
-        RegisterNgo:
-          Type: Api
-          Properties:
-            Path: /account/register-ngo
-            Method: POST
+  #       RegisterNgo:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/register-ngo
+  #           Method: POST
 
-        RegisterByEmail:
-          Type: Api
-          Properties:
-            Path: /account/register-by-email
-            Method: POST
+  #       RegisterByEmail:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/register-by-email
+  #           Method: POST
 
-        RegisterByPhoneNumber:
-          Type: Api
-          Properties:
-            Path: /account/register-by-phoneNumber
-            Method: POST
+  #       RegisterByPhoneNumber:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/register-by-phoneNumber
+  #           Method: POST
 
-        RegisterEmail2:
-          Type: Api
-          Properties:
-            Path: /account/register-email-2
-            Method: POST
+  #       RegisterEmail2:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/register-email-2
+  #           Method: POST
 
-        UpdateImage:
-          Type: Api
-          Properties:
-            Path: /account/update-image
-            Method: POST
+  #       UpdateImage:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/update-image
+  #           Method: POST
 
-        UpdatePassword:
-          Type: Api
-          Properties:
-            Path: /account/update-password
-            Method: PUT
+  #       UpdatePassword:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/update-password
+  #           Method: PUT
 
-        VerifySmsCode:
-          Type: Api
-          Properties:
-            Path: /account/verify-sms-code
-            Method: POST
+  #       VerifySmsCode:
+  #         Type: Api
+  #         Properties:
+  #           Path: /account/verify-sms-code
+  #           Method: POST
 
-      Environment:
-        Variables:
-          TWILIO_ACCOUNT_SID: ""
-          TWILIO_AUTH_TOKEN: ""
-          TWILIO_VERIFY_SERVICE_SID: ""
-          REFRESH_TOKEN_MAX_AGE_SEC: ""
-          JWT_SECRET: ""
-          JWT_BYPASS: ""
-          MONGODB_URI: ""
-          ALLOWED_ORIGINS: ""
-          NODE_ENV: "development"
+  #     Environment:
+  #       Variables:
+  #         TWILIO_ACCOUNT_SID: ""
+  #         TWILIO_AUTH_TOKEN: ""
+  #         TWILIO_VERIFY_SERVICE_SID: ""
+  #         REFRESH_TOKEN_MAX_AGE_SEC: ""
+  #         JWT_SECRET: ""
+  #         JWT_BYPASS: ""
+  #         MONGODB_URI: ""
+  #         ALLOWED_ORIGINS: ""
+  #         NODE_ENV: "development"
+  

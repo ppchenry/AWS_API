@@ -1,8 +1,8 @@
-# Monorepo 重構進度報告（2026-04-17）
+# Monorepo 重構進度報告（2026-04-18）
 
 ## 概述 (Overview)
 
-在目前這一階段的 Monorepo 現代化工程中，已完成 8 個 Lambda 函式的原位 (in-place) 重構：
+在目前這一階段的 Monorepo 現代化工程中，已完成 9 個 Lambda 函式的原位 (in-place) 重構：
 
 * `functions/UserRoutes`
 * `functions/PetBasicInfo`
@@ -12,6 +12,8 @@
 * `functions/PetLostandFound`
 * `functions/EyeUpload`
 * `functions/PetDetailInfo`
+* `functions/purchaseConfirmation`
+* `functions/purchaseConfirmation`
 
 此項工作隸屬於 [README.md](README.md) 中定義的 Monorepo 清理計劃，遵循 [dev_docs/REFACTOR_CHECKLIST.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/REFACTOR_CHECKLIST.md) 的現代化基準，並依據 [dev_docs/LAMBDA_REFACTOR_INVENTORY.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/LAMBDA_REFACTOR_INVENTORY.md) 的優先順序執行。
 
@@ -25,7 +27,8 @@
 * `PetLostandFound`：`__tests__/test-petlostandfound.test.js` 內 **59 項整合測試案例**
 * `EyeUpload`：`__tests__/test-eyeupload.test.js` 內 **94 項整合測試案例**
 * `PetDetailInfo`：`__tests__/test-petdetailinfo.test.js` 內 **82 項整合測試案例**
-* 綜合總計：**8 個已重構 Lambda 共 483 項整合測試案例 + 6 項 SMS service 單元測試案例**
+* `purchaseConfirmation`：`__tests__/test-purchaseconfirmation.test.js` 內 **65 項整合測試案例**（63 項通過，2 項條件跳過）
+* 綜合總計：**9 個已重構 Lambda 共 548 項整合測試案例 + 6 項 SMS service 單元測試案例**
 
 以上數字為測試檔中「宣告的案例數」，本身不等同於同日完整執行紀錄。已完成的個別測試結果請參考 `dev_docs/test_reports/` 內各 Lambda 的測試報告。
 
@@ -40,15 +43,11 @@
 * `EmailVerification` 負責公開的 Email 身分證明流程，並可為已註冊使用者建立已驗證 session
 * `AuthRoute` 負責 refresh token 輪替與短效 access token 更新
 
-`PetLostandFound` 是首個非 auth 類別、以寵物領域為核心的大型 Lambda 完成全面模組化拆分。原始 1089 行單體檔案拆成 20+ focused modules，經過多輪審計修復並通過 59 項整合測試。測試過程也發現並修復 `mime` v4 ESM-only 相容性問題。
-
-`PetDetailInfo` 也已完成完整模組化拆分，並通過 82 項整合測試，覆蓋 CORS、JWT、guard validation、ownership、detail-info 更新、transfer lifecycle、NGO transfer RBAC、source/adoption lifecycle、duplicate handling、response shape、NoSQL injection guard 與 cleanup。
-
-核心進展是安全性加固。這一階段的工作並非單純的程式碼整潔化，而是在 8 個已重構的高價值 Lambda 介面上，實質降低已知受攻擊風險。這些風險包含未經授權的資料存取、帳戶或寵物刪除、帳號奪取、敏感資料外洩、暴力破解、水平越權與授權繞過。
+核心進展是安全性加固。這一階段的工作並非單純的程式碼整潔化，而是在 9 個已重構的高價值 Lambda 介面上，實質降低已知受攻擊風險。這些風險包含未經授權的資料存取、帳戶或寵物刪除、帳號奪取、敏感資料外洩、暴力破解、水平越權與授權繞過。
 
 ---
 
-## 截至 2026-04-17 的 Monorepo 現況 (Status)
+## 截至 2026-04-18 的 Monorepo 現況 (Status)
 
 專案初期處於 legacy 狀態，Lambda 之間存在大量重複 helper、混合 routing 與 business logic 的單體檔案，以及難以安全演進的隱性合約。
 
@@ -56,7 +55,7 @@
 
 目前進度：
 
-* 8 個模組化參考基準 Lambda
+* 9 個模組化參考基準 Lambda
 * 一套書面現代化標準
 * 一份以行數與風險為基礎的 Lambda 盤點清單
 * 已完成目標具備整合測試支撐
@@ -64,7 +63,7 @@
 
 依據 `dev_docs/LAMBDA_REFACTOR_INVENTORY.md`，目前正式納入重構統計範圍的是 **22 個** Lambda。`adoption_website`、`AuthorizerRoute`、`TestIPLambda`、`WhatsappRoute` 目前列為 out-of-plan。
 
-在此統計口徑下，已有 **8 / 22** 完成加固，約為 **36%**；仍有 **14 / 22**（約 **64%**）屬於 in-plan 待重構範圍。
+在此統計口徑下，已有 **9 / 22** 完成加固，約為 **41%**；仍有 **13 / 22**（約 **59%**）屬於 in-plan 待重構範圍。
 
 若以工作區全部 function folder 計算，目前共有 26 個 function folders；其中 4 個刻意排除於主要重構計劃之外，因此不應與主進度混算。
 
@@ -159,21 +158,22 @@ refresh 流程會：
 * `PetLostandFound` 具備 59/59 passing integration suite，覆蓋 pet-lost/pet-found CRUD、notifications CRUD、CORS、JWT auth、guard validation、self-access enforcement、ownership-guarded delete、rate limiting 與 response shape
 * `EyeUpload` 具備 94/94 passing integration suite，覆蓋 CORS、JWT auth、dead-route dispatch、schema validation、ownership enforcement、NGO authorization branches、upload validation、rate limiting 與 fixture-backed pet access checks
 * `PetDetailInfo` 具備 82/82 passing integration suite，覆蓋 CORS、JWT auth、guard validation、ownership、detail-info、transfer lifecycle、NGO transfer、source/adoption lifecycle、duplicate handling、response shape、NoSQL injection prevention 與 cleanup
+* `purchaseConfirmation` 具備 65 declared (63/63 passing, 2 skipped) integration suite，覆蓋 CORS、JWT auth、public-route bypass、RBAC、guard validation、dead-route dispatch、Zod validation (purchase + email schemas)、NoSQL injection、admin pagination、soft-cancel lifecycle、server-authoritative pricing、rate limiting 與 response shape consistency
 
-合併來看，前 2 個完成審計的 Lambda 直接處理了 **32 項 documented legacy security findings**，另外 `EmailVerification`、`AuthRoute`、`GetAllPets`、`PetLostandFound`、`EyeUpload`、`PetDetailInfo` 也已完成嚴格現代化與測試支撐的安全加固。
+合併來看，前 2 個完成審計的 Lambda 直接處理了 **32 項 documented legacy security findings**，另外 `EmailVerification`、`AuthRoute`、`GetAllPets`、`PetLostandFound`、`EyeUpload`、`PetDetailInfo`、`purchaseConfirmation` 也已完成嚴格現代化與測試支撐的安全加固。
 
-更準確的說法是定性評估，而不是宣稱固定百分比：已完成的 8 個 Lambda 在其自身 route surface 上，已大幅降低已知 code-owned attack classes。
+更準確的說法是定性評估，而不是宣稱固定百分比：已完成的 9 個 Lambda 在其自身 route surface 上，已大幅降低已知 code-owned attack classes。
 
 ### 2. 整體 Monorepo 的覆蓋程度
 
 在整個 monorepo 層級，現代化仍屬早期到中期階段：
 
-* inventory in-plan 目前 **8 / 22** 已完成
-* 約 **36%** 的 in-plan Lambda 已達新標準
-* 約 **64%** 仍需進行相同 route-by-route security verification 與 refactor discipline
+* inventory in-plan 目前 **9 / 22** 已完成
+* 約 **41%** 的 in-plan Lambda 已達新標準
+* 約 **59%** 仍需進行相同 route-by-route security verification 與 refactor discipline
 * 另有 **4 個** workspace Lambdas 目前列為 out-of-plan
 
-正確解讀是：已完成的 8 個 Lambda 內，大部分已知 code-owned attack classes 已被處理；但整個 monorepo 仍有廣泛 residual risk，直到更多 Lambda 完成重構。
+正確解讀是：已完成的 9 個 Lambda 內，大部分已知 code-owned attack classes 已被處理；但整個 monorepo 仍有廣泛 residual risk，直到更多 Lambda 完成重構。
 
 ---
 
@@ -202,9 +202,12 @@ refresh 流程會：
 * [dev_docs/test_reports/USERROUTES_TEST_REPORT.md](dev_docs/test_reports/USERROUTES_TEST_REPORT.md)
 * [dev_docs/test_reports/PETBASICINFO_TEST_REPORT.md](dev_docs/test_reports/PETBASICINFO_TEST_REPORT.md)
 * [dev_docs/test_reports/EMAIL_VERIFICATION_TEST_REPORT.md](dev_docs/test_reports/EMAIL_VERIFICATION_TEST_REPORT.md)
+* [dev_docs/test_reports/AUTHROUTE_TEST_REPORT.md](dev_docs/test_reports/AUTHROUTE_TEST_REPORT.md)
+* [dev_docs/test_reports/GETALLPETS_TEST_REPORT.md](dev_docs/test_reports/GETALLPETS_TEST_REPORT.md)
 * [dev_docs/test_reports/PETLOSTANDFOUND_TEST_REPORT.md](dev_docs/test_reports/PETLOSTANDFOUND_TEST_REPORT.md)
 * [dev_docs/test_reports/EYEUPLOAD_TEST_REPORT.md](dev_docs/test_reports/EYEUPLOAD_TEST_REPORT.md)
 * [dev_docs/test_reports/PETDETAILINFO_TEST_REPORT.md](dev_docs/test_reports/PETDETAILINFO_TEST_REPORT.md)
+* [dev_docs/test_reports/PURCHASECONFIRMATION_TEST_REPORT.md](dev_docs/test_reports/PURCHASECONFIRMATION_TEST_REPORT.md)
 
 ### 2. 性能改善 (Performance)
 
@@ -263,7 +266,7 @@ refresh 流程會：
 
 ## 結語
 
-截至 2026-04-17，Monorepo 重構工作已產出 8 個可作為基準的參考實作，並累積 **483 項整合測試案例 + 6 項 SMS service 單元測試案例**（依 `__tests__` 測試檔統計）。
+截至 2026-04-18，Monorepo 重構工作已產出 9 個可作為基準的參考實作，並累積 **548 項整合測試案例 + 6 項 SMS service 單元測試案例**（依 `__tests__` 測試檔統計）。
 
 已完成 refactor 顯示出明確改善：
 
@@ -273,4 +276,4 @@ refresh 流程會：
 * 擴展性
 * 穩定性
 
-這不是最終架構，但它是通往最終架構前必要且正確的基礎。如果目標是在持續交付的同時保護業務，這份 2026-04-17 報告應被視為早期安全風險退場與工程複利累積，而不是 cosmetic refactoring。
+這不是最終架構，但它是通往最終架構前必要且正確的基礎。如果目標是在持續交付的同時保護業務，這份 2026-04-18 報告應被視為早期安全風險退場與工程複利累積，而不是 cosmetic refactoring。

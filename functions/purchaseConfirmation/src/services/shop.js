@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { createSuccessResponse, createErrorResponse } = require("../utils/response");
+const { sanitizeShopInfo } = require("../utils/sanitize");
 const { logError } = require("../utils/logger");
 
 /**
@@ -15,7 +16,7 @@ async function getShopInfo({ event }) {
       { shopCode: 1, shopName: 1, shopAddress: 1, shopContact: 1, shopContactPerson: 1, price: 1 }
     ).lean();
     return createSuccessResponse(200, event, {
-      shopInfo: shops,
+      shopInfo: shops.map(sanitizeShopInfo),
     });
   } catch (error) {
     logError("getShopInfo failed", { scope, event, error });

@@ -7,7 +7,8 @@
     "methodNotAllowed": "此路由已不再使用。",
     "notFound": "找不到所請求的資源。",
     "invalidObjectId": "ID 格式無效。",
-    "rateLimited": "請求次數過多，請稍後再試。"
+    "rateLimited": "請求次數過多，請稍後再試。",
+    "originNotAllowed": "來源不被允許。"
   },
   "purchase": {
     "errors": {
@@ -24,7 +25,8 @@
       "alreadyCancelled": "該訂單驗證記錄已被取消。",
       "fileTooLarge": "上傳檔案超過 5 MB 大小限制。",
       "invalidFileType": "不支援的檔案格式，接受格式：JPEG、PNG、WebP、GIF。",
-      "tooManyFiles": "單一欄位上傳檔案過多。"
+      "tooManyFiles": "單一欄位上傳檔案過多。",
+      "invalidEmail": "電郵地址格式無效。"
     }
   },
   "email": {

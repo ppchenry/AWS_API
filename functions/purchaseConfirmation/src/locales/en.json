@@ -7,7 +7,8 @@
     "methodNotAllowed": "This route is no longer available.",
     "notFound": "The requested resource was not found.",
     "invalidObjectId": "Invalid ID format.",
-    "rateLimited": "Too many requests. Please try again later."
+    "rateLimited": "Too many requests. Please try again later.",
+    "originNotAllowed": "Origin not allowed."
   },
   "purchase": {
     "errors": {
@@ -24,7 +25,8 @@
       "alreadyCancelled": "This order verification has already been cancelled.",
       "fileTooLarge": "Uploaded file exceeds the 5 MB size limit.",
       "invalidFileType": "Unsupported file type. Accepted formats: JPEG, PNG, WebP, GIF.",
-      "tooManyFiles": "Too many files uploaded for a single field."
+      "tooManyFiles": "Too many files uploaded for a single field.",
+      "invalidEmail": "Invalid email address."
     }
   },
   "email": {

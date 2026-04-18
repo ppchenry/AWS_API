@@ -144,7 +144,7 @@ async function sendPtagDetectionEmail({ event, body }) {
   try {
     const parseResult = ptagDetectionEmailSchema.safeParse(body);
     if (!parseResult.success) {
-      return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error), event);
+      return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error, "email.errors.missingFields"), event);
     }
 
     const { name, tagId, dateTime, locationURL, email } = parseResult.data;

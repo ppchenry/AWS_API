@@ -35,7 +35,7 @@ function handleOptions(event) {
     return {
       statusCode: 403,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: "Origin not allowed" }),
+      body: JSON.stringify({ success: false, errorKey: "others.originNotAllowed", error: "Origin not allowed" }),
     };
   }
 }

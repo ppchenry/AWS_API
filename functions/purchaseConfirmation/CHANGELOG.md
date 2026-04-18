@@ -158,3 +158,14 @@ Key changes in this round:
 - **Delete idempotency**: double-cancel returns 409 (`purchase.errors.alreadyCancelled`), not 404.
 - **Query projections**: shop-info, orders, and order-verification list endpoints now use focused projections instead of broad reads. Bank credentials are excluded at query time, not stripped in memory.
 - **Documentation**: rate limit window, SMTP log level, validators.js reference, and closure claims corrected.
+
+---
+
+## Post-Refactor Fixes (2026-04-18)
+
+- **CORS 403 errorKey**: `cors.js` now returns `{ success: false, errorKey: "others.originNotAllowed", error: "..." }` on disallowed origins, matching the `errorKey` contract required by all error responses.
+- **Zod fallback locale keys**: `purchase.js` and `email.js` now pass a fallback locale key to `getFirstZodIssueMessage()` so validation errors always return a translatable `errorKey` instead of a plain string.
+- **Purchase schema email key**: `purchaseSchema.js` email validation error changed from `email.errors.invalidEmail` to `purchase.errors.invalidEmail` to keep the purchase namespace consistent.
+- **Locale additions**: `en.json` and `zh.json` updated with `others.originNotAllowed`, `purchase.errors.invalidEmail`.
+- **`WHATSAPP_PHONE_NUMBER_ID` in template.yaml**: added to the SAM environment variables for `purchaseConfirmationFunction` so `envSchema.js` cold-start validation passes under SAM local.
+- **Integration test suite**: 65 declared test cases in `__tests__/test-purchaseconfirmation.test.js` (63 passing, 2 skipped pending `TEST_SHOP_CODE` fixture).

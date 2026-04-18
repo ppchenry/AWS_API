@@ -41,7 +41,7 @@ async function submitPurchaseConfirmation({ event }) {
     // 3. Zod validation
     const parseResult = purchaseConfirmationSchema.safeParse(parsed);
     if (!parseResult.success) {
-      return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error), event);
+      return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error, "purchase.errors.missingRequiredFields"), event);
     }
 
     const {
