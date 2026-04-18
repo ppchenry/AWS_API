@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="format-detection" content="telephone=no">
+    <title>PTag 訂單資料：{{ORDER_ID}}</title>
+</head>
+<body style="margin:0; padding:0; background:#f4f4f4; font-family:Helvetica,Arial,sans-serif; color:#050505; font-size:16px; line-height:1.4;">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+        <tr>
+        <td align="center">
+            <table width="640" cellpadding="0" cellspacing="0" role="presentation" style="max-width:640px; background:white; margin:20px 0;">
+                <tr>
+                <td style="padding:20px;">
+
+                <!-- Header -->
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                    <tr>
+                    <td style="font-size:56px; font-family:Helvetica; font-weight:700; color:#050505; padding-left:20px;">PTag</td>
+                    </tr>
+                </table>
+
+                <!-- Greeting -->
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:40px;">
+                    <tr>
+                    <td align="center" style="padding:0 20px;">
+                        <img src="https://petpetclub.s3.ap-southeast-1.amazonaws.com/user-uploads/pets/68de55a8d0f07572c59344be/68e663980dea8b9a98db1552.png" alt="Check Icon" width="70" height="70" style="display:block;" />
+                    </td>
+                    </tr>
+                    <tr>
+                    <td align="center" style="font-size:24px; font-family:Helvetica; font-weight:700; color:black; padding:20px 0;">
+                        多謝！已經成功訂購 {{OPTION_DISPLAY}} 寵物牌
+                    </td>
+                    </tr>
+                    <tr>
+                    <td align="center" style="font-size:24px; font-family:Helvetica; font-weight:700; color:#FFB60C;">
+                        訂單編號：{{ORDER_ID}}
+                    </td>
+                    </tr>
+                </table>
+
+                <!-- Order Details Section -->
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#FCF8F3; margin-bottom:40px;">
+                    <tr>
+                    <td style="padding:20px;">
+                        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                        <tr>
+                            <td style="font-size:24px; font-family:Helvetica; font-weight:700; margin-bottom:24px;">訂單詳情</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:24px 0;">
+                            <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                                <tr>
+                                <td width="200" style="padding-right:40px;">
+                                    <img src="{{PRODUCT_IMAGE_SRC}}" alt="Option Image" width="200" height="200" style="display:block;" />
+                                </td>
+                                <td width="*" valign="top" style="padding-top:50px;">
+                                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                                    <tr>
+                                        <td style="font-size:24px; font-family:Helvetica; font-weight:700;">
+                                        {{OPTION_NAME_MAIN}}{{OPTION_NAME_SUFFIX_HTML}}
+                                        </td>
+                                    </tr>
+                                    {{OPTION_SIZE_ROW_HTML}}
+                                    <tr>
+                                        <td style="color:#969696; font-size:18px;">
+                                        <img src="https://petpetclub.s3.ap-southeast-1.amazonaws.com/user-uploads/pets/68de55a8d0f07572c59344be/68e6640b0dea8b9a98db1558.png" alt="Check" width="20" height="20" style="display:inline;" /> {{OPTION_COLOR_VALUE}}
+                                        </td>
+                                    </tr>
+                                    </table>
+                                </td>
+                                </tr>
+                            </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height:2px; background:#D1D1D1; font-size:0; line-height:0;">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="font-size:24px; font-family:Helvetica; font-weight:700; padding:24px 0 10px 0;">
+                            {{PRINT_CONTENT_LABEL}} 打印內容
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-size:24px; font-family:Helvetica; font-weight:700; padding-bottom:10px;">寵物資料</td>
+                        </tr>
+                        <tr>
+                            <td style="font-size:18px; font-family:Helvetica; font-weight:400; padding-bottom:10px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                                <tr>
+                                <td width="30%" style="font-size:18px; font-family:Helvetica; font-weight:400;">寵物名稱:</td>
+                                <td>{{PET_NAME}}</td>
+                                </tr>
+                            </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-size:18px; font-family:Helvetica; font-weight:400; padding-bottom:16px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                                <tr>
+                                <td width="30%" style="font-size:18px; font-family:Helvetica; font-weight:400; vertical-align:top;">照片:</td>
+                                <td>
+                                    <img src="{{PET_IMAGE_SRC}}" alt="Pet Image" width="400" height="250" style="display:block; border-radius:20px;" />
+                                </td>
+                                </tr>
+                            </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-size:18px; font-family:Helvetica; font-weight:400; padding-bottom:10px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                                <tr>
+                                <td width="30%" style="font-size:18px; font-family:Helvetica; font-weight:400;">收件人:</td>
+                                <td>{{LAST_NAME}}</td>
+                                </tr>
+                            </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-size:18px; font-family:Helvetica; font-weight:400; padding-bottom:10px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                                <tr>
+                                <td width="30%" style="font-size:18px; font-family:Helvetica; font-weight:400;">聯絡電話:</td>
+                                <td>{{PHONE_NUMBER}}</td>
+                                </tr>
+                            </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-size:18px; font-family:Helvetica; font-weight:400; padding-bottom:10px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                                <tr>
+                                <td width="30%" style="font-size:18px; font-family:Helvetica; font-weight:400;">送貨方法:</td>
+                                <td>{{DELIVERY}}</td>
+                                </tr>
+                            </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-size:18px; font-family:Helvetica; font-weight:400; padding-bottom:16px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                                <tr>
+                                <td width="30%" style="font-size:18px; font-family:Helvetica; font-weight:400; vertical-align:top;">送貨地址:</td>
+                                <td width="70%" style="font-size:18px; font-family:Helvetica; font-weight:400;">{{ADDRESS}}</td>
+                                </tr>
+                            </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-size:24px; font-family:Helvetica; font-weight:700; padding:10px 0;">付款資料</td>
+                        </tr>
+                        <tr>
+                            <td style="font-size:18px; font-family:Helvetica; font-weight:400; padding-bottom:24px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                                <tr>
+                                <td width="30%" style="font-size:18px; font-family:Helvetica; font-weight:400;">付款方法:</td>
+                                <td>{{PAYMENT_WAY}}</td>
+                                </tr>
+                            </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" style="height:2px; background:#D1D1D1; font-size:0; line-height:0;">&nbsp;</td>
+                        </tr>
+                        </table>
+
+                        <!-- Price Summary -->
+                        <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="margin:40px 0;">
+                        <tr>
+                            <td width="50%" style="padding:8px 0; font-size:18px; font-family:Helvetica; color:black; text-align:left;">單價</td>
+                            <td width="50%" style="padding:8px 0; font-size:18px; font-family:Helvetica; color:black; text-align:right;">${{UNIT_PRICE}}</td>
+                        </tr>
+                        <tr>
+                            <td width="50%" style="padding:8px 0; font-size:18px; font-family:Helvetica; color:black; text-align:left;">運費</td>
+                            <td width="50%" style="padding:8px 0; font-size:18px; font-family:Helvetica; color:black; text-align:right;">$50</td>
+                        </tr>
+                        <tr>
+                            <td width="50%" style="padding:8px 0; font-size:18px; font-family:Helvetica; color:black; text-align:left;">合共</td>
+                            <td width="50%" style="padding:8px 0; font-size:18px; font-family:Helvetica; font-weight:700; color:black; text-align:right;">${{TOTAL_PRICE}}</td>
+                        </tr>
+                        </table>
+                    </td>
+                    </tr>
+                </table>
+
+                <!-- Payment Instructions -->
+                <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:24px; padding:20px;">
+                    <tr>
+                    <td style="font-size:18px; font-family:Helvetica; font-weight:700;">付款說明</td>
+                    </tr>
+                    <tr>
+                    <td style="font-size:18px; font-family:Helvetica; font-weight:400; padding-top:10px;">
+                        請於 3 個工作天內付款，否則該訂單將會取消。<br />
+                        付款時請備註訂單編號 (多張訂單只需輸入其一訂單編號)<br />
+                        <span style="text-decoration:underline;">轉數快</span><br />
+                        快速支付系統識別碼 - 105134076<br /><br />
+                        <span style="text-decoration:underline;">滙豐銀行</span><br />
+                        747-237832-838 Pet Pet Club Limited <br /><br />
+                        付款後，可經以下途徑提交付款記錄 (入數紙)：<br />
+                        WhatsApp：5988 4711 / 5576 4375 或<br />
+                        Email：support@ptag.com.hk
+                    </td>
+                    </tr>
+                </table>
+
+                <!-- Delivery Instructions -->
+                <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:24px; padding:20px;">
+                    <tr>
+                    <td style="font-size:18px; font-family:Helvetica; font-weight:700;">送貨說明</td>
+                    </tr>
+                    <tr>
+                    <td style="font-size:18px; font-family:Helvetica; font-weight:400; padding-top:10px;">
+                        <span style="text-decoration:underline;">順豐快遞</span><br />
+                        如非選擇順豐站或順豐智能櫃, 順豐派送時將會收取額外附加費 <br /><br />
+                        <span style="text-decoration:underline;">交貨時間</span><br />
+                        確認付款後，5星期內送貨 (如需更換照片，以照片更新日為準)
+                    </td>
+                    </tr>
+                </table>
+
+                <!-- After-Sales Instructions -->
+                <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:24px; padding:20px;">
+                    <tr>
+                    <td style="font-size:18px; font-family:Helvetica; font-weight:700;">售後說明</td>
+                    </tr>
+                    <tr>
+                    <td style="font-size:18px; font-family:Helvetica; font-weight:400; padding-top:10px;">
+                        <span style="text-decoration:underline;">關於退換貨</span><br />
+                        只要符合下述條件其中一項就可以提出退貨申請：<br />
+                        1. 實際收到的貨品與所訂購貨品不符合<br />
+                        2. 貨品有瑕疵或於運送過程中有損壞<br />
+                        退貨請於收到貨品3個工作天內提出換貨申請，<br />
+                        經專人核實後將提供一換一服務，詳情請參閱使用條款
+                    </td>
+                    </tr>
+                </table>
+
+                <!-- Contact -->
+                <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:24px; padding:20px;">
+                    <tr>
+                    <td style="font-size:18px; font-family:Helvetica; font-weight:700;">
+                        如有任何疑問，請回覆本電子郵件或<br />WhatsApp：5988 4711 / 5576 4375聯絡我們
+                    </td>
+                    </tr>
+                </table>
+
+                <!-- CTA Button -->
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:32px 0 40px 0;">
+                    <tr>
+                        <td align="center">
+                            <table border="0" cellspacing="0" cellpadding="0" role="presentation">
+                                <tr>
+                                    <td style="border-radius:8px; background-color:#FFB60C;">
+                                        <a href="{{CONFIRMATION_LINK}}"
+                                        target="_blank"
+                                        style="background-color:#FFB60C; border:2px solid #FFB60C; border-radius:8px; color:#050505; display:inline-block; font-family:Helvetica,Arial,sans-serif; font-size:18px; font-weight:bold; line-height:48px; padding:0 40px; text-align:center; text-decoration:none; min-width:200px; -webkit-text-size-adjust:none; mso-hide:all;">
+                                            查看訂單詳情
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+
+                </td>
+                </tr>
+            </table>
+        </td>
+        </tr>
+    </table>
+</body>
+</html>

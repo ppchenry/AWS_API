@@ -2,10 +2,7 @@
   "name": "aws-api-tests",
   "version": "1.0.0",
   "scripts": {
-    "test": "jest --runInBand",
-    "test:petdetail": "node .\\node_modules\\jest\\bin\\jest.js __tests__/test-petdetailinfo.test.js --runInBand",
-    "sam:build:petdetail": "sam build --template-file template.petdetailinfo.yaml",
-    "sam:start:petdetail": "sam local start-api --template .aws-sam\\build\\template.yaml --env-vars env.json --warm-containers EAGER"
+    "test": "jest --runInBand"
   },
   "jest": {
     "testTimeout": 60000,

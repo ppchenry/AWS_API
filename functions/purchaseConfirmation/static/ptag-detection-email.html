@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="format-detection" content="telephone=no">
+    <title>PTag | 您的寵物 {{PET_NAME}} ({{TAG_ID}}) 最新位置更新</title>
+</head>
+<body style="margin:0; padding:0; background:#f4f4f4; font-family:Helvetica,Arial,sans-serif; color:#050505; font-size:16px; line-height:1.4;">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+        <tr>
+        <td align="center">
+            <table width="640" cellpadding="0" cellspacing="0" role="presentation" style="max-width:640px; background:white; margin:20px 0;">
+                <tr>
+                <td style="padding:20px;">
+
+                <!-- Header -->
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                    <tr>
+                    <td style="font-size:56px; font-family:Helvetica; font-weight:700; color:#050505; padding-left:20px;">PTag</td>
+                    </tr>
+                </table>
+
+                <!-- Chinese Body -->
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="padding-top:40px; padding-left:20px;">
+                    <tr>
+                        <td style="font-size:18px; font-family:Helvetica; font-weight:400;">您好,</td>
+                    </tr>
+                    <tr>
+                        <td style="font-size:18px; font-family:Helvetica; font-weight:400; padding-top:10px;">
+                            感謝您使用PTag寵物牌。<br />
+                            我們偵測到寵物{{PET_NAME}} ({{TAG_ID}}) 位置：<br />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-size:20px; font-family:Helvetica; font-weight:700; padding-top:20px;">
+                            🐾 最新位置更新時間：{{DATE_TIME}}<br />
+                            🐾 當前位置：請點擊
+                            <a href="{{LOCATION_URL}}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style="color: #11A4E1; text-decoration: none; font-weight: bold;">
+                                [現時寵物位置]
+                            </a>
+                            查看實時地圖
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-size:18px; font-family:Helvetica; font-weight:400; padding-top:20px;">
+                            如果您的寵物目前不在預期位置，建議您盡快前往該位置尋找。
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-size:18px; font-family:Helvetica; font-weight:400; padding-top:40px;">
+                            如有任何疑問，請回覆本電子郵件告知
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-size:18px; font-family:Helvetica; font-weight:400; padding-top:10px;">
+                            PTag
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Divider -->
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:30px 0;">
+                    <tr>
+                        <td style="font-size:0; line-height:0; height:1px; background:#cccccc;">&nbsp;</td>
+                    </tr>
+                </table>
+
+                <!-- Header (EN) -->
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                    <tr>
+                    <td style="font-size:56px; font-family:Helvetica; font-weight:700; color:#050505; padding-left:20px;">PTag</td>
+                    </tr>
+                </table>
+
+                <!-- English Body -->
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="padding-top:40px; padding-left:20px;">
+                    <tr>
+                        <td style="font-size:18px; font-family:Helvetica; font-weight:400;">Hello,</td>
+                    </tr>
+                    <tr>
+                        <td style="font-size:18px; font-family:Helvetica; font-weight:400; padding-top:10px;">
+                            Thank you for using PTag.<br />
+                            We have detected the location of pet {{PET_NAME}} ({{TAG_ID}}):<br />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-size:20px; font-family:Helvetica; font-weight:700; padding-top:20px;">
+                            🐾 Latest location update time: {{DATE_TIME}}.<br />
+                            🐾 Current location: Please click
+                            <a href="{{LOCATION_URL}}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style="color: #11A4E1; text-decoration: none; font-weight: bold;">
+                                [Current Pet Location]
+                            </a>
+                            to view the real-time map.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-size:18px; font-family:Helvetica; font-weight:400; padding-top:20px;">
+                            If your pet is not currently at the expected location, we recommend that you go to that location to look for it as soon as possible.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-size:18px; font-family:Helvetica; font-weight:400; padding-top:40px;">
+                            If you have any questions, please reply to this email.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-size:18px; font-family:Helvetica; font-weight:400; padding-top:10px;">
+                            PTag
+                        </td>
+                    </tr>
+                </table>
+
+                </td>
+                </tr>
+            </table>
+        </td>
+        </tr>
+    </table>
+</body>
+</html>

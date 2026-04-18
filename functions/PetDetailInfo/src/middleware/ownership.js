@@ -22,11 +22,8 @@ async function authorizeOwnership({ event }) {
     return createErrorResponse(404, "petNotFound", event);
   }
 
-  const callerUserId = event.userId;
-  const callerNgoId = event.ngoId;
-
-  const isOwner = pet.userId && String(pet.userId) === String(callerUserId);
-  const isNgo = callerNgoId && pet.ngoId && String(pet.ngoId) === String(callerNgoId);
+  const isOwner = pet.userId && String(pet.userId) === String(event.userId);
+  const isNgo = callerNgoId && pet.ngoId && String(pet.ngoId) === String(event.ngoId);
 
   if (!isOwner && !isNgo) {
     return createErrorResponse(403, "others.forbidden", event);

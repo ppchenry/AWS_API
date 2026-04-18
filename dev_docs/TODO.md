@@ -1,1 +1,1 @@
-- [ ] add location search to getNgoPetList in getallpets
+- [ ] add location param to ngo pet list query
