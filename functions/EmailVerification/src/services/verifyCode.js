@@ -10,8 +10,11 @@
  * update atomically sets consumedAt, so a concurrent second request with the
  * same code finds zero matching documents.
  *
- * Verification is a post-registration step. It never creates a new account,
- * and no placeholder users exist before this point.
+ * Verification-first flow:
+ * - If user exists in DB → login: issue token immediately.
+ * - If user does NOT exist → return verified: true, isNewUser: true.
+ *   Frontend then collects username and calls register endpoint.
+ * - If authenticated (event.userId) → on-demand: link email to account.
  */
 
 const crypto = require("crypto");
@@ -90,13 +93,68 @@ async function verifyEmailCode({ event, body }) {
 
     if (!consumed) return genericFail();
 
-    // 6. Code verified — now handle the existing user lookup.
+    // 6. Code verified — check if user exists.
     const User = mongoose.model("User");
-    const user = await User.findOne({ email })
-      .select("_id email role deleted verified")
-      .lean();
-    if (!user || user.deleted === true) return genericFail();
 
+    // 6a. Authenticated user — on-demand email linking.
+    if (event.userId) {
+      const currentUser = await User.findOne({ _id: event.userId, deleted: false }).lean();
+      if (!currentUser) {
+        return createErrorResponse(401, "others.unauthorized", event);
+      }
+
+      const emailOwner = await User.findOne({
+        email,
+        deleted: false,
+        _id: { $ne: currentUser._id },
+      }).lean();
+      if (emailOwner) {
+        return createErrorResponse(409, "phoneRegister.existWithEmail", event);
+      }
+
+      await User.findOneAndUpdate(
+        { _id: currentUser._id },
+        { $set: { email, verified: true } }
+      );
+
+      logInfo("Email linked successfully", {
+        scope: SCOPE,
+        event,
+        extra: { email, userId: currentUser._id },
+      });
+
+      return createSuccessResponse(200, event, {
+        message: getTranslation(t, "verifySuccessful"),
+        verified: true,
+        isNewUser: false,
+        userId: currentUser._id,
+        role: currentUser.role,
+        isVerified: true,
+        linked: { email },
+      });
+    }
+
+    // 6b. Public flow — check if user exists in DB.
+    const user = await User.findOne({ email, deleted: false })
+      .select("_id email role verified")
+      .lean();
+
+    // 6c. New user — return verified status, frontend collects username then calls register.
+    if (!user) {
+      logInfo("Email verified for new user (registration required)", {
+        scope: SCOPE,
+        event,
+        extra: { email },
+      });
+
+      return createSuccessResponse(200, event, {
+        message: getTranslation(t, "verifySuccessful"),
+        verified: true,
+        isNewUser: true,
+      });
+    }
+
+    // 6d. Existing user — login flow.
     if (!user.verified) {
       await User.findOneAndUpdate(
         { _id: user._id },
@@ -111,7 +169,7 @@ async function verifyEmailCode({ event, body }) {
     const { token: refreshToken } = await createRefreshToken(user._id);
     const cookieHeader = buildRefreshCookie(refreshToken, event);
 
-    logInfo("Email verification successful", {
+    logInfo("Email verification successful — login", {
       scope: SCOPE,
       event,
       extra: { email, userId: user._id },
@@ -123,6 +181,8 @@ async function verifyEmailCode({ event, body }) {
       event,
       {
         message: getTranslation(t, "verifySuccessful"),
+        verified: true,
+        isNewUser: false,
         userId: user._id,
         role: user.role,
         isVerified: true,
