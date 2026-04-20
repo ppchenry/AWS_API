@@ -9,7 +9,7 @@ const createDewormRecordSchema = z.object({
   frequency: z.number().optional(),
   nextDewormDate: z.string({ error: "dewormRecord.invalidDateFormat" }).optional(),
   notification: z.boolean().optional(),
-});
+}).strict();
 
 const updateDewormRecordSchema = z.object({
   date: z.string({ error: "dewormRecord.invalidDateFormat" }).optional(),
@@ -20,7 +20,7 @@ const updateDewormRecordSchema = z.object({
   frequency: z.number().optional(),
   nextDewormDate: z.string({ error: "dewormRecord.invalidDateFormat" }).optional(),
   notification: z.boolean().optional(),
-});
+}).strict();
 
 module.exports = {
   createDewormRecordSchema,

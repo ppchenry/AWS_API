@@ -13,15 +13,15 @@ const RECORD_ID_PARAMS = {
 };
 
 /**
- * Parses request bodies, validates path parameters, and enforces body requirements.
+ * Parses request bodies, validates required path identifiers, and enforces
+ * cheap pre-DB request requirements.
  *
  * @param {{ event: import("aws-lambda").APIGatewayProxyEvent }} params
- * @returns {{ isValid: boolean, error?: any, body?: Record<string, any> | null }}
+ * @returns {Promise<{ isValid: boolean, error?: any, body?: Record<string, any> | null }>}
  */
-function validateRequest({ event }) {
+async function validateUserRequest({ event }) {
   const { body, pathParameters, httpMethod } = event;
   const method = httpMethod?.toUpperCase();
-
   // 1. JSON Body Parse
   let parsedBody = null;
   if (typeof body === "string" && body.trim().length > 0) {
@@ -30,7 +30,7 @@ function validateRequest({ event }) {
     } catch {
       return {
         isValid: false,
-        error: createErrorResponse(400, "common.invalidJSON", event),
+        error: createErrorResponse(400, "others.invalidJSON", event),
       };
     }
   }
@@ -83,7 +83,11 @@ function validateRequest({ event }) {
 }
 
 /**
+ * Maps record-id path params to the existing missing-id locale key contract.
+ *
  * @private
+ * @param {string} paramName
+ * @returns {string}
  */
 function _getMissingIdKey(paramName) {
   switch (paramName) {
@@ -101,7 +105,11 @@ function _getMissingIdKey(paramName) {
 }
 
 /**
+ * Maps record-id path params to the existing invalid-id locale key contract.
+ *
  * @private
+ * @param {string} paramName
+ * @returns {string}
  */
 function _getInvalidIdKey(paramName) {
   switch (paramName) {
@@ -118,4 +126,4 @@ function _getInvalidIdKey(paramName) {
   }
 }
 
-module.exports = { validateRequest };
+module.exports = { validateUserRequest };

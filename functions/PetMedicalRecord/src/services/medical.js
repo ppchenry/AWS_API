@@ -4,6 +4,7 @@ const { logError } = require("../utils/logger");
 const { sanitizeRecord } = require("../utils/sanitize");
 const { isValidDateFormat, parseDDMMYYYY } = require("../utils/validators");
 const { getFirstZodIssueMessage } = require("../utils/zod");
+const { loadAuthorizedPet } = require("../middleware/selfAccess");
 const {
   createMedicalRecordSchema,
   updateMedicalRecordSchema,
@@ -16,6 +17,8 @@ async function getMedicalRecords({ event }) {
   const scope = "services.medical.getMedicalRecords";
   try {
     const petID = event.pathParameters.petID;
+    const petAccess = await loadAuthorizedPet({ event, petId: petID });
+    if (!petAccess.isValid) return petAccess.error;
     const MedicalRecords = mongoose.model("Medical_Records");
 
     const records = await MedicalRecords.find({ petId: petID })
@@ -40,12 +43,17 @@ async function createMedicalRecord({ event, body }) {
   const scope = "services.medical.createMedicalRecord";
   try {
     const petID = event.pathParameters.petID;
+    const petAccess = await loadAuthorizedPet({ event, petId: petID });
+    if (!petAccess.isValid) return petAccess.error;
 
     const parseResult = createMedicalRecordSchema.safeParse(body);
     if (!parseResult.success) {
       return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error), event);
     }
     const data = parseResult.data;
+    if (Object.keys(data).length === 0) {
+      return createErrorResponse(400, "medicalRecord.noFieldsToUpdate", event);
+    }
 
     if (data.medicalDate && !isValidDateFormat(data.medicalDate)) {
       return createErrorResponse(400, "medicalRecord.invalidDateFormat", event);
@@ -63,13 +71,13 @@ async function createMedicalRecord({ event, body }) {
       petId: petID,
     });
 
-    await Pets.findByIdAndUpdate(petID, {
+    await Pets.findOneAndUpdate({ _id: petID, deleted: { $ne: true } }, {
       $inc: { medicalRecordsCount: 1 },
     });
 
     return createSuccessResponse(200, event, {
       message: "medicalRecord.postSuccess",
-      form: data,
+      form: sanitizeRecord(newRecord),
       petId: petID,
       medicalRecordId: newRecord._id,
     });
@@ -87,6 +95,8 @@ async function updateMedicalRecord({ event, body }) {
   try {
     const petID = event.pathParameters.petID;
     const medicalID = event.pathParameters.medicalID;
+    const petAccess = await loadAuthorizedPet({ event, petId: petID });
+    if (!petAccess.isValid) return petAccess.error;
 
     const parseResult = updateMedicalRecordSchema.safeParse(body);
     if (!parseResult.success) {
@@ -100,24 +110,32 @@ async function updateMedicalRecord({ event, body }) {
 
     const MedicalRecords = mongoose.model("Medical_Records");
 
-    const exists = await MedicalRecords.findById(medicalID).lean();
-    if (!exists) {
-      return createErrorResponse(404, "medicalRecord.medicalRecordNotFound", event);
+    const updateFields = {};
+    if (data.medicalDate !== undefined) updateFields.medicalDate = data.medicalDate ? parseDDMMYYYY(data.medicalDate) : null;
+    if (data.medicalPlace !== undefined) updateFields.medicalPlace = data.medicalPlace;
+    if (data.medicalDoctor !== undefined) updateFields.medicalDoctor = data.medicalDoctor;
+    if (data.medicalResult !== undefined) updateFields.medicalResult = data.medicalResult;
+    if (data.medicalSolution !== undefined) updateFields.medicalSolution = data.medicalSolution;
+
+    if (Object.keys(updateFields).length === 0) {
+      return createErrorResponse(400, "medicalRecord.noFieldsToUpdate", event);
     }
 
-    const updateFields = {};
-    if (data.medicalDate) updateFields.medicalDate = parseDDMMYYYY(data.medicalDate);
-    if (data.medicalPlace) updateFields.medicalPlace = data.medicalPlace;
-    if (data.medicalDoctor) updateFields.medicalDoctor = data.medicalDoctor;
-    if (data.medicalResult) updateFields.medicalResult = data.medicalResult;
-    if (data.medicalSolution) updateFields.medicalSolution = data.medicalSolution;
+    const updated = await MedicalRecords.findOneAndUpdate(
+      { _id: medicalID, petId: petID },
+      { $set: updateFields },
+      { new: true, projection: "medicalDate medicalPlace medicalDoctor medicalResult medicalSolution petId" }
+    ).lean();
 
-    await MedicalRecords.updateOne({ _id: medicalID }, { $set: updateFields });
+    if (!updated) {
+      return createErrorResponse(404, "medicalRecord.medicalRecordNotFound", event);
+    }
 
     return createSuccessResponse(200, event, {
       message: "medicalRecord.putSuccess",
       petId: petID,
       medicalRecordId: medicalID,
+      form: sanitizeRecord(updated),
     });
   } catch (error) {
     logError("Failed to update medical record", { scope, event, error });
@@ -133,11 +151,13 @@ async function deleteMedicalRecord({ event }) {
   try {
     const petID = event.pathParameters.petID;
     const medicalID = event.pathParameters.medicalID;
+    const petAccess = await loadAuthorizedPet({ event, petId: petID });
+    if (!petAccess.isValid) return petAccess.error;
 
     const MedicalRecords = mongoose.model("Medical_Records");
     const Pets = mongoose.model("Pet");
 
-    const deleted = await MedicalRecords.deleteOne({ _id: medicalID });
+    const deleted = await MedicalRecords.deleteOne({ _id: medicalID, petId: petID });
 
     if (deleted.deletedCount === 0) {
       return createErrorResponse(404, "medicalRecord.medicalRecordNotFound", event);

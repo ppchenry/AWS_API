@@ -2,7 +2,7 @@
 
 ## 概述 (Overview)
 
-在目前這一階段的 Monorepo 現代化工程中，已完成 9 個 Lambda 函式的原位 (in-place) 重構：
+在目前這一階段的 Monorepo 現代化工程中，已完成 10 個 Lambda 函式的原位 (in-place) 重構：
 
 * `functions/UserRoutes`
 * `functions/PetBasicInfo`
@@ -12,6 +12,7 @@
 * `functions/PetLostandFound`
 * `functions/EyeUpload`
 * `functions/PetDetailInfo`
+* `functions/PetMedicalRecord`
 * `functions/purchaseConfirmation`
 
 此項工作隸屬於 [README.md](README.md) 中定義的 Monorepo 清理計劃，遵循 [dev_docs/REFACTOR_CHECKLIST.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/REFACTOR_CHECKLIST.md) 的現代化基準，並依據 [dev_docs/LAMBDA_REFACTOR_INVENTORY.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/LAMBDA_REFACTOR_INVENTORY.md) 的優先順序執行。
@@ -26,8 +27,9 @@
 * `PetLostandFound`：`__tests__/test-petlostandfound.test.js` 內 **59 項整合測試案例**
 * `EyeUpload`：`__tests__/test-eyeupload.test.js` 內 **94 項整合測試案例**
 * `PetDetailInfo`：`__tests__/test-petdetailinfo.test.js` 內 **82 項整合測試案例**
+* `PetMedicalRecord`：`__tests__/test-petmedicalrecord.test.js` 內 **65 項整合測試案例**，另有 `__tests__/test-petmedicalrecord-bloodtest-aggregate.test.js` 內 **3 項 blood-test aggregate 單元測試**
 * `purchaseConfirmation`：`__tests__/test-purchaseconfirmation.test.js` 內 **65 項整合測試案例**（63 項通過，2 項條件跳過）
-* 綜合總計：**9 個已重構 Lambda 共 535 項整合測試案例 + 6 項 SMS service 單元測試案例 + 28 項 auth-workflow 單元測試案例**
+* 綜合總計：**10 個已重構 Lambda 共 600 項整合測試案例 + 6 項 SMS service 單元測試案例 + 28 項 auth-workflow 單元測試案例 + 3 項 PetMedicalRecord aggregate 單元測試**
 
 以上數字為測試檔中「宣告的案例數」，本身不等同於同日完整執行紀錄。已完成的個別測試結果請參考 `dev_docs/test_reports/` 內各 Lambda 的測試報告。
 
@@ -46,7 +48,7 @@
 
 ---
 
-## 截至 2026-04-19 的 Monorepo 現況 (Status)
+## 截至 2026-04-20 的 Monorepo 現況 (Status)
 
 專案初期處於 legacy 狀態，Lambda 之間存在大量重複 helper、混合 routing 與 business logic 的單體檔案，以及難以安全演進的隱性合約。
 
@@ -54,7 +56,7 @@
 
 目前進度：
 
-* 9 個模組化參考基準 Lambda
+* 10 個模組化參考基準 Lambda
 * 一套書面現代化標準
 * 一份以行數與風險為基礎的 Lambda 盤點清單
 * 已完成目標具備整合測試支撐
@@ -62,7 +64,7 @@
 
 依據 `dev_docs/LAMBDA_REFACTOR_INVENTORY.md`，目前正式納入重構統計範圍的是 **22 個** Lambda。`adoption_website`、`AuthorizerRoute`、`TestIPLambda`、`WhatsappRoute` 目前列為 out-of-plan。
 
-在此統計口徑下，已有 **9 / 22** 完成加固，約為 **41%**；仍有 **13 / 22**（約 **59%**）屬於 in-plan 待重構範圍。
+在此統計口徑下，已有 **10 / 22** 完成加固，約為 **45%**；仍有 **12 / 22**（約 **55%**）屬於 in-plan 待重構範圍。
 
 若以工作區全部 function folder 計算，目前共有 26 個 function folders；其中 4 個刻意排除於主要重構計劃之外，因此不應與主進度混算。
 
@@ -167,19 +169,20 @@ refresh 流程會：
 * `PetLostandFound` 具備 59/59 passing integration suite，覆蓋 pet-lost/pet-found CRUD、notifications CRUD、CORS、JWT auth、guard validation、self-access enforcement、ownership-guarded delete、rate limiting 與 response shape
 * `EyeUpload` 具備 94/94 passing integration suite，覆蓋 CORS、JWT auth、dead-route dispatch、schema validation、ownership enforcement、NGO authorization branches、upload validation、rate limiting 與 fixture-backed pet access checks
 * `PetDetailInfo` 具備 82/82 passing integration suite，覆蓋 CORS、JWT auth、guard validation、ownership、detail-info、transfer lifecycle、NGO transfer、source/adoption lifecycle、duplicate handling、response shape、NoSQL injection prevention 與 cleanup
+* `PetMedicalRecord` 具備 65/65 passing integration suite，另有 3/3 passing blood-test aggregate 單元測試，覆蓋 CORS、JWT auth、guard validation、ownership、medical / medication / deworm / blood-test CRUD、schema strictness、response sanitization 與 schema-bound hard-delete semantics
 * `purchaseConfirmation` 具備 65 declared (63/63 passing, 2 skipped) integration suite，覆蓋 CORS、JWT auth、public-route bypass、RBAC、guard validation、dead-route dispatch、Zod validation (purchase + email schemas)、NoSQL injection、admin pagination、soft-cancel lifecycle、server-authoritative pricing、rate limiting 與 response shape consistency
 
-合併來看，前 2 個完成審計的 Lambda 直接處理了 **32 項 documented legacy security findings**，另外 `EmailVerification`、`AuthRoute`、`GetAllPets`、`PetLostandFound`、`EyeUpload`、`PetDetailInfo`、`purchaseConfirmation` 也已完成嚴格現代化與測試支撐的安全加固。
+合併來看，前 2 個完成審計的 Lambda 直接處理了 **32 項 documented legacy security findings**，另外 `EmailVerification`、`AuthRoute`、`GetAllPets`、`PetLostandFound`、`EyeUpload`、`PetDetailInfo`、`PetMedicalRecord`、`purchaseConfirmation` 也已完成嚴格現代化與測試支撐的安全加固。
 
-更準確的說法是定性評估，而不是宣稱固定百分比：已完成的 9 個 Lambda 在其自身 route surface 上，已大幅降低已知 code-owned attack classes。
+更準確的說法是定性評估，而不是宣稱固定百分比：已完成的 10 個 Lambda 在其自身 route surface 上，已大幅降低已知 code-owned attack classes。
 
 ### 2. 整體 Monorepo 的覆蓋程度
 
 在整個 monorepo 層級，現代化仍屬早期到中期階段：
 
-* inventory in-plan 目前 **9 / 22** 已完成
-* 約 **41%** 的 in-plan Lambda 已達新標準
-* 約 **59%** 仍需進行相同 route-by-route security verification 與 refactor discipline
+* inventory in-plan 目前 **10 / 22** 已完成
+* 約 **45%** 的 in-plan Lambda 已達新標準
+* 約 **55%** 仍需進行相同 route-by-route security verification 與 refactor discipline
 * 另有 **4 個** workspace Lambdas 目前列為 out-of-plan
 
 正確解讀是：已完成的 9 個 Lambda 內，大部分已知 code-owned attack classes 已被處理；但整個 monorepo 仍有廣泛 residual risk，直到更多 Lambda 完成重構。
@@ -216,6 +219,7 @@ refresh 流程會：
 * [dev_docs/test_reports/PETLOSTANDFOUND_TEST_REPORT.md](dev_docs/test_reports/PETLOSTANDFOUND_TEST_REPORT.md)
 * [dev_docs/test_reports/EYEUPLOAD_TEST_REPORT.md](dev_docs/test_reports/EYEUPLOAD_TEST_REPORT.md)
 * [dev_docs/test_reports/PETDETAILINFO_TEST_REPORT.md](dev_docs/test_reports/PETDETAILINFO_TEST_REPORT.md)
+* [dev_docs/test_reports/PETMEDICALRECORD_TEST_REPORT.md](dev_docs/test_reports/PETMEDICALRECORD_TEST_REPORT.md)
 * [dev_docs/test_reports/PURCHASECONFIRMATION_TEST_REPORT.md](dev_docs/test_reports/PURCHASECONFIRMATION_TEST_REPORT.md)
 
 ### 2. 性能改善 (Performance)
@@ -275,7 +279,7 @@ refresh 流程會：
 
 ## 結語
 
-截至 2026-04-19，Monorepo 重構工作已產出 9 個可作為基準的參考實作，並累積 **535 項整合測試案例 + 6 項 SMS service 單元測試案例 + 28 項 auth-workflow 單元測試案例**（依 `__tests__` 測試檔統計）。
+截至 2026-04-20，Monorepo 重構工作已產出 10 個可作為基準的參考實作，並累積 **600 項整合測試案例 + 6 項 SMS service 單元測試案例 + 28 項 auth-workflow 單元測試案例 + 3 項 PetMedicalRecord aggregate 單元測試**（依 `__tests__` 測試檔統計）。
 
 已完成 refactor 顯示出明確改善：
 

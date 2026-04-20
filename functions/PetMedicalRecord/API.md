@@ -1,19 +1,20 @@
 # PetMedicalRecord API
 
-All routes require JWT authentication via `Authorization: Bearer <token>` header.
+All non-OPTIONS routes require `Authorization: Bearer <token>`.
+All pet-scoped routes perform DB-backed ownership at service start after DB bootstrap. The caller must either own the pet via JWT `userId` or match the pet's `ngoId`.
 
 ## Routes
 
 ### Medical Records
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/pets/{petID}/medical-record` | List all medical records for a pet |
-| POST | `/pets/{petID}/medical-record` | Create a medical record |
-| PUT | `/pets/{petID}/medical-record/{medicalID}` | Update a medical record |
-| DELETE | `/pets/{petID}/medical-record/{medicalID}` | Delete a medical record |
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/pets/{petID}/medical-record` | JWT | List medical records for an authorized pet |
+| POST | `/pets/{petID}/medical-record` | JWT | Create a medical record |
+| PUT | `/pets/{petID}/medical-record/{medicalID}` | JWT | Update a medical record |
+| DELETE | `/pets/{petID}/medical-record/{medicalID}` | JWT | Delete a medical record |
 
-**POST/PUT Body:**
+POST/PUT body:
 ```json
 {
   "medicalDate": "2024-01-15",
@@ -24,16 +25,66 @@ All routes require JWT authentication via `Authorization: Bearer <token>` header
 }
 ```
 
+GET success shape:
+```json
+{
+  "success": true,
+  "message": "medicalRecord.getSuccess",
+  "form": {
+    "medical": [
+      {
+        "_id": "record-id",
+        "medicalDate": "2024-01-15T00:00:00.000Z",
+        "medicalPlace": "Vet Clinic A",
+        "medicalDoctor": "Dr. Smith",
+        "medicalResult": "Healthy",
+        "medicalSolution": "None required",
+        "petId": "pet-id"
+      }
+    ]
+  },
+  "petId": "pet-id"
+}
+```
+
+POST/PUT success shape:
+```json
+{
+  "success": true,
+  "message": "medicalRecord.postSuccess",
+  "form": {
+    "_id": "record-id",
+    "medicalDate": "2024-01-15T00:00:00.000Z",
+    "medicalPlace": "Vet Clinic A",
+    "medicalDoctor": "Dr. Smith",
+    "medicalResult": "Healthy",
+    "medicalSolution": "None required",
+    "petId": "pet-id"
+  },
+  "petId": "pet-id",
+  "medicalRecordId": "record-id"
+}
+```
+
+DELETE success shape:
+```json
+{
+  "success": true,
+  "message": "medicalRecord.deleteSuccess",
+  "id": "pet-id"
+}
+```
+
 ### Medication Records
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/pets/{petID}/medication-record` | List all medication records for a pet |
-| POST | `/pets/{petID}/medication-record` | Create a medication record |
-| PUT | `/pets/{petID}/medication-record/{medicationID}` | Update a medication record |
-| DELETE | `/pets/{petID}/medication-record/{medicationID}` | Delete a medication record |
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/pets/{petID}/medication-record` | JWT | List medication records for an authorized pet |
+| POST | `/pets/{petID}/medication-record` | JWT | Create a medication record |
+| PUT | `/pets/{petID}/medication-record/{medicationID}` | JWT | Update a medication record |
+| DELETE | `/pets/{petID}/medication-record/{medicationID}` | JWT | Delete a medication record |
 
-**POST/PUT Body:**
+POST/PUT body:
 ```json
 {
   "medicationDate": "2024-01-15",
@@ -45,16 +96,20 @@ All routes require JWT authentication via `Authorization: Bearer <token>` header
 }
 ```
 
+GET success form key: `form.medication`
+POST/PUT success id field: `medicationRecordId`
+DELETE success field: `id`
+
 ### Deworm Records
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/pets/{petID}/deworm-record` | List all deworm records for a pet |
-| POST | `/pets/{petID}/deworm-record` | Create a deworm record |
-| PUT | `/pets/{petID}/deworm-record/{dewormID}` | Update a deworm record |
-| DELETE | `/pets/{petID}/deworm-record/{dewormID}` | Delete a deworm record |
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/pets/{petID}/deworm-record` | JWT | List deworm records for an authorized pet |
+| POST | `/pets/{petID}/deworm-record` | JWT | Create a deworm record |
+| PUT | `/pets/{petID}/deworm-record/{dewormID}` | JWT | Update a deworm record |
+| DELETE | `/pets/{petID}/deworm-record/{dewormID}` | JWT | Delete a deworm record |
 
-**POST/PUT Body:**
+POST/PUT body:
 ```json
 {
   "date": "2024-01-15",
@@ -68,16 +123,20 @@ All routes require JWT authentication via `Authorization: Bearer <token>` header
 }
 ```
 
+GET success form key: `form.deworm`
+POST/PUT success id field: `dewormRecordId`
+DELETE success field: `id`
+
 ### Blood Test Records
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/pets/{petID}/blood-test-record` | List all blood test records for a pet |
-| POST | `/pets/{petID}/blood-test-record` | Create a blood test record |
-| PUT | `/pets/{petID}/blood-test-record/{bloodTestID}` | Update a blood test record |
-| DELETE | `/pets/{petID}/blood-test-record/{bloodTestID}` | Delete a blood test record |
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/pets/{petID}/blood-test-record` | JWT | List blood-test records for an authorized pet |
+| POST | `/pets/{petID}/blood-test-record` | JWT | Create a blood-test record |
+| PUT | `/pets/{petID}/blood-test-record/{bloodTestID}` | JWT | Update a blood-test record |
+| DELETE | `/pets/{petID}/blood-test-record/{bloodTestID}` | JWT | Delete a blood-test record |
 
-**POST/PUT Body:**
+POST/PUT body:
 ```json
 {
   "bloodTestDate": "2024-01-15",
@@ -89,34 +148,46 @@ All routes require JWT authentication via `Authorization: Bearer <token>` header
 }
 ```
 
-## Response Shape
+GET success form key: `form.blood_test`
+POST/PUT success id field: `bloodTestRecordId`
+DELETE success fields: `petId`, `bloodTestRecordId`
 
-**Success:**
-```json
-{
-  "success": true,
-  "message": "medicalRecord.getSuccess",
-  "form": { ... },
-  "petId": "..."
-}
-```
+## Error Shape
 
-**Error:**
+All structured errors use:
 ```json
 {
   "success": false,
-  "errorKey": "medicalRecord.invalidDateFormat",
-  "error": "Invalid date format...",
-  "requestId": "..."
+  "errorKey": "others.invalidJSON",
+  "error": "Invalid JSON format",
+  "requestId": "aws-request-id"
 }
 ```
 
-## Date Formats
-
-Accepted: ISO 8601 (`YYYY-MM-DD`, `YYYY-MM-DDTHH:mm:ssZ`) and `DD/MM/YYYY`.
+Common route-specific error keys include:
+- `missingPetId`
+- `invalidPetIdFormat`
+- `petNotFound`
+- `others.forbidden`
+- `others.invalidJSON`
+- `others.missingParams`
+- `medicalRecord.medicalRecordNotFound`
+- `medicationRecord.medicationRecordNotFound`
+- `dewormRecord.dewormRecordNotFound`
+- `bloodTest.bloodTestRecordNotFound`
+- `medicalRecord.noFieldsToUpdate`
+- `medicationRecord.noFieldsToUpdate`
+- `dewormRecord.noFieldsToUpdate`
+- `bloodTest.noFieldsToUpdate`
 
 ## Constraints
 
-- All path parameters (`petID`, `medicalID`, etc.) must be valid MongoDB ObjectIds.
-- POST/PUT requests require a non-empty JSON body.
-- Blood test PUT returns 400 if no updatable fields are provided.
+- All path parameters (`petID`, record IDs) must be valid MongoDB ObjectIds.
+- POST and PUT requests require a non-empty JSON body.
+- Unknown request-body keys are rejected by strict schemas.
+- POST/PUT return `400 ...noFieldsToUpdate` when no valid domain fields remain.
+- Update and delete operations are scoped by both record id and `petId`.
+- Missing, deleted, or unauthorized pets fail before service execution.
+- Date inputs accept ISO `YYYY-MM-DD`, ISO timestamps, and `DD/MM/YYYY`; impossible calendar dates are rejected.
+- Delete routes intentionally preserve current hard-delete behavior because these record collections do not expose a `deleted` field.
+- Pet summary maintenance is uniform across medical, medication, deworm, and blood-test records, including `bloodTestRecordsCount` and `latestBloodTestDate`.

@@ -7,7 +7,7 @@ const createBloodTestSchema = z.object({
   ehrlichiosis: z.string().optional(),
   anaplasmosis: z.string().optional(),
   babesiosis: z.string().optional(),
-});
+}).strict();
 
 const updateBloodTestSchema = z.object({
   bloodTestDate: z.string({ error: "bloodTest.invalidDateFormat" }).optional(),
@@ -16,7 +16,7 @@ const updateBloodTestSchema = z.object({
   ehrlichiosis: z.string().optional(),
   anaplasmosis: z.string().optional(),
   babesiosis: z.string().optional(),
-});
+}).strict();
 
 module.exports = {
   createBloodTestSchema,

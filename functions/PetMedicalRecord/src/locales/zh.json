@@ -1,6 +1,7 @@
 {
   "others": {
     "unauthorized": "未授權",
+    "forbidden": "禁止存取",
     "internalError": "內部伺服器錯誤",
     "methodNotAllowed": "不允許的方法",
     "invalidJSON": "無效的 JSON 格式",
@@ -23,7 +24,8 @@
     "medicalRecordNotFound": "未找到醫療記錄",
     "putSuccess": "寵物醫療記錄更新成功",
     "deleteSuccess": "醫療記錄刪除成功",
-    "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式"
+    "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式",
+    "noFieldsToUpdate": "未提供任何要更新的欄位"
   },
   "bloodTest": {
     "getNotFound": "找不到寵物血檢紀錄",
@@ -46,7 +48,8 @@
     "medicationRecordNotFound": "未找到用藥記錄",
     "putSuccess": "寵物用藥記錄更新成功",
     "deleteSuccess": "用藥記錄刪除成功",
-    "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式"
+    "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式",
+    "noFieldsToUpdate": "未提供任何要更新的欄位"
   },
   "dewormRecord": {
     "getNotFound": "未找到寵物驅蟲記錄",
@@ -57,6 +60,7 @@
     "dewormRecordNotFound": "未找到驅蟲記錄",
     "putSuccess": "寵物驅蟲記錄更新成功",
     "deleteSuccess": "驅蟲記錄刪除成功",
-    "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式"
+    "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式",
+    "noFieldsToUpdate": "未提供任何要更新的欄位"
   }
 }

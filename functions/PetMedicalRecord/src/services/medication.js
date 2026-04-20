@@ -4,6 +4,7 @@ const { logError } = require("../utils/logger");
 const { sanitizeRecord } = require("../utils/sanitize");
 const { isValidDateFormat, parseDDMMYYYY } = require("../utils/validators");
 const { getFirstZodIssueMessage } = require("../utils/zod");
+const { loadAuthorizedPet } = require("../middleware/selfAccess");
 const {
   createMedicationRecordSchema,
   updateMedicationRecordSchema,
@@ -16,6 +17,8 @@ async function getMedicationRecords({ event }) {
   const scope = "services.medication.getMedicationRecords";
   try {
     const petID = event.pathParameters.petID;
+    const petAccess = await loadAuthorizedPet({ event, petId: petID });
+    if (!petAccess.isValid) return petAccess.error;
     const MedicationRecords = mongoose.model("Medication_Records");
 
     const records = await MedicationRecords.find({ petId: petID })
@@ -40,12 +43,17 @@ async function createMedicationRecord({ event, body }) {
   const scope = "services.medication.createMedicationRecord";
   try {
     const petID = event.pathParameters.petID;
+    const petAccess = await loadAuthorizedPet({ event, petId: petID });
+    if (!petAccess.isValid) return petAccess.error;
 
     const parseResult = createMedicationRecordSchema.safeParse(body);
     if (!parseResult.success) {
       return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error), event);
     }
     const data = parseResult.data;
+    if (Object.keys(data).length === 0) {
+      return createErrorResponse(400, "medicationRecord.noFieldsToUpdate", event);
+    }
 
     if (data.medicationDate && !isValidDateFormat(data.medicationDate)) {
       return createErrorResponse(400, "medicationRecord.invalidDateFormat", event);
@@ -60,11 +68,11 @@ async function createMedicationRecord({ event, body }) {
       drugPurpose: data.drugPurpose,
       drugMethod: data.drugMethod,
       drugRemark: data.drugRemark,
-      allergy: data.allergy || false,
+      allergy: data.allergy ?? false,
       petId: petID,
     });
 
-    await Pets.findByIdAndUpdate(petID, {
+    await Pets.findOneAndUpdate({ _id: petID, deleted: { $ne: true } }, {
       $inc: { medicationRecordsCount: 1 },
     });
 
@@ -88,6 +96,8 @@ async function updateMedicationRecord({ event, body }) {
   try {
     const petID = event.pathParameters.petID;
     const medicationID = event.pathParameters.medicationID;
+    const petAccess = await loadAuthorizedPet({ event, petId: petID });
+    if (!petAccess.isValid) return petAccess.error;
 
     const parseResult = updateMedicationRecordSchema.safeParse(body);
     if (!parseResult.success) {
@@ -101,25 +111,33 @@ async function updateMedicationRecord({ event, body }) {
 
     const MedicationRecords = mongoose.model("Medication_Records");
 
-    const exists = await MedicationRecords.findById(medicationID).lean();
-    if (!exists) {
-      return createErrorResponse(404, "medicationRecord.medicationRecordNotFound", event);
-    }
-
     const updateFields = {};
-    if (data.medicationDate) updateFields.medicationDate = parseDDMMYYYY(data.medicationDate);
-    if (data.drugName) updateFields.drugName = data.drugName;
-    if (data.drugPurpose) updateFields.drugPurpose = data.drugPurpose;
-    if (data.drugMethod) updateFields.drugMethod = data.drugMethod;
-    if (data.drugRemark) updateFields.drugRemark = data.drugRemark;
+    if (data.medicationDate !== undefined) updateFields.medicationDate = data.medicationDate ? parseDDMMYYYY(data.medicationDate) : null;
+    if (data.drugName !== undefined) updateFields.drugName = data.drugName;
+    if (data.drugPurpose !== undefined) updateFields.drugPurpose = data.drugPurpose;
+    if (data.drugMethod !== undefined) updateFields.drugMethod = data.drugMethod;
+    if (data.drugRemark !== undefined) updateFields.drugRemark = data.drugRemark;
     if (data.allergy !== undefined) updateFields.allergy = data.allergy;
 
-    await MedicationRecords.updateOne({ _id: medicationID }, { $set: updateFields });
+    if (Object.keys(updateFields).length === 0) {
+      return createErrorResponse(400, "medicationRecord.noFieldsToUpdate", event);
+    }
+
+    const updated = await MedicationRecords.findOneAndUpdate(
+      { _id: medicationID, petId: petID },
+      { $set: updateFields },
+      { new: true, projection: "medicationDate drugName drugPurpose drugMethod drugRemark allergy petId" }
+    ).lean();
+
+    if (!updated) {
+      return createErrorResponse(404, "medicationRecord.medicationRecordNotFound", event);
+    }
 
     return createSuccessResponse(200, event, {
       message: "medicationRecord.putSuccess",
       petId: petID,
-      medicationRecord: updateFields,
+      medicationRecordId: medicationID,
+      form: sanitizeRecord(updated),
     });
   } catch (error) {
     logError("Failed to update medication record", { scope, event, error });
@@ -135,16 +153,17 @@ async function deleteMedicationRecord({ event }) {
   try {
     const petID = event.pathParameters.petID;
     const medicationID = event.pathParameters.medicationID;
+    const petAccess = await loadAuthorizedPet({ event, petId: petID });
+    if (!petAccess.isValid) return petAccess.error;
 
     const MedicationRecords = mongoose.model("Medication_Records");
     const Pets = mongoose.model("Pet");
 
-    const exists = await MedicationRecords.findById(medicationID).lean();
-    if (!exists) {
+    const deleted = await MedicationRecords.deleteOne({ _id: medicationID, petId: petID });
+
+    if (deleted.deletedCount === 0) {
       return createErrorResponse(404, "medicationRecord.medicationRecordNotFound", event);
     }
-
-    await MedicationRecords.deleteOne({ _id: medicationID });
 
     const count = await MedicationRecords.countDocuments({ petId: petID });
     await Pets.findByIdAndUpdate(petID, { medicationRecordsCount: count });

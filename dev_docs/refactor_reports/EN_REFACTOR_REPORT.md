@@ -2,7 +2,7 @@
 
 ## Overview
 
-The first refactor stage of the monorepo modernization effort has now completed 9 Lambdas in place:
+The first refactor stage of the monorepo modernization effort has now completed 10 Lambdas in place:
 
 * `functions/UserRoutes`
 * `functions/PetBasicInfo`
@@ -12,6 +12,7 @@ The first refactor stage of the monorepo modernization effort has now completed 
 * `functions/PetLostandFound`
 * `functions/EyeUpload`
 * `functions/PetDetailInfo`
+* `functions/PetMedicalRecord`
 * `functions/purchaseConfirmation`
 
 This work sits inside the broader monorepo cleanup described in [README.md](README.md), follows the modernization baseline in [dev_docs/REFACTOR_CHECKLIST.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/REFACTOR_CHECKLIST.md), and is prioritized using [dev_docs/LAMBDA_REFACTOR_INVENTORY.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/LAMBDA_REFACTOR_INVENTORY.md).
@@ -26,8 +27,9 @@ The current test-file-based case inventory is:
 * `PetLostandFound`: **59 declared integration test cases** in `__tests__/test-petlostandfound.test.js`
 * `EyeUpload`: **94 declared integration test cases** in `__tests__/test-eyeupload.test.js`
 * `PetDetailInfo`: **82 declared integration test cases** in `__tests__/test-petdetailinfo.test.js`
+* `PetMedicalRecord`: **65 declared integration test cases** in `__tests__/test-petmedicalrecord.test.js` plus **3 declared blood-test aggregate unit test cases** in `__tests__/test-petmedicalrecord-bloodtest-aggregate.test.js`
 * `purchaseConfirmation`: **65 declared integration test cases** (63 passing, 2 skipped) in `__tests__/test-purchaseconfirmation.test.js`
-* Combined: **535 declared integration test cases across the 9 refactored lambdas + 6 declared SMS unit test cases + 28 declared auth-workflow unit test cases**
+* Combined: **600 declared integration test cases across the 10 refactored lambdas + 6 declared SMS unit test cases + 28 declared auth-workflow unit test cases + 3 declared PetMedicalRecord aggregate unit test cases**
 
 These counts describe declared cases in test files. They are not, by themselves, a same-day execution transcript.
 
@@ -51,13 +53,13 @@ For non-technical stakeholders, the important point is this: this work was not o
 
 ---
 
-## Monorepo Status As Of 2026-04-19
+## Monorepo Status As Of 2026-04-20
 
 The monorepo started from a legacy state where many Lambdas duplicated helpers, mixed routing and business logic in the same file, and were difficult to evolve safely. The current direction is not a full re-architecture yet. It is a controlled in-situ modernization pass designed to stabilize each Lambda one by one.
 
-As of 2026-04-19, the program now has:
+As of 2026-04-20, the program now has:
 
-* 9 modularized reference Lambdas
+* 10 modularized reference Lambdas
 * a written modernization standard
 * a line-count and risk-based Lambda inventory
 * integration-test-backed verification for the first completed targets
@@ -67,11 +69,11 @@ The completed Lambdas now act as the implementation baseline for the remaining i
 
 Based on `dev_docs/LAMBDA_REFACTOR_INVENTORY.md`, the official refactor scope is **22** Lambdas (with `adoption_website`, `AuthorizerRoute`, `TestIPLambda`, and `WhatsappRoute` explicitly listed as out-of-plan).
 
-By inventory scope, **9 of 22** Lambdas are now at the new hardened baseline. That is roughly **41%** completed, with **13 of 22** (about **59%**) remaining in-plan work.
+By inventory scope, **10 of 22** Lambdas are now at the new hardened baseline. That is roughly **45%** completed, with **12 of 22** (about **55%**) remaining in-plan work.
 
 For workspace context, there are currently 26 function folders total; using that denominator alone would understate progress because 4 are intentionally excluded from the refactor plan.
 
-That also means the completed work should be seen as high-leverage groundwork, not as isolated refactoring. These first 9 Lambdas establish the secure pattern, the test strategy, and the operational standard that the remaining Lambdas can now follow.
+That also means the completed work should be seen as high-leverage groundwork, not as isolated refactoring. These first 10 Lambdas establish the secure pattern, the test strategy, and the operational standard that the remaining Lambdas can now follow.
 
 ---
 
@@ -198,11 +200,12 @@ For the first completed reference Lambdas, the hardening coverage is high.
 * `PetLostandFound` now has a dedicated **59 / 59 passing** integration suite covering pet-lost/pet-found CRUD, notifications CRUD, CORS preflight, JWT auth, guard validation, self-access enforcement, ownership-guarded delete, rate limiting, and response shape consistency
 * `EyeUpload` now has a dedicated **94 / 94 passing** integration suite covering CORS preflight, JWT auth, dead-route dispatch, schema validation, ownership enforcement, NGO authorization branches, upload validation, rate limiting, and fixture-backed pet access checks
 * `PetDetailInfo` now has a dedicated **82 / 82 passing** integration suite covering CORS preflight, JWT auth, guard validation, ownership, detail-info, transfer lifecycle, NGO transfer, source/adoption lifecycle, duplicate handling, response shape, NoSQL injection prevention, and cleanup
+* `PetMedicalRecord` now has a dedicated **65 / 65 passing** integration suite plus **3 / 3 passing** blood-test aggregate unit tests covering CORS preflight, JWT auth, guard validation, ownership, CRUD lifecycle across medical / medication / deworm / blood-test routes, schema strictness, response sanitization, and schema-bound hard-delete semantics
 * `purchaseConfirmation` now has a dedicated **65 declared (63 / 63 passing, 2 skipped)** integration suite covering CORS preflight, JWT auth, public-route bypass, RBAC, guard validation, dead-route dispatch, Zod validation (purchase + email schemas), NoSQL injection, admin pagination, soft-cancel lifecycle, server-authoritative pricing, rate limiting, and response shape consistency
 
-Taken together, that is **32 documented legacy security findings** directly addressed across the first 2 completed Lambdas, plus completed strict modernization and test-backed hardening for `EmailVerification`, `AuthRoute`, `GetAllPets`, `PetLostandFound`, `EyeUpload`, `PetDetailInfo`, and `purchaseConfirmation` covering the public verification, refresh-session, pet-access-control, pet-domain CRUD, pet-upload / analysis, extended pet-detail/source/adoption, and purchase/order-management portions of the platform surface.
+Taken together, that is **32 documented legacy security findings** directly addressed across the first 2 completed Lambdas, plus completed strict modernization and test-backed hardening for `EmailVerification`, `AuthRoute`, `GetAllPets`, `PetLostandFound`, `EyeUpload`, `PetDetailInfo`, `PetMedicalRecord`, and `purchaseConfirmation` covering the public verification, refresh-session, pet-access-control, pet-domain CRUD, pet-upload / analysis, extended pet-detail/source/adoption, medical-record lifecycle, and purchase/order-management portions of the platform surface.
 
-A more accurate statement is qualitative rather than percentage-based: **a substantial portion of the known code-owned attack surface identified in the first 2 audited Lambdas, plus the core public verification attack surface in `EmailVerification`, the purchase and order-management surface in `purchaseConfirmation`, has now been meaningfully hardened**.
+A more accurate statement is qualitative rather than percentage-based: **a substantial portion of the known code-owned attack surface identified in the first 2 audited Lambdas, plus the core public verification attack surface in `EmailVerification`, the pet-medical-record surface in `PetMedicalRecord`, and the purchase and order-management surface in `purchaseConfirmation`, has now been meaningfully hardened**.
 
 This is intentionally conservative and not stated as a hard 100%, because some residual risk is still outside pure handler hardening, for example:
 
@@ -215,9 +218,9 @@ This is intentionally conservative and not stated as a hard 100%, because some r
 
 At the monorepo level, the hardening is still early.
 
-* **9 of 22** inventory-scoped Lambdas have been modernized to the new baseline
-* that means roughly **41%** of the in-plan Lambda fleet has received this full hardening treatment so far
-* roughly **59%** of in-plan Lambdas still require the same route-by-route security verification and refactor discipline
+* **10 of 22** inventory-scoped Lambdas have been modernized to the new baseline
+* that means roughly **45%** of the in-plan Lambda fleet has received this full hardening treatment so far
+* roughly **55%** of in-plan Lambdas still require the same route-by-route security verification and refactor discipline
 * plus **4 workspace Lambdas** are currently tracked as intentionally out-of-plan in the inventory
 
 So the correct interpretation is:
@@ -364,6 +367,7 @@ For `purchaseConfirmation`, the hardened flow now includes:
 * integration coverage across CORS, JWT, public routes, RBAC, guard, dead routes, Zod validation, NoSQL injection, admin pagination, soft-cancel lifecycle, purchase flow, rate limiting, and response shape
 
 These security fixes are backed by the integration results summarized in [dev_docs/test_reports/USERROUTES_TEST_REPORT.md](dev_docs/test_reports/USERROUTES_TEST_REPORT.md), [dev_docs/test_reports/PETBASICINFO_TEST_REPORT.md](dev_docs/test_reports/PETBASICINFO_TEST_REPORT.md), [dev_docs/test_reports/EMAIL_VERIFICATION_TEST_REPORT.md](dev_docs/test_reports/EMAIL_VERIFICATION_TEST_REPORT.md), [dev_docs/test_reports/AUTHROUTE_TEST_REPORT.md](dev_docs/test_reports/AUTHROUTE_TEST_REPORT.md), [dev_docs/test_reports/GETALLPETS_TEST_REPORT.md](dev_docs/test_reports/GETALLPETS_TEST_REPORT.md), [dev_docs/test_reports/PETLOSTANDFOUND_TEST_REPORT.md](dev_docs/test_reports/PETLOSTANDFOUND_TEST_REPORT.md), [dev_docs/test_reports/EYEUPLOAD_TEST_REPORT.md](dev_docs/test_reports/EYEUPLOAD_TEST_REPORT.md), [dev_docs/test_reports/PETDETAILINFO_TEST_REPORT.md](dev_docs/test_reports/PETDETAILINFO_TEST_REPORT.md), and [dev_docs/test_reports/PURCHASECONFIRMATION_TEST_REPORT.md](dev_docs/test_reports/PURCHASECONFIRMATION_TEST_REPORT.md).
+These security fixes are backed by the integration results summarized in [dev_docs/test_reports/USERROUTES_TEST_REPORT.md](dev_docs/test_reports/USERROUTES_TEST_REPORT.md), [dev_docs/test_reports/PETBASICINFO_TEST_REPORT.md](dev_docs/test_reports/PETBASICINFO_TEST_REPORT.md), [dev_docs/test_reports/EMAIL_VERIFICATION_TEST_REPORT.md](dev_docs/test_reports/EMAIL_VERIFICATION_TEST_REPORT.md), [dev_docs/test_reports/AUTHROUTE_TEST_REPORT.md](dev_docs/test_reports/AUTHROUTE_TEST_REPORT.md), [dev_docs/test_reports/GETALLPETS_TEST_REPORT.md](dev_docs/test_reports/GETALLPETS_TEST_REPORT.md), [dev_docs/test_reports/PETLOSTANDFOUND_TEST_REPORT.md](dev_docs/test_reports/PETLOSTANDFOUND_TEST_REPORT.md), [dev_docs/test_reports/EYEUPLOAD_TEST_REPORT.md](dev_docs/test_reports/EYEUPLOAD_TEST_REPORT.md), [dev_docs/test_reports/PETDETAILINFO_TEST_REPORT.md](dev_docs/test_reports/PETDETAILINFO_TEST_REPORT.md), [dev_docs/test_reports/PETMEDICALRECORD_TEST_REPORT.md](dev_docs/test_reports/PETMEDICALRECORD_TEST_REPORT.md), and [dev_docs/test_reports/PURCHASECONFIRMATION_TEST_REPORT.md](dev_docs/test_reports/PURCHASECONFIRMATION_TEST_REPORT.md).
 
 ---
 
@@ -513,7 +517,7 @@ This is why the work may feel slower than surface-level coding changes: secure m
 
 ## Conclusion
 
-As of 2026-04-19, the monorepo refactor effort has produced 9 strong reference implementations, 535 declared integration test cases across those refactored lambdas plus 6 declared SMS unit test cases and 28 declared auth-workflow unit test cases, and a verified pattern for continuing the remaining Lambda modernization work.
+As of 2026-04-20, the monorepo refactor effort has produced 10 strong reference implementations, 600 declared integration test cases across those refactored lambdas plus 6 declared SMS unit test cases, 28 declared auth-workflow unit test cases, and 3 declared PetMedicalRecord aggregate unit test cases, and a verified pattern for continuing the remaining Lambda modernization work.
 
 The completed refactors show clear improvement across:
 

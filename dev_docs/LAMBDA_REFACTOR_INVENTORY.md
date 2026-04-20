@@ -7,9 +7,9 @@ It is not a perfect measure. Final priority should still consider route count, a
 ## Summary
 
 - Total Lambda entry files checked: 22
-- Already modularized with `src/handler.js`: 9
-- Remaining Lambdas needing review: 13
-- Clear full-separation candidates: 4
+- Already modularized with `src/handler.js`: 10
+- Remaining Lambdas needing review: 12
+- Clear full-separation candidates: 3
 - Medium-size Lambdas that likely need partial separation: 4
 - Smaller Lambdas that should usually stay simple: 5
 
@@ -27,6 +27,7 @@ These already match the stronger handler-based pattern.
 | `PetLostandFound` | `index.js` | 4 | already modularized |
 | `EyeUpload` | `index.js` | 4 | already modularized |
 | `PetDetailInfo` | `index.js` | 4 | already modularized |
+| `PetMedicalRecord` | `index.js` | 4 | already modularized |
 | `purchaseConfirmation` | `index.js` | 2 | already modularized |
 
 ## Full Separation Recommended
@@ -42,10 +43,9 @@ Suggested target shape:
 
 | Priority | Lambda | Entry file | Lines | Recommendation |
 | --- | --- | --- | ---: | --- |
-| 1 | `PetMedicalRecord` | `index.js` | 784 | strong candidate for full modular split |
-| 2 | `SFExpressRoutes` | `index.js` | 603 | strong candidate for full modular split |
-| 3 | `OrderVerification` | `index.js` | 582 | strong candidate for full modular split |
-| 4 | `PetBiometricRoutes` | `index.js` | 511 | strong candidate for full modular split |
+| 1 | `SFExpressRoutes` | `index.js` | 603 | strong candidate for full modular split |
+| 2 | `OrderVerification` | `index.js` | 582 | strong candidate for full modular split |
+| 3 | `PetBiometricRoutes` | `index.js` | 511 | strong candidate for full modular split |
 
 ## Partial Separation Recommended
 
@@ -85,7 +85,7 @@ These are smaller Lambdas. They should still meet the refactor checklist for val
 | `EyeUpload` | `index.js` | 4 | yes | already modularized |
 | `PetDetailInfo` | `index.js` | 4 | yes | already modularized |
 | `purchaseConfirmation` | `index.js` | 2 | yes | already modularized |
-| `PetMedicalRecord` | `index.js` | 784 | no | full separation |
+| `PetMedicalRecord` | `index.js` | 4 | yes | already modularized |
 | `SFExpressRoutes` | `index.js` | 603 | no | full separation |
 | `OrderVerification` | `index.js` | 582 | no | full separation |
 | `EmailVerification` | `index.js` | 4 | yes | already modularized |
@@ -115,10 +115,9 @@ These are smaller Lambdas. They should still meet the refactor checklist for val
 
 If the goal is to reduce structural risk quickly, the best next candidates are:
 
-1. `PetMedicalRecord`
-2. `OrderVerification`
-3. `SFExpressRoutes`
-4. `PetBiometricRoutes`
+1. `OrderVerification`
+2. `SFExpressRoutes`
+3. `PetBiometricRoutes`
 
 These appear to have the highest structural payoff by size alone.
 
