@@ -2,16 +2,50 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const { createErrorResponse, createSuccessResponse } = require("../utils/response");
 const { getFirstZodIssueMessage } = require("../utils/zod");
-const { logError } = require("../utils/logger");
+const { logInfo, logError } = require("../utils/logger");
 const { enforceRateLimit } = require("../utils/rateLimit");
 const { normalizeEmail, normalizePhone } = require("../utils/validators");
-const { issueNgoAccessToken, createRefreshToken, buildRefreshCookie } = require("../utils/token");
+const { issueUserAccessToken, issueNgoAccessToken, createRefreshToken, buildRefreshCookie } = require("../utils/token");
 const { registerSchema } = require("../zodSchema/registerSchema");
 const { registerNgoSchema } = require("../zodSchema/registerNgoSchema");
 
+/** Max age (ms) for a verification record to be considered valid for registration. */
+const VERIFICATION_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+
 /**
- * UNIFIED REGISTER
- * Handles account creation for email, phone, or mixed identities.
+ * Checks that the given identifier (email or phone) was recently verified.
+ * Returns true if a consumed verification record exists within the time window.
+ */
+async function isRecentlyVerified({ email, phoneNumber }) {
+  const cutoff = new Date(Date.now() - VERIFICATION_WINDOW_MS);
+
+  if (email) {
+    const EmailVerificationCode = mongoose.model("EmailVerificationCode");
+    const record = await EmailVerificationCode.findOne({
+      _id: email,
+      consumedAt: { $gte: cutoff },
+    }).lean();
+    if (record) return true;
+  }
+
+  if (phoneNumber) {
+    const SmsVerificationCode = mongoose.model("SmsVerificationCode");
+    const record = await SmsVerificationCode.findOne({
+      _id: phoneNumber,
+      consumedAt: { $gte: cutoff },
+    }).lean();
+    if (record) return true;
+  }
+
+  return false;
+}
+
+/**
+ * UNIFIED REGISTER (verification-first flow)
+ *
+ * Frontend flow: verify email/SMS → collect username → POST /account/register
+ * This endpoint checks that the identifier was recently verified, then
+ * creates the user account and issues tokens.
  */
 async function register({ event, body }) {
   try {
@@ -28,7 +62,6 @@ async function register({ event, body }) {
     }
 
     // 1. Zod Validation
-    // Validates that at least (email + password) OR (phone + password) exists
     const parseResult = registerSchema.safeParse(body);
     if (!parseResult.success) {
       return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error), event);
@@ -39,7 +72,6 @@ async function register({ event, body }) {
       lastName,
       phoneNumber,
       email,
-      password,
       subscribe,
       promotion,
       district,
@@ -49,60 +81,43 @@ async function register({ event, body }) {
     } = parseResult.data;
     const normalizedEmail = normalizeEmail(email);
     const normalizedPhoneNumber = normalizePhone(phoneNumber);
-    const passwordValue = password && password !== "" ? password : null;
 
-    // 2. Duplicate Check
-    // Existing verified accounts still block registration, but existing
-    // unverified accounts are treated as resumable pending signups.
-    const existingUser = await User.findOne({
-      $or: [
-        ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
-        ...(normalizedPhoneNumber ? [{ phoneNumber: normalizedPhoneNumber }] : [])
-      ],
-      deleted: false
-    }).lean();
+    // 2. Verify that at least one identifier was recently verified
+    const verified = await isRecentlyVerified({
+      email: normalizedEmail,
+      phoneNumber: normalizedPhoneNumber,
+    });
+    if (!verified) {
+      return createErrorResponse(403, "register.errors.verificationRequired", event);
+    }
 
-    if (existingUser) {
-      if (!existingUser.verified) {
-        return createSuccessResponse(201, event, {
-          id: existingUser._id,
-          continueVerification: true,
-          user: {
-            id: existingUser._id,
-            firstName: existingUser.firstName,
-            lastName: existingUser.lastName,
-            email: normalizedEmail || existingUser.email,
-            phoneNumber: normalizedPhoneNumber || existingUser.phoneNumber,
-            role: existingUser.role,
-            verified: existingUser.verified,
-            hasPassword: Boolean(existingUser.password),
-          }
-        });
+    // 3. Duplicate Check
+    const duplicateFilters = [
+      ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+      ...(normalizedPhoneNumber ? [{ phoneNumber: normalizedPhoneNumber }] : []),
+    ];
+
+    if (duplicateFilters.length > 0) {
+      const existingUser = await User.findOne({
+        $or: duplicateFilters,
+        deleted: false
+      }).lean();
+
+      if (existingUser) {
+        const isPhoneConflict = normalizedPhoneNumber && existingUser.phoneNumber === normalizedPhoneNumber;
+        const errorKey = isPhoneConflict ? 'phoneRegister.userExist' : 'phoneRegister.existWithEmail';
+        return createErrorResponse(409, errorKey, event);
       }
-
-      const isPhoneConflict = normalizedPhoneNumber && existingUser.phoneNumber === normalizedPhoneNumber;
-      const errorKey = isPhoneConflict ? 'phoneRegister.userExist' : 'phoneRegister.existWithEmail';
-      return createErrorResponse(409, errorKey, event);
     }
 
-    let hashedPassword;
-    if (passwordValue) {
-      const saltRounds = 10;
-      hashedPassword = await bcrypt.hash(passwordValue, saltRounds);
-    }
-
-    // 4. Create User Instance
-    const newId = new mongoose.Types.ObjectId();
-    
-    const newUser = new User({
-      _id: newId,
+    // 4. Create User — already verified, no password needed
+    const newUser = await User.create({
       firstName,
       lastName,
-      password: hashedPassword,
-      phoneNumber: normalizedPhoneNumber,
-      email: normalizedEmail || `${newId.toString()}@temp.account`,
+      phoneNumber: normalizedPhoneNumber || undefined,
+      email: normalizedEmail || undefined,
       role: "user",
-      verified: false,
+      verified: true,
       subscribe: subscribe === 'true' || subscribe === true,
       promotion: promotion ?? false,
       district: district ?? null,
@@ -116,22 +131,27 @@ async function register({ event, body }) {
       bloodAnalysisCredit: 300,
     });
 
-    // 5. Save to Database
-    await newUser.save();
+    const user = newUser.toObject();
 
-    // 6. Final Success Response (creation only, no session issuance)
+    // 5. Issue tokens
+    const token = issueUserAccessToken(user);
+    const { token: refreshToken } = await createRefreshToken(user._id);
+
+    logInfo("User registered successfully", {
+      scope: "services.register.register",
+      event,
+      extra: { email: normalizedEmail, phoneNumber: normalizedPhoneNumber, userId: user._id },
+    });
+
+    // 6. Success response with tokens
     return createSuccessResponse(201, event, {
-      id: newUser._id,
-      user: {
-        id: newUser._id,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        email: newUser.email,
-        phoneNumber: newUser.phoneNumber,
-        role: newUser.role,
-        verified: newUser.verified,
-        hasPassword: Boolean(hashedPassword),
-      }
+      message: "Registration successful",
+      userId: user._id,
+      role: user.role,
+      isVerified: true,
+      token,
+    }, {
+      "Set-Cookie": buildRefreshCookie(refreshToken, event),
     });
 
   } catch (err) {

@@ -11,6 +11,8 @@ const NGOSchema = require("../models/NGO.js");
 const NGOCounterSchema = require("../models/NgoCounters.js");
 const RefreshTokenSchema = require("../models/RefreshToken.js");
 const RateLimitSchema = require("../models/RateLimit.js");
+const SmsVerificationCodeSchema = require("../models/SmsVerificationCode.js");
+const EmailVerificationCodeSchema = require("../models/EmailVerificationCode.js");
 const { logInfo, logError } = require("../utils/logger");
 
 let conn = null;
@@ -47,6 +49,8 @@ const connectToMongoDB = async () => {
       mongoose.models.RefreshToken || mongoose.model("RefreshToken", RefreshTokenSchema, "refresh_tokens");
       mongoose.models.NgoCounters || mongoose.model("NgoCounters", NGOCounterSchema, "ngo_counters");
       mongoose.models.RateLimit || mongoose.model("RateLimit", RateLimitSchema, "rate_limits");
+      mongoose.models.SmsVerificationCode || mongoose.model("SmsVerificationCode", SmsVerificationCodeSchema, "sms_verification_codes");
+      mongoose.models.EmailVerificationCode || mongoose.model("EmailVerificationCode", EmailVerificationCodeSchema, "email_verification_codes");
     
       return conn; 
     } catch (error) {

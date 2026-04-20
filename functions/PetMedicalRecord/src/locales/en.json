@@ -1,4 +1,11 @@
 {
+  "others": {
+    "unauthorized": "Unauthorized",
+    "internalError": "Internal server error",
+    "methodNotAllowed": "Method Not Allowed",
+    "invalidJSON": "Invalid JSON format",
+    "missingParams": "Missing required parameters"
+  },
   "common": {
     "invalidJSON": "Invalid JSON format"
   },
