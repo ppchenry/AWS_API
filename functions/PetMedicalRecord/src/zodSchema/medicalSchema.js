@@ -6,7 +6,7 @@ const createMedicalRecordSchema = z.object({
   medicalDoctor: z.string().optional(),
   medicalResult: z.string().optional(),
   medicalSolution: z.string().optional(),
-});
+}).strict();
 
 const updateMedicalRecordSchema = z.object({
   medicalDate: z.string({ error: "medicalRecord.invalidDateFormat" }).optional(),
@@ -14,7 +14,7 @@ const updateMedicalRecordSchema = z.object({
   medicalDoctor: z.string().optional(),
   medicalResult: z.string().optional(),
   medicalSolution: z.string().optional(),
-});
+}).strict();
 
 module.exports = {
   createMedicalRecordSchema,

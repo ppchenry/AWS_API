@@ -8,6 +8,9 @@
     "testTimeout": 60000,
     "setupFilesAfterEnv": [
       "<rootDir>/jest.setup.cjs"
+    ],
+    "modulePathIgnorePatterns": [
+      "<rootDir>/.aws-sam/"
     ]
   },
   "devDependencies": {

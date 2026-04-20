@@ -1,5 +1,28 @@
 # UserRoutes Refactor Changelog
 
+## [2026-04-19] — Verification-first auth flow
+
+### Summary
+
+Regular-user authentication has been migrated from password-based login to a **verification-first flow**. Users verify their email or phone first, then register with the verification proof. No passwords are collected for regular users.
+
+### Changes
+
+- `POST /account/login` is now a **frozen route** returning `405` — regular users do not use credential login
+- `PUT /account/update-password` is now a **frozen route** returning `405` — regular users have no passwords
+- `POST /account/login-2` is now a **frozen route** returning `405`
+- `POST /account/register` now requires a consumed email/SMS verification code within a 10-minute window (reads from `email_verification_codes` / `sms_verification_codes` collections)
+- Registration returns `{ userId, role, isVerified, token }` with `201` and an `HttpOnly` refresh cookie
+- NGO auth is unchanged (still uses passwords)
+
+### Test Impact
+
+- Integration suite updated from 106 → **93** tests (removed obsolete login credential tests, password-update tests, and login-first flow tests)
+- New dedicated `__tests__/test-authworkflow.test.js` suite with **28 unit tests** covering the full verification-first lifecycle
+- SMS service unit suite unchanged: **6 tests**
+
+---
+
 ## Scope
 
 This changelog documents the current UserRoutes refactor stage completed after local SAM testing and route-level verification.

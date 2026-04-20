@@ -4,6 +4,7 @@ const { logError } = require("../utils/logger");
 const { sanitizeRecord } = require("../utils/sanitize");
 const { isValidDateFormat, parseDDMMYYYY } = require("../utils/validators");
 const { getFirstZodIssueMessage } = require("../utils/zod");
+const { loadAuthorizedPet } = require("../middleware/selfAccess");
 const {
   createDewormRecordSchema,
   updateDewormRecordSchema,
@@ -16,6 +17,8 @@ async function getDewormRecords({ event }) {
   const scope = "services.deworm.getDewormRecords";
   try {
     const petID = event.pathParameters.petID;
+    const petAccess = await loadAuthorizedPet({ event, petId: petID });
+    if (!petAccess.isValid) return petAccess.error;
     const DewormRecords = mongoose.model("Deworm_Records");
 
     const records = await DewormRecords.find({ petId: petID })
@@ -40,12 +43,17 @@ async function createDewormRecord({ event, body }) {
   const scope = "services.deworm.createDewormRecord";
   try {
     const petID = event.pathParameters.petID;
+    const petAccess = await loadAuthorizedPet({ event, petId: petID });
+    if (!petAccess.isValid) return petAccess.error;
 
     const parseResult = createDewormRecordSchema.safeParse(body);
     if (!parseResult.success) {
       return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error), event);
     }
     const data = parseResult.data;
+    if (Object.keys(data).length === 0) {
+      return createErrorResponse(400, "dewormRecord.noFieldsToUpdate", event);
+    }
 
     if (data.date && !isValidDateFormat(data.date)) {
       return createErrorResponse(400, "dewormRecord.invalidDateFormat", event);
@@ -57,26 +65,29 @@ async function createDewormRecord({ event, body }) {
     const DewormRecords = mongoose.model("Deworm_Records");
     const Pets = mongoose.model("Pet");
 
+    const parsedDate = data.date ? parseDDMMYYYY(data.date) : null;
+    const parsedNextDewormDate = data.nextDewormDate ? parseDDMMYYYY(data.nextDewormDate) : null;
+
     const newRecord = await DewormRecords.create({
-      date: data.date ? parseDDMMYYYY(data.date) : null,
+      date: parsedDate,
       vaccineBrand: data.vaccineBrand,
       vaccineType: data.vaccineType,
       typesOfInternalParasites: data.typesOfInternalParasites,
       typesOfExternalParasites: data.typesOfExternalParasites,
       frequency: data.frequency,
-      nextDewormDate: data.nextDewormDate ? parseDDMMYYYY(data.nextDewormDate) : null,
-      notification: data.notification || false,
+      nextDewormDate: parsedNextDewormDate,
+      notification: data.notification ?? false,
       petId: petID,
     });
 
-    await Pets.findByIdAndUpdate(petID, {
+    await Pets.findOneAndUpdate({ _id: petID, deleted: { $ne: true } }, {
       $inc: { dewormRecordsCount: 1 },
-      $max: { latestDewormDate: data.date },
+      $max: { latestDewormDate: parsedDate },
     });
 
     return createSuccessResponse(200, event, {
       message: "dewormRecord.postSuccess",
-      form: data,
+      form: sanitizeRecord(newRecord),
       petId: petID,
       dewormRecordId: newRecord._id,
     });
@@ -94,6 +105,8 @@ async function updateDewormRecord({ event, body }) {
   try {
     const petID = event.pathParameters.petID;
     const dewormID = event.pathParameters.dewormID;
+    const petAccess = await loadAuthorizedPet({ event, petId: petID });
+    if (!petAccess.isValid) return petAccess.error;
 
     const parseResult = updateDewormRecordSchema.safeParse(body);
     if (!parseResult.success) {
@@ -111,24 +124,35 @@ async function updateDewormRecord({ event, body }) {
     const DewormRecords = mongoose.model("Deworm_Records");
     const Pets = mongoose.model("Pet");
 
-    const exists = await DewormRecords.findById(dewormID).lean();
-    if (!exists) {
+    const updateFields = {};
+    if (data.date !== undefined) updateFields.date = data.date ? parseDDMMYYYY(data.date) : null;
+    if (data.vaccineBrand !== undefined) updateFields.vaccineBrand = data.vaccineBrand;
+    if (data.vaccineType !== undefined) updateFields.vaccineType = data.vaccineType;
+    if (data.typesOfInternalParasites !== undefined) updateFields.typesOfInternalParasites = data.typesOfInternalParasites;
+    if (data.typesOfExternalParasites !== undefined) updateFields.typesOfExternalParasites = data.typesOfExternalParasites;
+    if (data.frequency !== undefined) updateFields.frequency = data.frequency;
+    if (data.nextDewormDate !== undefined) updateFields.nextDewormDate = data.nextDewormDate ? parseDDMMYYYY(data.nextDewormDate) : null;
+    if (data.notification !== undefined) updateFields.notification = data.notification;
+
+    if (Object.keys(updateFields).length === 0) {
+      return createErrorResponse(400, "dewormRecord.noFieldsToUpdate", event);
+    }
+
+    const updated = await DewormRecords.findOneAndUpdate(
+      { _id: dewormID, petId: petID },
+      { $set: updateFields },
+      {
+        new: true,
+        projection: "date vaccineBrand vaccineType typesOfInternalParasites typesOfExternalParasites frequency nextDewormDate notification petId",
+      }
+    ).lean();
+
+    if (!updated) {
       return createErrorResponse(404, "dewormRecord.dewormRecordNotFound", event);
     }
 
-    const updateFields = {};
-    if (data.date) updateFields.date = parseDDMMYYYY(data.date);
-    if (data.vaccineBrand) updateFields.vaccineBrand = data.vaccineBrand;
-    if (data.vaccineType) updateFields.vaccineType = data.vaccineType;
-    if (data.typesOfInternalParasites) updateFields.typesOfInternalParasites = data.typesOfInternalParasites;
-    if (data.typesOfExternalParasites) updateFields.typesOfExternalParasites = data.typesOfExternalParasites;
-    if (data.frequency) updateFields.frequency = data.frequency;
-    if (data.nextDewormDate) updateFields.nextDewormDate = parseDDMMYYYY(data.nextDewormDate);
-    if (data.notification !== undefined) updateFields.notification = data.notification;
-
-    await DewormRecords.updateOne({ _id: dewormID }, { $set: updateFields });
-
     const latestDewormRecords = await DewormRecords.find({ petId: petID })
+      .select("date")
       .sort({ date: -1 })
       .limit(1)
       .lean();
@@ -141,6 +165,7 @@ async function updateDewormRecord({ event, body }) {
       message: "dewormRecord.putSuccess",
       petId: petID,
       dewormRecordId: dewormID,
+      form: sanitizeRecord(updated),
     });
   } catch (error) {
     logError("Failed to update deworm record", { scope, event, error });
@@ -156,20 +181,21 @@ async function deleteDewormRecord({ event }) {
   try {
     const petID = event.pathParameters.petID;
     const dewormID = event.pathParameters.dewormID;
+    const petAccess = await loadAuthorizedPet({ event, petId: petID });
+    if (!petAccess.isValid) return petAccess.error;
 
     const DewormRecords = mongoose.model("Deworm_Records");
     const Pets = mongoose.model("Pet");
 
-    const exists = await DewormRecords.findById(dewormID).lean();
-    if (!exists) {
+    const deleted = await DewormRecords.deleteOne({ _id: dewormID, petId: petID });
+
+    if (deleted.deletedCount === 0) {
       return createErrorResponse(404, "dewormRecord.dewormRecordNotFound", event);
     }
 
-    await DewormRecords.deleteOne({ _id: dewormID });
-
     const [count, latest] = await Promise.all([
       DewormRecords.countDocuments({ petId: petID }),
-      DewormRecords.find({ petId: petID }).sort({ date: -1 }).limit(1).lean(),
+      DewormRecords.find({ petId: petID }).select("date").sort({ date: -1 }).limit(1).lean(),
     ]);
 
     await Pets.findByIdAndUpdate(petID, {

@@ -4,10 +4,46 @@ const { logError } = require("../utils/logger");
 const { sanitizeRecord } = require("../utils/sanitize");
 const { isValidDateFormat, parseDDMMYYYY } = require("../utils/validators");
 const { getFirstZodIssueMessage } = require("../utils/zod");
+const { loadAuthorizedPet } = require("../middleware/selfAccess");
 const {
   createBloodTestSchema,
   updateBloodTestSchema,
 } = require("../zodSchema/bloodTestSchema");
+
+async function syncBloodTestPetSummary({
+  petId,
+  parsedBloodTestDate,
+  mode,
+  models = {},
+}) {
+  const BloodTest = models.BloodTest || mongoose.model("blood_tests");
+  const Pet = models.Pet || mongoose.model("Pet");
+
+  if (mode === "create") {
+    await Pet.findOneAndUpdate(
+      { _id: petId, deleted: { $ne: true } },
+      {
+        $inc: { bloodTestRecordsCount: 1 },
+        ...(parsedBloodTestDate ? { $max: { latestBloodTestDate: parsedBloodTestDate } } : {}),
+      }
+    );
+    return;
+  }
+
+  const [count, latest] = await Promise.all([
+    BloodTest.countDocuments({ petId }),
+    BloodTest.find({ petId })
+      .select("bloodTestDate")
+      .sort({ bloodTestDate: -1 })
+      .limit(1)
+      .lean(),
+  ]);
+
+  await Pet.findByIdAndUpdate(petId, {
+    bloodTestRecordsCount: count,
+    latestBloodTestDate: latest[0]?.bloodTestDate || null,
+  });
+}
 
 /**
  * GET /pets/{petID}/blood-test-record
@@ -16,6 +52,8 @@ async function getBloodTestRecords({ event }) {
   const scope = "services.bloodTest.getBloodTestRecords";
   try {
     const petID = event.pathParameters.petID;
+    const petAccess = await loadAuthorizedPet({ event, petId: petID });
+    if (!petAccess.isValid) return petAccess.error;
     const BloodTest = mongoose.model("blood_tests");
 
     const records = await BloodTest.find({ petId: petID })
@@ -40,21 +78,27 @@ async function createBloodTestRecord({ event, body }) {
   const scope = "services.bloodTest.createBloodTestRecord";
   try {
     const petID = event.pathParameters.petID;
+    const petAccess = await loadAuthorizedPet({ event, petId: petID });
+    if (!petAccess.isValid) return petAccess.error;
 
     const parseResult = createBloodTestSchema.safeParse(body);
     if (!parseResult.success) {
       return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error), event);
     }
     const data = parseResult.data;
+    if (Object.keys(data).length === 0) {
+      return createErrorResponse(400, "bloodTest.noFieldsToUpdate", event);
+    }
 
     if (data.bloodTestDate && !isValidDateFormat(data.bloodTestDate)) {
       return createErrorResponse(400, "bloodTest.invalidDateFormat", event);
     }
 
     const BloodTest = mongoose.model("blood_tests");
+    const parsedBloodTestDate = data.bloodTestDate ? parseDDMMYYYY(data.bloodTestDate) : null;
 
     const newRecord = await BloodTest.create({
-      bloodTestDate: data.bloodTestDate ? parseDDMMYYYY(data.bloodTestDate) : null,
+      bloodTestDate: parsedBloodTestDate,
       heartworm: data.heartworm,
       lymeDisease: data.lymeDisease,
       ehrlichiosis: data.ehrlichiosis,
@@ -63,9 +107,15 @@ async function createBloodTestRecord({ event, body }) {
       petId: petID,
     });
 
+    await syncBloodTestPetSummary({
+      petId: petID,
+      parsedBloodTestDate,
+      mode: "create",
+    });
+
     return createSuccessResponse(200, event, {
       message: "bloodTest.postSuccess",
-      form: data,
+      form: sanitizeRecord(newRecord),
       petId: petID,
       bloodTestRecordId: newRecord._id,
     });
@@ -83,6 +133,8 @@ async function updateBloodTestRecord({ event, body }) {
   try {
     const petID = event.pathParameters.petID;
     const bloodTestID = event.pathParameters.bloodTestID;
+    const petAccess = await loadAuthorizedPet({ event, petId: petID });
+    if (!petAccess.isValid) return petAccess.error;
 
     const parseResult = updateBloodTestSchema.safeParse(body);
     if (!parseResult.success) {
@@ -96,29 +148,38 @@ async function updateBloodTestRecord({ event, body }) {
 
     const BloodTest = mongoose.model("blood_tests");
 
-    const exists = await BloodTest.findById(bloodTestID).lean();
-    if (!exists) {
-      return createErrorResponse(404, "bloodTest.bloodTestRecordNotFound", event);
-    }
-
     const updateFields = {};
-    if (data.bloodTestDate) updateFields.bloodTestDate = parseDDMMYYYY(data.bloodTestDate);
-    if (data.heartworm) updateFields.heartworm = data.heartworm;
-    if (data.lymeDisease) updateFields.lymeDisease = data.lymeDisease;
-    if (data.ehrlichiosis) updateFields.ehrlichiosis = data.ehrlichiosis;
-    if (data.anaplasmosis) updateFields.anaplasmosis = data.anaplasmosis;
-    if (data.babesiosis) updateFields.babesiosis = data.babesiosis;
+    if (data.bloodTestDate !== undefined) updateFields.bloodTestDate = data.bloodTestDate ? parseDDMMYYYY(data.bloodTestDate) : null;
+    if (data.heartworm !== undefined) updateFields.heartworm = data.heartworm;
+    if (data.lymeDisease !== undefined) updateFields.lymeDisease = data.lymeDisease;
+    if (data.ehrlichiosis !== undefined) updateFields.ehrlichiosis = data.ehrlichiosis;
+    if (data.anaplasmosis !== undefined) updateFields.anaplasmosis = data.anaplasmosis;
+    if (data.babesiosis !== undefined) updateFields.babesiosis = data.babesiosis;
 
     if (Object.keys(updateFields).length === 0) {
       return createErrorResponse(400, "bloodTest.noFieldsToUpdate", event);
     }
 
-    await BloodTest.updateOne({ _id: bloodTestID }, { $set: updateFields });
+    const updated = await BloodTest.findOneAndUpdate(
+      { _id: bloodTestID, petId: petID },
+      { $set: updateFields },
+      {
+        new: true,
+        projection: "bloodTestDate heartworm lymeDisease ehrlichiosis anaplasmosis babesiosis petId",
+      }
+    ).lean();
+
+    if (!updated) {
+      return createErrorResponse(404, "bloodTest.bloodTestRecordNotFound", event);
+    }
+
+    await syncBloodTestPetSummary({ petId: petID, mode: "recalculate" });
 
     return createSuccessResponse(200, event, {
       message: "bloodTest.putSuccess",
       petId: petID,
       bloodTestRecordId: bloodTestID,
+      form: sanitizeRecord(updated),
     });
   } catch (error) {
     logError("Failed to update blood test record", { scope, event, error });
@@ -134,14 +195,18 @@ async function deleteBloodTestRecord({ event }) {
   try {
     const petID = event.pathParameters.petID;
     const bloodTestID = event.pathParameters.bloodTestID;
+    const petAccess = await loadAuthorizedPet({ event, petId: petID });
+    if (!petAccess.isValid) return petAccess.error;
 
     const BloodTest = mongoose.model("blood_tests");
 
-    const deleted = await BloodTest.deleteOne({ _id: bloodTestID });
+    const deleted = await BloodTest.deleteOne({ _id: bloodTestID, petId: petID });
 
     if (deleted.deletedCount === 0) {
       return createErrorResponse(404, "bloodTest.bloodTestRecordNotFound", event);
     }
+
+    await syncBloodTestPetSummary({ petId: petID, mode: "recalculate" });
 
     return createSuccessResponse(200, event, {
       message: "bloodTest.deleteSuccess",
@@ -159,4 +224,5 @@ module.exports = {
   createBloodTestRecord,
   updateBloodTestRecord,
   deleteBloodTestRecord,
+  syncBloodTestPetSummary,
 };

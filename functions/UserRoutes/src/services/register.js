@@ -13,10 +13,11 @@ const { registerNgoSchema } = require("../zodSchema/registerNgoSchema");
 const VERIFICATION_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
 /**
- * Checks that the given identifier (email or phone) was recently verified.
- * Returns true if a consumed verification record exists within the time window.
+ * Checks that EVERY supplied identifier was independently verified recently.
+ * Returns { verified: true } only when all present identifiers have proof.
+ * Returns { verified: false, missing: "email"|"phoneNumber" } on first failure.
  */
-async function isRecentlyVerified({ email, phoneNumber }) {
+async function checkAllIdentifiersVerified({ email, phoneNumber }) {
   const cutoff = new Date(Date.now() - VERIFICATION_WINDOW_MS);
 
   if (email) {
@@ -25,7 +26,7 @@ async function isRecentlyVerified({ email, phoneNumber }) {
       _id: email,
       consumedAt: { $gte: cutoff },
     }).lean();
-    if (record) return true;
+    if (!record) return { verified: false, missing: "email" };
   }
 
   if (phoneNumber) {
@@ -34,10 +35,25 @@ async function isRecentlyVerified({ email, phoneNumber }) {
       _id: phoneNumber,
       consumedAt: { $gte: cutoff },
     }).lean();
-    if (record) return true;
+    if (!record) return { verified: false, missing: "phoneNumber" };
   }
 
-  return false;
+  return { verified: true };
+}
+
+/**
+ * Invalidates verification proof records after successful registration.
+ * Prevents replay of the same proof for additional registration attempts.
+ */
+async function consumeVerificationProofs({ email, phoneNumber }) {
+  if (email) {
+    const EmailVerificationCode = mongoose.model("EmailVerificationCode");
+    await EmailVerificationCode.deleteOne({ _id: email }).catch(() => {});
+  }
+  if (phoneNumber) {
+    const SmsVerificationCode = mongoose.model("SmsVerificationCode");
+    await SmsVerificationCode.deleteOne({ _id: phoneNumber }).catch(() => {});
+  }
 }
 
 /**
@@ -82,13 +98,16 @@ async function register({ event, body }) {
     const normalizedEmail = normalizeEmail(email);
     const normalizedPhoneNumber = normalizePhone(phoneNumber);
 
-    // 2. Verify that at least one identifier was recently verified
-    const verified = await isRecentlyVerified({
+    // 2. Verify that EVERY supplied identifier was independently verified
+    const identifierCheck = await checkAllIdentifiersVerified({
       email: normalizedEmail,
       phoneNumber: normalizedPhoneNumber,
     });
-    if (!verified) {
-      return createErrorResponse(403, "register.errors.verificationRequired", event);
+    if (!identifierCheck.verified) {
+      const errorKey = identifierCheck.missing === "phoneNumber"
+        ? "register.errors.phoneVerificationRequired"
+        : "register.errors.verificationRequired";
+      return createErrorResponse(403, errorKey, event);
     }
 
     // 3. Duplicate Check
@@ -136,6 +155,12 @@ async function register({ event, body }) {
     // 5. Issue tokens
     const token = issueUserAccessToken(user);
     const { token: refreshToken } = await createRefreshToken(user._id);
+
+    // 5b. Consume verification proofs so they cannot be replayed
+    await consumeVerificationProofs({
+      email: normalizedEmail,
+      phoneNumber: normalizedPhoneNumber,
+    });
 
     logInfo("User registered successfully", {
       scope: "services.register.register",

@@ -5,7 +5,7 @@ const { getReadConnection } = require("./config/db");
 const { createErrorResponse } = require("./utils/response");
 const { handleOptions } = require("./cors");
 const { authJWT } = require("./middleware/authJWT");
-const { validateRequest } = require("./middleware/guard");
+const { validateUserRequest } = require("./middleware/guard");
 const { routeRequest } = require("./router");
 const { logError } = require("./utils/logger");
 
@@ -36,7 +36,7 @@ async function handleRequest(event, context) {
     if (authError && !PUBLIC_RESOURCES.includes(event.resource)) return authError;
 
     // 3. Guard Layer (cheap, no DB)
-    const validation = validateRequest({ event });
+    const validation = await validateUserRequest({ event });
     if (!validation.isValid) return validation.error;
 
     // 4. DB Connection

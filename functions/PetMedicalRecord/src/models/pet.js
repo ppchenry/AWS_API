@@ -219,11 +219,19 @@ const PetSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
+    bloodTestRecordsCount: {
+      type: Number,
+      default: 0
+    },
     vaccineRecordsCount: {
       type: Number,
       default: 0
     },
     latestDewormDate: {
+      type: Date,
+      default: null
+    },
+    latestBloodTestDate: {
       type: Date,
       default: null
     },

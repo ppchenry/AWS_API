@@ -1,17 +1,32 @@
+/**
+ * Builds the structured request context attached to log entries.
+ *
+ * @param {import("aws-lambda").APIGatewayProxyEvent | Record<string, any> | undefined} event
+ * @returns {Record<string, any> | undefined}
+ */
 function getRequestLogContext(event) {
   if (!event) {
     return undefined;
   }
 
   return {
-    requestId: event.awsRequestId,
+    requestId: event.requestContext?.requestId || event.awsRequestId,
+    stage: event.requestContext?.stage,
     method: event.httpMethod,
     resource: event.resource,
     path: event.path,
     userId: event.userId,
+    userEmail: event.userEmail,
+    userRole: event.userRole,
   };
 }
 
+/**
+ * Serializes an Error-like object into the structured log error shape.
+ *
+ * @param {any} error
+ * @returns {Record<string, any> | undefined}
+ */
 function serializeError(error) {
   if (!error) {
     return undefined;
@@ -25,6 +40,14 @@ function serializeError(error) {
   };
 }
 
+/**
+ * Writes one structured JSON log entry using the appropriate console method.
+ *
+ * @param {"info" | "warn" | "error"} level
+ * @param {string} message
+ * @param {{ scope?: string, event?: any, error?: any, extra?: Record<string, any> }} [options]
+ * @returns {void}
+ */
 function writeStructuredLog(level, message, options = {}) {
   const entry = {
     timestamp: new Date().toISOString(),
@@ -57,14 +80,35 @@ function writeStructuredLog(level, message, options = {}) {
   logger(JSON.stringify(entry));
 }
 
+/**
+ * Emits an info-level structured log entry.
+ *
+ * @param {string} message
+ * @param {{ scope?: string, event?: any, error?: any, extra?: Record<string, any> }} [options]
+ * @returns {void}
+ */
 function logInfo(message, options) {
   writeStructuredLog("info", message, options);
 }
 
+/**
+ * Emits a warn-level structured log entry.
+ *
+ * @param {string} message
+ * @param {{ scope?: string, event?: any, error?: any, extra?: Record<string, any> }} [options]
+ * @returns {void}
+ */
 function logWarn(message, options) {
   writeStructuredLog("warn", message, options);
 }
 
+/**
+ * Emits an error-level structured log entry.
+ *
+ * @param {string} message
+ * @param {{ scope?: string, event?: any, error?: any, extra?: Record<string, any> }} [options]
+ * @returns {void}
+ */
 function logError(message, options) {
   writeStructuredLog("error", message, options);
 }

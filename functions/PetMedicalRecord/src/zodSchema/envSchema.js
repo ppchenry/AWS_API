@@ -10,7 +10,10 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((v) => v === "true"),
-  ALLOWED_ORIGINS: z.string().default("*"),
+  ALLOWED_ORIGINS: z
+    .string()
+    .trim()
+    .min(1, "ALLOWED_ORIGINS is required"),
 });
 
 module.exports = { envSchema };
