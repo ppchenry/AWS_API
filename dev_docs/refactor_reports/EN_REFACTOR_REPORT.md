@@ -1,4 +1,4 @@
-# Monorepo Refactor Report (2026-04-18)
+# Monorepo Refactor Report (2026-04-19)
 
 ## Overview
 
@@ -18,7 +18,7 @@ This work sits inside the broader monorepo cleanup described in [README.md](READ
 
 The current test-file-based case inventory is:
 
-* `UserRoutes`: **106 declared integration test cases** in `__tests__/test-userroutes.test.js` plus **6 declared SMS unit test cases** in `__tests__/test-sms-service.test.js`
+* `UserRoutes`: **93 declared integration test cases** in `__tests__/test-userroutes.test.js` plus **6 declared SMS unit test cases** in `__tests__/test-sms-service.test.js` plus **28 declared auth-workflow unit test cases** in `__tests__/test-authworkflow.test.js`
 * `PetBasicInfo`: **37 declared integration test cases** in `__tests__/test-petbasicinfo.test.js`
 * `EmailVerification`: **30 declared integration test cases** in `__tests__/test-emailverification.test.js`
 * `AuthRoute`: **22 declared test cases** in `__tests__/test-authroute.test.js`
@@ -27,7 +27,7 @@ The current test-file-based case inventory is:
 * `EyeUpload`: **94 declared integration test cases** in `__tests__/test-eyeupload.test.js`
 * `PetDetailInfo`: **82 declared integration test cases** in `__tests__/test-petdetailinfo.test.js`
 * `purchaseConfirmation`: **65 declared integration test cases** (63 passing, 2 skipped) in `__tests__/test-purchaseconfirmation.test.js`
-* Combined: **548 declared integration test cases across the 9 refactored lambdas + 6 declared SMS unit test cases**
+* Combined: **535 declared integration test cases across the 9 refactored lambdas + 6 declared SMS unit test cases + 28 declared auth-workflow unit test cases**
 
 These counts describe declared cases in test files. They are not, by themselves, a same-day execution transcript.
 
@@ -40,8 +40,8 @@ This means the refactoring effort is already producing measurable improvements i
 
 The core account auth flow is now also clearer at the monorepo level:
 
-* `UserRoutes` handles primary login, register-first account creation, SMS verification login, NGO auth, and protected account operations
-* `EmailVerification` handles public email proof and can bootstrap a verified session for an already registered account
+* `UserRoutes` handles **verification-first registration** (no passwords for regular users), NGO auth, and protected account operations. `POST /account/login`, `PUT /account/update-password`, and `POST /account/login-2` are frozen routes returning `405`
+* `EmailVerification` handles public email proof with a **3-branch verify**: (1) authenticated user → link email to account, (2) new user → `{ verified: true, isNewUser: true }`, (3) existing user → auto-login with token
 * `AuthRoute` handles refresh-token rotation and access-token renewal
 
 
@@ -51,11 +51,11 @@ For non-technical stakeholders, the important point is this: this work was not o
 
 ---
 
-## Monorepo Status As Of 2026-04-18
+## Monorepo Status As Of 2026-04-19
 
 The monorepo started from a legacy state where many Lambdas duplicated helpers, mixed routing and business logic in the same file, and were difficult to evolve safely. The current direction is not a full re-architecture yet. It is a controlled in-situ modernization pass designed to stabilize each Lambda one by one.
 
-As of 2026-04-18, the program now has:
+As of 2026-04-19, the program now has:
 
 * 9 modularized reference Lambdas
 * a written modernization standard
@@ -79,21 +79,24 @@ That also means the completed work should be seen as high-leverage groundwork, n
 
 The account session lifecycle is now split across 3 Lambdas with clearer ownership and fewer hidden side effects.
 
-### 1. `UserRoutes` Owns Registration, Primary Login, and SMS Session Bootstrap
+### 1. `UserRoutes` Owns Registration and Protected Account Operations
 
-`UserRoutes` is now the main account-entry Lambda. It handles regular registration, NGO registration, email/password login, SMS verification login, and the authenticated account-management surface.
+`UserRoutes` is now the main account-entry Lambda. It handles verification-first registration, NGO registration, and the authenticated account-management surface.
 
-The most important change is that normal-user registration and session issuance are no longer mixed together.
+The most important change is the **verification-first flow**: regular users no longer use passwords at all.
 
 For regular users:
 
-* `POST /account/register` is now creation-only
-* registration can create a pending identity without issuing tokens
-* session issuance happens later through `POST /account/login`, `POST /account/verify-sms-code`, or `POST /account/verify-email-code`
+* `POST /account/login` is **frozen** and returns `405` — regular users do not log in with credentials
+* `PUT /account/update-password` is **frozen** and returns `405` — regular users have no passwords
+* `POST /account/login-2` is **frozen** and returns `405`
+* `POST /account/register` requires a consumed email or SMS verification code within a 10-minute window
+* registration returns `{ userId, role, isVerified, token }` with `201` and an `HttpOnly` refresh cookie
+* the full regular-user auth cycle is: **verify email/SMS → register with proof → receive session**
 
 For NGOs:
 
-* `POST /account/register-ngo` creates the NGO user context and now issues an NGO-scoped session immediately
+* `POST /account/register-ngo` creates the NGO user context and issues an NGO-scoped session immediately (NGOs still use passwords)
 * later NGO login checks current NGO approval state before issuing a session
 
 When `UserRoutes` does issue a session, the contract is now aligned across the supported paths:
@@ -101,19 +104,24 @@ When `UserRoutes` does issue a session, the contract is now aligned across the s
 * a short-lived Bearer JWT access token
 * a refresh token stored as an `HttpOnly` cookie
 
-### 2. `EmailVerification` Owns Email Proof, Not Account Creation
+### 2. `EmailVerification` Owns Email Proof With 3-Branch Verify
 
-`EmailVerification` is now responsible for public email-code generation and post-registration email-code verification.
+`EmailVerification` is now responsible for public email-code generation and verification.
+
+Its verify endpoint uses a **3-branch flow**:
+
+* **Branch 1 — Authenticated user** (Bearer token present): links the verified email to the caller's existing account
+* **Branch 2 — New user** (no account exists for the email): returns `{ verified: true, isNewUser: true }` so the frontend can proceed to registration with the verification proof
+* **Branch 3 — Existing user** (account exists, not authenticated): marks the account verified and issues a full session (access token + refresh cookie) as an auto-login
 
 Its role is narrower and safer than the legacy flow:
 
 * generate is public and anti-enumeration hardened
 * verify consumes the code atomically to prevent replay
 * verify never creates a user account
-* verify only succeeds for an existing, non-deleted registered account
-* on success it marks that account verified and issues the same session artifacts used by the main login flow
+* on success it routes to the appropriate branch based on authentication state and account existence
 
-This means `EmailVerification` is no longer an account-creation mechanism. It is a controlled email-proof step that can bootstrap a session only after a user record already exists.
+This means `EmailVerification` is no longer a simple account-verification mechanism. It is a controlled email-proof step that serves both new and existing users through distinct, well-tested branches.
 
 ### 3. `AuthRoute` Owns Refresh Rotation and Renewal Policy
 
@@ -137,12 +145,13 @@ For NGO users, refresh also preserves session context and enforces current polic
 The hardened session lifecycle is now:
 
 1. A user first establishes identity through one of the explicit bootstrap paths:
-	regular login, SMS verification, email verification, or NGO registration/login.
-2. A successful bootstrap path returns a short-lived access token plus an `HttpOnly` refresh-token cookie.
-3. Protected routes use the access token through the JWT middleware layer.
-4. When the access token expires, the client calls `AuthRoute` to rotate the refresh token and obtain a fresh access token.
+	email verification (3-branch), SMS verification, or NGO registration/login.
+2. For regular users, the frontend uses the verification proof to register (`POST /account/register`), which returns a session.
+3. For existing users, email or SMS verification can auto-login directly.
+4. Protected routes use the access token through the JWT middleware layer.
+5. When the access token expires, the client calls `AuthRoute` to rotate the refresh token and obtain a fresh access token.
 
-Compared with the earlier legacy state, this is a material improvement because registration, verification, login, and refresh now have distinct responsibilities, consistent token semantics, and test-backed behavior that can be audited as one coherent auth system.
+Compared with the earlier legacy state, this is a material improvement because passwords are eliminated for regular users, registration requires cryptographic proof of identity ownership, and login/register/refresh now have distinct responsibilities with test-backed behavior.
 
 ---
 
@@ -181,7 +190,7 @@ There are two different ways to measure progress, and they should not be confuse
 
 For the first completed reference Lambdas, the hardening coverage is high.
 
-* `UserRoutes` documented **19 legacy security findings**, and its changelog states those legacy findings were addressed in this refactor stage
+* `UserRoutes` documented **19 legacy security findings**, and its changelog states those legacy findings were addressed in this refactor stage. The auth flow has since been upgraded to **verification-first** (no passwords for regular users, frozen login/password routes returning 405)
 * `PetBasicInfo` documented **13 legacy security findings** across auth, ownership, destructive operations, route matching, sanitization, and error handling
 * `EmailVerification` completed strict re-audit, **30 / 30 passing** integration tests, and live deployed verification for generate/verify behavior
 * `AuthRoute` now has a dedicated **22-case** suite in `__tests__/test-authroute.test.js` covering handler lifecycle, public-resource bypass, JWT middleware branches, NGO-claim token issuance, NGO approval denial, replay rejection, and refresh rotation
@@ -247,6 +256,7 @@ For `UserRoutes`, the patched issues include:
 * inconsistent response format and status handling
 * fuzzy route matching with `includes()`
 * monolithic handler coupling that made security regressions easy
+* **verification-first flow**: `POST /account/login`, `PUT /account/update-password`, and `POST /account/login-2` are now frozen (405), eliminating credential-based attack vectors for regular users
 
 For `PetBasicInfo`, the patched issues include:
 
@@ -270,6 +280,7 @@ For `EmailVerification`, the hardened flow now includes:
 * no placeholder or pre-verification user creation
 * dedicated verification-state storage instead of storing transient codes on `User`
 * one-time code consumption with replay prevention
+* 3-branch verify: authenticated user → link identifier, new user → `isNewUser: true`, existing user → auto-login with token
 * stronger refresh-cookie scoping aligned to `/auth/refresh`
 * exact-route dispatch and public-route allowlisting
 * rate limiting on both generate and verify flows
@@ -502,7 +513,7 @@ This is why the work may feel slower than surface-level coding changes: secure m
 
 ## Conclusion
 
-As of 2026-04-18, the monorepo refactor effort has produced 9 strong reference implementations, 548 declared integration test cases across those refactored lambdas plus 6 declared SMS unit test cases, and a verified pattern for continuing the remaining Lambda modernization work.
+As of 2026-04-19, the monorepo refactor effort has produced 9 strong reference implementations, 535 declared integration test cases across those refactored lambdas plus 6 declared SMS unit test cases and 28 declared auth-workflow unit test cases, and a verified pattern for continuing the remaining Lambda modernization work.
 
 The completed refactors show clear improvement across:
 
@@ -516,4 +527,4 @@ Most importantly, they demonstrate why in-situ modernization is the right first 
 
 This is not the end-state architecture yet, but it is the correct and necessary foundation for getting there safely.
 
-If the objective is to protect the business while continuing to ship, this 2026-04-18 report should be evaluated as early security risk reduction with compounding engineering payoff, not as cosmetic refactoring.
+If the objective is to protect the business while continuing to ship, this 2026-04-19 report should be evaluated as early security risk reduction with compounding engineering payoff, not as cosmetic refactoring.

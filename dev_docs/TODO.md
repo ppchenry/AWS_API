@@ -1,3 +1,3 @@
 - [ ] add location param to ngo pet list query
 - [ ] audit petmedicalrecord changes
-- [ ] authflow lambdas test cases and docs clean up 
+- [x] authflow lambdas test cases and docs clean up 

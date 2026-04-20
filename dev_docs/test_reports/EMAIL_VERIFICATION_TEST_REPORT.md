@@ -18,7 +18,7 @@ Current status:
 - CORS preflight handling is covered for allowed, disallowed, and missing origins.
 - The frozen `/account/generate-email-code-2` route remains locked down.
 - Generate and verify flows are covered for validation, anti-enumeration, and response-shape consistency.
-- Verification now requires an existing registered account and never creates a new user record.
+- Verification uses a 3-branch flow: (1) authenticated user → link identifier to account, (2) new user (no existing account) → returns `{ verified: true, isNewUser: true }`, (3) existing unverified user → auto-login with token issuance.
 - Replay prevention, consumed-code handling, and existing-user reuse are all covered with DB-backed tests.
 - A real outbound email smoke test still passes.
 
@@ -61,13 +61,15 @@ Current status:
 #### Authentication & authorisation
 
 - This Lambda exposes public verification endpoints rather than JWT-protected account routes
-- Security-sensitive behavior is enforced through anti-enumeration, one-time code consumption, and account-existence checks instead of session auth
+- Authenticated users can call verify with a Bearer token to link an email to their existing account
+- Security-sensitive behavior is enforced through anti-enumeration, one-time code consumption, and the 3-branch verify logic
 
 #### Security hardening
 
 - Generate flow does not create user records before verification (`C6`)
 - Verify flow returns the same generic failure for nonexistent email and wrong code
-- Verification requires an existing registered account
+- Verification for new users (no account) returns `{ verified: true, isNewUser: true }` without creating a user record
+- Verification for existing users marks the account verified and issues session artifacts
 - Same code cannot be reused after successful verification
 - Expired codes and already-consumed codes fail generically
 - Existing and non-existing email generate flows return identical success shape

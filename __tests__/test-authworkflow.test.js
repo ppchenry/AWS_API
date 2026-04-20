@@ -316,6 +316,10 @@ function loadRegisterService({
     lean: jest.fn().mockResolvedValue(smsVerificationRecord),
   }));
 
+  // consumeVerificationProofs calls deleteOne
+  EmailVerificationCodeModel.deleteOne = jest.fn().mockResolvedValue({ deletedCount: 1 });
+  SmsVerificationCodeModel.deleteOne = jest.fn().mockResolvedValue({ deletedCount: 1 });
+
   // Duplicate check: User.findOne with $or
   UserModel.findOne = jest.fn(() => ({
     lean: jest.fn().mockResolvedValue(existingUser),
@@ -1019,5 +1023,153 @@ describe("E2E flow simulation (mock)", () => {
     expect(result.body.isNewUser).toBe(false);
     expect(result.body.token).toBe("access-token-jwt");
     expect(result.body.userId).toBe("returning-email-user");
+  });
+});
+
+// ─── Cross-Identifier Trust Regression ──────────────────────────────────────
+
+describe("Cross-identifier trust enforcement", () => {
+  test("rejects verified email + unverified phone", async () => {
+    const { register } = loadRegisterService({
+      emailVerificationRecord: { _id: TEST_EMAIL, consumedAt: new Date() },
+      smsVerificationRecord: null, // phone NOT verified
+    });
+
+    const result = await register({
+      event: {},
+      body: {
+        firstName: "John",
+        lastName: "Doe",
+        email: TEST_EMAIL,
+        phoneNumber: TEST_PHONE,
+      },
+    });
+
+    expect(result.statusCode).toBe(403);
+    expect(result.body.success).toBe(false);
+    expect(result.body.errorKey).toBe("register.errors.phoneVerificationRequired");
+  });
+
+  test("rejects verified phone + unverified email", async () => {
+    const { register } = loadRegisterService({
+      emailVerificationRecord: null, // email NOT verified
+      smsVerificationRecord: { _id: TEST_PHONE, consumedAt: new Date() },
+    });
+
+    const result = await register({
+      event: {},
+      body: {
+        firstName: "Jane",
+        lastName: "Doe",
+        email: TEST_EMAIL,
+        phoneNumber: TEST_PHONE,
+      },
+    });
+
+    expect(result.statusCode).toBe(403);
+    expect(result.body.success).toBe(false);
+    expect(result.body.errorKey).toBe("register.errors.verificationRequired");
+  });
+
+  test("accepts both identifiers when both are verified", async () => {
+    const { register, mocks } = loadRegisterService({
+      emailVerificationRecord: { _id: TEST_EMAIL, consumedAt: new Date() },
+      smsVerificationRecord: { _id: TEST_PHONE, consumedAt: new Date() },
+    });
+
+    const result = await register({
+      event: {},
+      body: {
+        firstName: "Both",
+        lastName: "Verified",
+        email: TEST_EMAIL,
+        phoneNumber: TEST_PHONE,
+      },
+    });
+
+    expect(result.statusCode).toBe(201);
+    expect(result.body.success).toBe(true);
+    expect(result.body.token).toBe("access-token-jwt");
+    expect(mocks.UserModel.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: TEST_EMAIL.toLowerCase(),
+        phoneNumber: TEST_PHONE,
+      })
+    );
+  });
+});
+
+// ─── Proof Consumption After Registration ───────────────────────────────────
+
+describe("Proof consumption after registration", () => {
+  test("deletes email verification record after successful registration", async () => {
+    const { register, mocks } = loadRegisterService({
+      emailVerificationRecord: { _id: TEST_EMAIL, consumedAt: new Date() },
+    });
+
+    const result = await register({
+      event: {},
+      body: { firstName: "John", lastName: "Doe", email: TEST_EMAIL },
+    });
+
+    expect(result.statusCode).toBe(201);
+    expect(mocks.EmailVerificationCodeModel.deleteOne).toHaveBeenCalledWith({ _id: TEST_EMAIL.toLowerCase() });
+  });
+
+  test("deletes SMS verification record after successful registration", async () => {
+    const { register, mocks } = loadRegisterService({
+      smsVerificationRecord: { _id: TEST_PHONE, consumedAt: new Date() },
+    });
+
+    const result = await register({
+      event: {},
+      body: { firstName: "Jane", lastName: "Doe", phoneNumber: TEST_PHONE },
+    });
+
+    expect(result.statusCode).toBe(201);
+    expect(mocks.SmsVerificationCodeModel.deleteOne).toHaveBeenCalledWith({ _id: TEST_PHONE });
+  });
+
+  test("deletes both records when both identifiers are present", async () => {
+    const { register, mocks } = loadRegisterService({
+      emailVerificationRecord: { _id: TEST_EMAIL, consumedAt: new Date() },
+      smsVerificationRecord: { _id: TEST_PHONE, consumedAt: new Date() },
+    });
+
+    const result = await register({
+      event: {},
+      body: {
+        firstName: "Both",
+        lastName: "User",
+        email: TEST_EMAIL,
+        phoneNumber: TEST_PHONE,
+      },
+    });
+
+    expect(result.statusCode).toBe(201);
+    expect(mocks.EmailVerificationCodeModel.deleteOne).toHaveBeenCalledWith({ _id: TEST_EMAIL.toLowerCase() });
+    expect(mocks.SmsVerificationCodeModel.deleteOne).toHaveBeenCalledWith({ _id: TEST_PHONE });
+  });
+
+  test("does not delete proof records when registration fails (duplicate)", async () => {
+    const existingUser = {
+      _id: "existing-id",
+      email: TEST_EMAIL,
+      phoneNumber: null,
+      role: "user",
+      verified: true,
+    };
+    const { register, mocks } = loadRegisterService({
+      existingUser,
+      emailVerificationRecord: { _id: TEST_EMAIL, consumedAt: new Date() },
+    });
+
+    const result = await register({
+      event: {},
+      body: { firstName: "John", lastName: "Doe", email: TEST_EMAIL },
+    });
+
+    expect(result.statusCode).toBe(409);
+    expect(mocks.EmailVerificationCodeModel.deleteOne).not.toHaveBeenCalled();
   });
 });

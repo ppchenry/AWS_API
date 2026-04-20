@@ -1,5 +1,29 @@
 # Changelog – EmailVerification Lambda
 
+## [2.4.0] – 2026-04-19 — 3-branch verify and verification-first support
+
+### Scope
+
+EmailVerification verify endpoint now uses a **3-branch flow** to support the verification-first auth model:
+
+1. **Authenticated user** (Bearer token present): links the verified email to the caller's existing account
+2. **New user** (no account exists): returns `{ verified: true, isNewUser: true }` so the frontend can proceed to registration with proof
+3. **Existing user** (account exists, not authenticated): marks account verified and issues a full session (auto-login)
+
+This enables the new `UserRoutes` verification-first registration flow where users verify first, then register with the consumed proof.
+
+### Verification
+
+- `sam build EmailVerificationFunction`
+- `npx jest --runInBand --testPathPattern=test-emailverification --modulePathIgnorePatterns=".aws-sam" --no-coverage`
+- Result: `30 passed`
+
+### Result Of This Stage
+
+EmailVerification now serves both new and existing users through distinct, well-tested branches. The 30-test integration suite covers all three branches plus validation, anti-enumeration, and replay prevention.
+
+---
+
 ## [2.3.1] – 2026-04-16 — Zod 4 standardization and verification refresh
 
 ### Scope

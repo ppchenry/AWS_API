@@ -401,13 +401,13 @@ describe("Tier 2: generate does not create User records (C6)", () => {
   );
 });
 
-describe("Tier 2: verify requires an existing registered user", () => {
+describe("Tier 2: verify returns isNewUser when no account exists", () => {
   const testEmail = `verify-create-${Date.now()}@noexist.example.com`;
   const testCode = "314159";
   const codeHash = crypto.createHash("sha256").update(testCode).digest("hex");
 
   dbTest(
-    "verification fails generically when no user exists for the verified email",
+    "verification succeeds with isNewUser:true when no user exists for the verified email",
     async () => {
       await verificationCodesCol().insertOne({
         _id: testEmail,
@@ -424,10 +424,13 @@ describe("Tier 2: verify requires an existing registered user", () => {
         email: testEmail,
         resetCode: testCode,
       });
-      expect(res.status).toBe(400);
-      expect(res.body.success).toBe(false);
-      expect(res.body.errorKey).toBe("verificationFailed");
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.verified).toBe(true);
+      expect(res.body.isNewUser).toBe(true);
+      expect(res.body).not.toHaveProperty("token");
 
+      // No user should have been created — registration is a separate step
       const afterUser = await usersCol().findOne({ email: testEmail });
       expect(afterUser).toBeNull();
 

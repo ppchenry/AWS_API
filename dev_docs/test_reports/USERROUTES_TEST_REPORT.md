@@ -1,11 +1,12 @@
 # UserRoutes Test Report
 
-**Date:** 2026-04-15
+**Date:** 2026-04-19
 **Service:** `UserRoutes` Lambda (AWS SAM)
 **Primary integration suite:** `__tests__/test-userroutes.test.js`
-**Additional unit suite:** `__tests__/test-sms-service.test.js`
-**Result:** **106 / 106 integration tests passed ✅**
+**Additional unit suites:** `__tests__/test-sms-service.test.js`, `__tests__/test-authworkflow.test.js`
+**Result:** **93 / 93 integration tests passed ✅**
 **Additional SMS unit coverage:** **6 / 6 tests passed ✅**
+**Additional auth-workflow unit coverage:** **28 / 28 tests passed ✅**
 
 ---
 
@@ -15,36 +16,39 @@ Tests were run against a live SAM local environment connected to the UAT MongoDB
 
 Current status:
 
-- The main UserRoutes integration suite is fully green and reflects the new register-first auth contract.
+- The main UserRoutes integration suite is fully green and reflects the new **verification-first** auth contract.
+- Regular login (`POST /account/login`), password update (`PUT /account/update-password`), and legacy login-2 (`POST /account/login-2`) are **frozen routes** returning `405`. Login tests that exercised the old credential flow have been removed.
+- Regular registration (`POST /account/register`) now requires a consumed email or SMS verification proof within a 10-minute window. The integration suite seeds `email_verification_codes` / `sms_verification_codes` records to exercise this.
 - The `POST /account/delete-user-with-email` block now passes after isolating its sacrificial-user setup from earlier register rate-limit state.
 - The SMS service unit suite is fully green and covers the Twilio-backed verify behavior that the integration suite intentionally does not exercise live.
+- The auth-workflow unit suite (`test-authworkflow.test.js`, 28 tests) covers the full verification-first lifecycle: email verify → register, SMS verify → register, frozen-route enforcement, and edge cases.
 - NGO auth coverage now includes register-issued session assertions and a DB-backed login-denial check when NGO approval is revoked.
 
 ### 1.1 Endpoint Coverage
 
-| Endpoint | Method | Tests |
-| --- | --- | --- |
-| `/account/register` | POST | 13 |
-| `/account/login` | POST | 11 |
-| `/account/login-2` | POST | 2 |
-| `/account/{userId}` | GET | 2 |
-| `/account` | PUT | 6 |
-| `/account/update-password` | PUT | 4 |
-| `/account/update-image` | POST | 3 |
-| `/account/user-list` | GET | 4 |
-| `/account/register-by-email` etc. | POST | 3 |
-| `/account/register-ngo` | POST | 10 |
-| `/account/login` (NGO) | POST | 2 |
-| `/account/edit-ngo/{ngoId}` | GET | 5 |
-| `/account/edit-ngo/{ngoId}` | PUT | 5 |
-| `/account/edit-ngo/{ngoId}/pet-placement-options` | GET | 5 |
-| `/account/delete-user-with-email` | POST | 6 |
-| `/account/generate-sms-code` | POST | 2 |
-| `/account/verify-sms-code` | POST | 3 |
-| `/account/{userId}` | DELETE | 7 |
-| Cross-registration duplicate protection | — | 1 |
-| Security (cross-cutting) | — | 13 |
-| **Total** | | **106** |
+| Endpoint | Method | Tests | Notes |
+| --- | --- | --- | --- |
+| `/account/register` | POST | 9 | Verification-first flow; requires consumed proof |
+| `/account/login` | POST | 5 | Frozen route (405) + auth middleware tests |
+| `/account/login-2` | POST | 2 | Frozen route (405) |
+| `/account/{userId}` | GET | 2 | |
+| `/account` | PUT | 6 | |
+| `/account/update-password` | PUT | 1 | Frozen route (405) |
+| `/account/update-image` | POST | 3 | |
+| `/account/user-list` | GET | 4 | |
+| `/account/register-by-email` etc. | POST | 3 | Dead routes (405) via `test.each` |
+| `/account/register-ngo` | POST | 10 | NGO still uses passwords |
+| `/account/login` (NGO) | POST | 1 | Frozen route (405); NGO token from register |
+| `/account/edit-ngo/{ngoId}` | GET | 5 | |
+| `/account/edit-ngo/{ngoId}` | PUT | 5 | |
+| `/account/edit-ngo/{ngoId}/pet-placement-options` | GET | 5 | |
+| `/account/delete-user-with-email` | POST | 6 | |
+| `/account/generate-sms-code` | POST | 2 | |
+| `/account/verify-sms-code` | POST | 3 | |
+| `/account/{userId}` | DELETE | 7 | |
+| Cross-registration duplicate protection | — | 1 | |
+| Security (cross-cutting) | — | 13 | |
+| **Total** | | **93** | |
 
 ### 1.1.1 SMS Unit Coverage
 
@@ -120,8 +124,10 @@ Every required field and every business rule is checked individually:
 - **Registration throttling** — repeated register and NGO-register attempts are rate-limited and return `429`
 - **Mass assignment prevention** — extra fields (`role`, `password`, `credit`) in `PUT /account` are silently stripped by Zod; the request succeeds but the database row is unaffected
 - **Registration role hardening** — regular `POST /account/register` ignores a caller-supplied `role` and still creates a standard user
-- **Register-first flow** — regular `POST /account/register` is creation-only and does not issue a session
-- **Duplicate unverified signup recovery** — regular `POST /account/register` returns `201` with `continueVerification: true` for existing unverified email/phone identities so the frontend can resume verification instead of being forced into a hard conflict path
+- **Verification-first flow** — regular `POST /account/register` requires a consumed email or SMS verification code within a 10-minute window; no password is collected for regular users. Returns `{ userId, role, isVerified, token }` with `201`
+- **Frozen login route** — `POST /account/login` returns `405` for all callers (regular users authenticate via verify → register)
+- **Frozen password route** — `PUT /account/update-password` returns `405` (passwords are not used by regular users)
+- **Frozen login-2 route** — `POST /account/login-2` returns `405`
 - **NGO session alignment** — `POST /account/register-ngo` now issues an NGO session and `POST /account/login` rejects NGOs whose approval has been revoked
 - **Cross-account conflict prevention** — profile updates and NGO edit reject email conflicts against existing accounts → `409`
 - **Body `userId` injection on NGO edit** — `userId` in the request body is ignored; the server always uses the JWT identity
@@ -286,11 +292,15 @@ The `POST /account/delete-user-with-email` setup now uses its own `x-forwarded-f
 ### Latest Verified Results
 
 ```text
-PASS  __tests__/test-userroutes.test.js (151.304 s)
+PASS  __tests__/test-userroutes.test.js
 Test Suites: 1 passed, 1 total
-Tests:       106 passed, 106 total
+Tests:       93 passed, 93 total
 
 PASS  __tests__/test-sms-service.test.js
 Test Suites: 1 passed, 1 total
 Tests:       6 passed, 6 total
+
+PASS  __tests__/test-authworkflow.test.js
+Test Suites: 1 passed, 1 total
+Tests:       28 passed, 28 total
 ```
