@@ -328,144 +328,313 @@ Resources:
   #         TEST_NGO_ID: ""
   #         NODE_ENV: "development"
 
-  PetMedicalRecordFunction:
+  # PetMedicalRecordFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Timeout: 60
+  #     MemorySize: 512
+  #     CodeUri: functions/PetMedicalRecord/
+  #     Handler: index.handler
+  #     Runtime: nodejs22.x
+  #     Events:
+  #       MedicalRecordOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medical-record
+  #           Method: OPTIONS
+  #       MedicalRecordIdOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medical-record/{medicalID}
+  #           Method: OPTIONS
+  #       MedicationRecordOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medication-record
+  #           Method: OPTIONS
+  #       MedicationRecordIdOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medication-record/{medicationID}
+  #           Method: OPTIONS
+  #       DewormRecordOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/deworm-record
+  #           Method: OPTIONS
+  #       DewormRecordIdOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/deworm-record/{dewormID}
+  #           Method: OPTIONS
+  #       BloodTestRecordOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/blood-test-record
+  #           Method: OPTIONS
+  #       BloodTestRecordIdOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/blood-test-record/{bloodTestID}
+  #           Method: OPTIONS
+  #       MedicalRecordGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medical-record
+  #           Method: GET
+  #       MedicalRecordPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medical-record
+  #           Method: POST
+  #       MedicalRecordPut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medical-record/{medicalID}
+  #           Method: PUT
+  #       MedicalRecordDelete:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medical-record/{medicalID}
+  #           Method: DELETE
+  #       MedicationRecordGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medication-record
+  #           Method: GET
+  #       MedicationRecordPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medication-record
+  #           Method: POST
+  #       MedicationRecordPut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medication-record/{medicationID}
+  #           Method: PUT
+  #       MedicationRecordDelete:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medication-record/{medicationID}
+  #           Method: DELETE
+  #       DewormRecordGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/deworm-record
+  #           Method: GET
+  #       DewormRecordPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/deworm-record
+  #           Method: POST
+  #       DewormRecordPut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/deworm-record/{dewormID}
+  #           Method: PUT
+  #       DewormRecordDelete:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/deworm-record/{dewormID}
+  #           Method: DELETE
+  #       BloodTestRecordGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/blood-test-record
+  #           Method: GET
+  #       BloodTestRecordPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/blood-test-record
+  #           Method: POST
+  #       BloodTestRecordPut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/blood-test-record/{bloodTestID}
+  #           Method: PUT
+  #       BloodTestRecordDelete:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/blood-test-record/{bloodTestID}
+  #           Method: DELETE
+  #     Environment:
+  #       Variables:
+  #         MONGODB_URI: ""
+  #         JWT_SECRET: ""
+  #         JWT_BYPASS: ""
+  #         ALLOWED_ORIGINS: ""
+  #         TEST_PET_ID: ""
+  #         TEST_OWNER_USER_ID: ""
+  #         TEST_NGO_ID: ""
+  #         NODE_ENV: "development"
+
+  SFExpressRoutesFunction: 
     Type: AWS::Serverless::Function
     Properties:
       Timeout: 60
       MemorySize: 512
-      CodeUri: functions/PetMedicalRecord/
+      CodeUri: functions/SFExpressRoutes/
       Handler: index.handler
       Runtime: nodejs22.x
       Events:
-        MedicalRecordOptions:
+        SFExpressCreateOrderPost:
           Type: Api
           Properties:
-            Path: /pets/{petID}/medical-record
-            Method: OPTIONS
-        MedicalRecordIdOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medical-record/{medicalID}
-            Method: OPTIONS
-        MedicationRecordOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medication-record
-            Method: OPTIONS
-        MedicationRecordIdOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medication-record/{medicationID}
-            Method: OPTIONS
-        DewormRecordOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/deworm-record
-            Method: OPTIONS
-        DewormRecordIdOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/deworm-record/{dewormID}
-            Method: OPTIONS
-        BloodTestRecordOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/blood-test-record
-            Method: OPTIONS
-        BloodTestRecordIdOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/blood-test-record/{bloodTestID}
-            Method: OPTIONS
-        MedicalRecordGet:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medical-record
-            Method: GET
-        MedicalRecordPost:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medical-record
+            Path: /sf-express-routes/create-order
             Method: POST
-        MedicalRecordPut:
+        SFExpressCreateOrderOptions:
           Type: Api
           Properties:
-            Path: /pets/{petID}/medical-record/{medicalID}
-            Method: PUT
-        MedicalRecordDelete:
+            Path: /sf-express-routes/create-order
+            Method: OPTIONS
+        SFExpressPickupLocationsPost:
           Type: Api
           Properties:
-            Path: /pets/{petID}/medical-record/{medicalID}
-            Method: DELETE
-        MedicationRecordGet:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medication-record
-            Method: GET
-        MedicationRecordPost:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medication-record
+            Path: /sf-express-routes/get-pickup-locations
             Method: POST
-        MedicationRecordPut:
+        SFExpressPickupLocationsOptions:
           Type: Api
           Properties:
-            Path: /pets/{petID}/medication-record/{medicationID}
-            Method: PUT
-        MedicationRecordDelete:
+            Path: /sf-express-routes/get-pickup-locations
+            Method: OPTIONS
+        SFExpressGetTokenPost:
           Type: Api
           Properties:
-            Path: /pets/{petID}/medication-record/{medicationID}
-            Method: DELETE
-        DewormRecordGet:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/deworm-record
-            Method: GET
-        DewormRecordPost:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/deworm-record
+            Path: /sf-express-routes/get-token
             Method: POST
-        DewormRecordPut:
+        SFExpressGetTokenOptions:
           Type: Api
           Properties:
-            Path: /pets/{petID}/deworm-record/{dewormID}
-            Method: PUT
-        DewormRecordDelete:
+            Path: /sf-express-routes/get-token
+            Method: OPTIONS
+        SFExpressGetAreaPost:
           Type: Api
           Properties:
-            Path: /pets/{petID}/deworm-record/{dewormID}
-            Method: DELETE
-        BloodTestRecordGet:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/blood-test-record
-            Method: GET
-        BloodTestRecordPost:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/blood-test-record
+            Path: /sf-express-routes/get-area
             Method: POST
-        BloodTestRecordPut:
+        SFExpressGetAreaOptions:
           Type: Api
           Properties:
-            Path: /pets/{petID}/blood-test-record/{bloodTestID}
-            Method: PUT
-        BloodTestRecordDelete:
+            Path: /sf-express-routes/get-area
+            Method: OPTIONS
+        SFExpressGetNetCodePost:
           Type: Api
           Properties:
-            Path: /pets/{petID}/blood-test-record/{bloodTestID}
-            Method: DELETE
+            Path: /sf-express-routes/get-netCode
+            Method: POST
+        SFExpressGetNetCodeOptions:
+          Type: Api
+          Properties:
+            Path: /sf-express-routes/get-netCode
+            Method: OPTIONS
+        SFExpressPrintCloudWayBillPost:
+          Type: Api
+          Properties:
+            Path: /v2/sf-express-routes/print-cloud-waybill
+            Method: POST
+        SFExpressPrintCloudWayBillOptions:
+          Type: Api
+          Properties:
+            Path: /v2/sf-express-routes/print-cloud-waybill
+            Method: OPTIONS
       Environment:
         Variables:
-          MONGODB_URI: ""
           JWT_SECRET: ""
           JWT_BYPASS: ""
           ALLOWED_ORIGINS: ""
-          TEST_PET_ID: ""
-          TEST_OWNER_USER_ID: ""
-          TEST_NGO_ID: ""
+          MONGODB_URI: ""
+          SF_CUSTOMER_CODE: ""
+          SF_PRODUCTION_CHECK_CODE: ""
+          SF_SANDBOX_CHECK_CODE: ""
+          SMTP_FROM: ""
+          SMTP_HOST: ""
+          SMTP_PASS: ""
+          SMTP_PORT: ""
+          SMTP_USER: ""
+          SF_ADDRESS_API_KEY: ""
+          NODE_ENV: "development"
+
+  OrderVerification:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 60
+      MemorySize: 512
+      CodeUri: functions/OrderVerification/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Events:
+        OrderVerificationSupplierGet:
+          Type: Api
+          Properties:
+            Path: /v2/orderVerification/supplier/{orderId}
+            Method: GET
+        OrderVerificationSupplierPut:
+          Type: Api
+          Properties:
+            Path: /v2/orderVerification/supplier/{orderId}
+            Method: PUT
+        OrderVerificationSupplierOptions:
+          Type: Api
+          Properties:
+            Path: /v2/orderVerification/supplier/{orderId}
+            Method: OPTIONS
+        OrderVerificationWhatsappOrderLinkGet:
+          Type: Api
+          Properties:
+            Path: /v2/orderVerification/whatsapp-order-link/{_id}
+            Method: GET
+        OrderVerificationWhatsappOrderLinkOptions:
+          Type: Api
+          Properties:
+            Path: /v2/orderVerification/whatsapp-order-link/{_id}
+            Method: OPTIONS
+        OrderVerificationOrdersInfoGet:
+          Type: Api
+          Properties:
+            Path: /v2/orderVerification/ordersInfo/{tempId}
+            Method: GET
+        OrderVerificationOrdersInfoOptions:
+          Type: Api
+          Properties:
+            Path: /v2/orderVerification/ordersInfo/{tempId}
+            Method: OPTIONS
+        OrderVerificationGetAllOrdersGet:
+          Type: Api
+          Properties:
+            Path: /v2/orderVerification/getAllOrders
+            Method: GET
+        OrderVerificationGetAllOrdersOptions:
+          Type: Api
+          Properties:
+            Path: /v2/orderVerification/getAllOrders
+            Method: OPTIONS
+        OrderVerificationTagIdGet:
+          Type: Api
+          Properties:
+            Path: /v2/orderVerification/{tagId}
+            Method: GET
+        OrderVerificationTagIdPut:
+          Type: Api
+          Properties:
+            Path: /v2/orderVerification/{tagId}
+            Method: PUT
+        OrderVerificationTagIdDelete:
+          Type: Api
+          Properties:
+            Path: /v2/orderVerification/{tagId}
+            Method: DELETE
+        OrderVerificationTagIdOptions:
+          Type: Api
+          Properties:
+            Path: /v2/orderVerification/{tagId}
+            Method: OPTIONS
+      Environment:
+        Variables:
+          JWT_SECRET: ""
+          JWT_BYPASS: ""
+          ALLOWED_ORIGINS: ""
+          MONGODB_URI: ""
+          WHATSAPP_BEARER_TOKEN: ""
           NODE_ENV: "development"
 
   # purchaseConfirmationFunction:

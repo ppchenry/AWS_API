@@ -2,12 +2,13 @@
   "name": "orderverification",
   "version": "1.0.0",
   "main": "index.js",
-  "type": "module",
+  "type": "commonjs",
   "dependencies": {
     "bson": "^6.10.4",
     "busboy": "^0.3.1",
     "debug": "^4.4.1",
     "dicer": "^0.3.0",
+    "jsonwebtoken": "^9.0.2",
     "kareem": "^2.6.3",
     "lambda-multipart-parser": "^1.0.1",
     "memory-pager": "^1.5.0",
@@ -23,7 +24,8 @@
     "streamsearch": "^0.1.2",
     "tr46": "^5.1.1",
     "webidl-conversions": "^7.0.0",
-    "whatwg-url": "^14.2.0"
+    "whatwg-url": "^14.2.0",
+    "zod": "^4.3.6"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

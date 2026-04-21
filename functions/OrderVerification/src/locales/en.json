@@ -1,0 +1,28 @@
+{
+  "others": {
+    "internalError": "Internal server error",
+    "methodNotAllowed": "Method not allowed",
+    "invalidJSON": "Invalid JSON body",
+    "missingParams": "Required parameters are missing",
+    "unauthorized": "Unauthorized",
+    "originNotAllowed": "Origin not allowed",
+    "invalidInput": "Invalid input"
+  },
+  "orderVerification": {
+    "errors": {
+      "missingOrderId": "orderId is required",
+      "missingTagId": "tagId is required",
+      "missingTempId": "tempId is required",
+      "missingVerificationId": "_id is required",
+      "invalidVerificationId": "_id is invalid",
+      "notFound": "Order verification not found",
+      "orderNotFound": "Order info not found",
+      "noOrders": "No latest PTag orders found",
+      "duplicateOrderId": "Duplicated tag info with OrderId",
+      "invalidDate": "Invalid date format",
+      "invalidField": "Invalid field value",
+      "invalidPendingStatus": "pendingStatus must be a boolean",
+      "invalidStaffVerification": "staffVerification must be a boolean"
+    }
+  }
+}

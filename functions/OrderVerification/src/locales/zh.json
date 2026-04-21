@@ -1,0 +1,28 @@
+{
+  "others": {
+    "internalError": "伺服器內部錯誤",
+    "methodNotAllowed": "不支援的請求方法",
+    "invalidJSON": "JSON 請求格式不正確",
+    "missingParams": "缺少必要參數",
+    "unauthorized": "未授權",
+    "originNotAllowed": "來源網域不被允許",
+    "invalidInput": "輸入資料不正確"
+  },
+  "orderVerification": {
+    "errors": {
+      "missingOrderId": "必須提供 orderId",
+      "missingTagId": "必須提供 tagId",
+      "missingTempId": "必須提供 tempId",
+      "missingVerificationId": "必須提供 _id",
+      "invalidVerificationId": "_id 格式不正確",
+      "notFound": "找不到訂單驗證資料",
+      "orderNotFound": "找不到訂單資料",
+      "noOrders": "找不到最新 PTag 訂單",
+      "duplicateOrderId": "OrderId 重複，標籤資料已存在",
+      "invalidDate": "日期格式不正確",
+      "invalidField": "欄位值不正確",
+      "invalidPendingStatus": "pendingStatus 必須為布林值",
+      "invalidStaffVerification": "staffVerification 必須為布林值"
+    }
+  }
+}

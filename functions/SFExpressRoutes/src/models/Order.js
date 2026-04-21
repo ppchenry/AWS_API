@@ -57,14 +57,12 @@ const OrderSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    // only for custom order
     petName: {
       type: String,
     },
     petContact: {
       type: String,
     },
-    // SF Express order info
     sfWayBillNumber: {
       type: String,
     },
