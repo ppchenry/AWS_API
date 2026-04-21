@@ -9,7 +9,7 @@ const RECORD_ID_PARAMS = {
   "/pets/{petID}/medical-record/{medicalID}": "medicalID",
   "/pets/{petID}/medication-record/{medicationID}": "medicationID",
   "/pets/{petID}/deworm-record/{dewormID}": "dewormID",
-  "/pets/{petID}/blood-test-record/{bloodTestID}": "bloodTestID",
+  "/v2/pets/{petID}/blood-test-record/{bloodTestID}": "bloodTestID",
 };
 
 /**

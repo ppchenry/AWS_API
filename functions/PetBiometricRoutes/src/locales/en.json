@@ -1,0 +1,34 @@
+{
+  "others": {
+    "invalidInput": "Invalid request payload.",
+    "invalidJSON": "Invalid JSON format.",
+    "missingParams": "Missing parameters.",
+    "methodNotAllowed": "Method not allowed for this path.",
+    "internalError": "Something went wrong. Please try again later.",
+    "unauthorized": "Authentication required. Please log in.",
+    "rateLimited": "Too many requests. Please try again later.",
+    "serviceUnavailable": "Service temporarily unavailable. Please try again later."
+  },
+  "petBiometric": {
+    "forbidden": "You do not have permission to access this pet biometric resource.",
+    "invalidPetId": "Invalid pet ID.",
+    "petNotFound": "Pet not found.",
+    "notRegistered": "Pet biometric data has not been registered.",
+    "invalidCredentials": "Cannot find user with the corresponding access key and secret key.",
+    "invalidImageUrl": "Invalid image URL format.",
+    "unsupportedFormat": "Unsupported image format.",
+    "fileTooLarge": "Image file is too large.",
+    "fileTooSmall": "Image file is empty.",
+    "uploadFailed": "Unable to upload the image at this time.",
+    "errors": {
+      "petIdRequired": "Pet ID is required.",
+      "imageArrayRequired": "All face image arrays are required.",
+      "accessKeyRequired": "Access key is required.",
+      "secretKeyRequired": "Secret key is required.",
+      "imageRequired": "Either image_url or files[0] is required.",
+      "fileNameRequired": "File name is required.",
+      "contentTypeRequired": "File content type is required.",
+      "fileContentRequired": "File content is required."
+    }
+  }
+}

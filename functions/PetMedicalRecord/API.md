@@ -131,10 +131,10 @@ DELETE success field: `id`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/pets/{petID}/blood-test-record` | JWT | List blood-test records for an authorized pet |
-| POST | `/pets/{petID}/blood-test-record` | JWT | Create a blood-test record |
-| PUT | `/pets/{petID}/blood-test-record/{bloodTestID}` | JWT | Update a blood-test record |
-| DELETE | `/pets/{petID}/blood-test-record/{bloodTestID}` | JWT | Delete a blood-test record |
+| GET | `/v2/pets/{petID}/blood-test-record` | JWT | List blood-test records for an authorized pet |
+| POST | `/v2/pets/{petID}/blood-test-record` | JWT | Create a blood-test record |
+| PUT | `/v2/pets/{petID}/blood-test-record/{bloodTestID}` | JWT | Update a blood-test record |
+| DELETE | `/v2/pets/{petID}/blood-test-record/{bloodTestID}` | JWT | Delete a blood-test record |
 
 POST/PUT body:
 ```json

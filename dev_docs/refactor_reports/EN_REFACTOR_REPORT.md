@@ -2,7 +2,7 @@
 
 ## Overview
 
-The first refactor stage of the monorepo modernization effort has now completed 12 Lambdas in place:
+The first refactor stage of the monorepo modernization effort has now completed 13 Lambdas in place:
 
 * `functions/UserRoutes`
 * `functions/PetBasicInfo`
@@ -16,6 +16,7 @@ The first refactor stage of the monorepo modernization effort has now completed 
 * `functions/purchaseConfirmation`
 * `functions/SFExpressRoutes`
 * `functions/OrderVerification`
+* `functions/PetBiometricRoutes`
 
 This work sits inside the broader monorepo cleanup described in [README.md](README.md), follows the modernization baseline in [dev_docs/REFACTOR_CHECKLIST.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/REFACTOR_CHECKLIST.md), and is prioritized using [dev_docs/LAMBDA_REFACTOR_INVENTORY.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/LAMBDA_REFACTOR_INVENTORY.md).
 
@@ -33,7 +34,8 @@ The current test-file-based case inventory is:
 * `purchaseConfirmation`: **65 declared integration test cases** (63 passing, 2 skipped) in `__tests__/test-purchaseconfirmation.test.js`
 * `SFExpressRoutes`: **31 declared integration test cases** (26 passing, 5 skipped) in `__tests__/test-sfexpressroutes.test.js` plus **15 declared unit test cases** in `__tests__/test-sfexpressroutes-unit.test.js`
 * `OrderVerification`: **39 declared integration test cases** in `__tests__/test-orderverification.test.js`
-* Combined: **670 declared integration-style test cases across the 12 refactored Lambdas + 15 declared SFExpressRoutes unit test cases + 6 declared SMS unit test cases + 28 declared auth-workflow unit test cases + 3 declared PetMedicalRecord aggregate unit test cases**
+* `PetBiometricRoutes`: **41 declared integration test cases** in `__tests__/test-petbiometricroutes.test.js` with the latest SAM-local run executing **33** and environment-gating **8** business-database-dependent cases because the external business cluster was unavailable from the current machine
+* Combined: **711 declared integration-style test cases across the 13 refactored Lambdas + 15 declared SFExpressRoutes unit test cases + 6 declared SMS unit test cases + 28 declared auth-workflow unit test cases + 3 declared PetMedicalRecord aggregate unit test cases**
 
 These counts describe declared cases in test files. They are not, by themselves, a same-day execution transcript.
 
@@ -50,8 +52,7 @@ The core account auth flow is now also clearer at the monorepo level:
 * `EmailVerification` handles public email proof with a **3-branch verify**: (1) authenticated user → link email to account, (2) new user → `{ verified: true, isNewUser: true }`, (3) existing user → auto-login with token
 * `AuthRoute` handles refresh-token rotation and access-token renewal
 
-
-The biggest improvement so far is security hardening. This refactor stage did not just clean up code structure. It materially reduced known exploitability in twelve high-value Lambda surfaces already modernized.
+The biggest improvement so far is security hardening. This refactor stage did not just clean up code structure. It materially reduced known exploitability in thirteen high-value Lambda surfaces already modernized.
 
 For non-technical stakeholders, the important point is this: this work was not optional cleanup. It removed weaknesses that could have allowed unauthorized data access, unauthorized account or pet deletion, account takeover, sensitive data leakage, brute-force abuse, and route-level authorization bypass. In a startup environment, those are not theoretical engineering concerns. They are business risks that can turn into customer-impacting incidents, emergency hotfixes, support burden, reputational damage, and loss of trust.
 
@@ -63,7 +64,7 @@ The monorepo started from a legacy state where many Lambdas duplicated helpers, 
 
 As of 2026-04-21, the program now has:
 
-* 12 modularized reference Lambdas
+* 13 modularized reference Lambdas
 * a written modernization standard
 * a line-count and risk-based Lambda inventory
 * integration-test-backed verification for the first completed targets
@@ -73,11 +74,11 @@ The completed Lambdas now act as the implementation baseline for the remaining i
 
 Based on `dev_docs/LAMBDA_REFACTOR_INVENTORY.md`, the official refactor scope is **22** Lambdas (with `adoption_website`, `AuthorizerRoute`, `TestIPLambda`, and `WhatsappRoute` explicitly listed as out-of-plan).
 
-By inventory scope, **12 of 22** Lambdas are now at the new hardened baseline. That is roughly **55%** completed, with **10 of 22** (about **45%**) remaining in-plan work.
+By inventory scope, **13 of 22** Lambdas are now at the new hardened baseline. That is roughly **59%** completed, with **9 of 22** (about **41%**) remaining in-plan work.
 
 For workspace context, there are currently 26 function folders total; using that denominator alone would understate progress because 4 are intentionally excluded from the refactor plan.
 
-That also means the completed work should be seen as high-leverage groundwork, not as isolated refactoring. These first 12 Lambdas establish the secure pattern, the test strategy, and the operational standard that the remaining Lambdas can now follow.
+That also means the completed work should be seen as high-leverage groundwork, not as isolated refactoring. These first 13 Lambdas establish the secure pattern, the test strategy, and the operational standard that the remaining Lambdas can now follow.
 
 ---
 
@@ -151,7 +152,7 @@ For NGO users, refresh also preserves session context and enforces current polic
 The hardened session lifecycle is now:
 
 1. A user first establishes identity through one of the explicit bootstrap paths:
-	email verification (3-branch), SMS verification, or NGO registration/login.
+   email verification (3-branch), SMS verification, or NGO registration/login.
 2. For regular users, the frontend uses the verification proof to register (`POST /account/register`), which returns a session.
 3. For existing users, email or SMS verification can auto-login directly.
 4. Protected routes use the access token through the JWT middleware layer.
@@ -208,8 +209,9 @@ For the first completed reference Lambdas, the hardening coverage is high.
 * `purchaseConfirmation` now has a dedicated **65 declared (63 / 63 passing, 2 skipped)** integration suite covering CORS preflight, JWT auth, public-route bypass, RBAC, guard validation, dead-route dispatch, Zod validation (purchase + email schemas), NoSQL injection, admin pagination, soft-cancel lifecycle, server-authoritative pricing, rate limiting, and response shape consistency
 * `SFExpressRoutes` now has a dedicated **31-case integration suite** (26 passing, 5 intentionally gated live/DB tests skipped) plus **15 / 15 passing** unit tests covering JWT, CORS, malformed bodies, route safety, request validation, rate limiting, SF token retrieval, ownership checks, upstream SF failure branches, cloud-waybill failure branches, and email side-effect failures
 * `OrderVerification` now has a dedicated **39 / 39 passing** SAM-local integration suite covering JWT, CORS, guard validation, admin/developer-only order listing, DB-backed ownership checks, supplier fallback lookup, update persistence, sanitized output, duplicate orderId rejection, frozen DELETE behavior, WhatsApp non-dispatch fallback, and structured handler failure logging
+* `PetBiometricRoutes` now has a dedicated **41-case** SAM-local integration suite with **33 executed passing assertions** and **8 environment-gated business-database-dependent cases**, covering CORS, JWT auth, exact-route `405` behavior, guard validation, DB-backed ownership, registration create/update persistence, rate limiting, and the schema-backed verify contract up to the point of external business-cluster access
 
-Taken together, that is **32 documented legacy security findings** directly addressed across the first 2 completed Lambdas, plus completed strict modernization and test-backed hardening for `EmailVerification`, `AuthRoute`, `GetAllPets`, `PetLostandFound`, `EyeUpload`, `PetDetailInfo`, `PetMedicalRecord`, `purchaseConfirmation`, `SFExpressRoutes`, and `OrderVerification` covering the public verification, refresh-session, pet-access-control, pet-domain CRUD, pet-upload / analysis, extended pet-detail/source/adoption, medical-record lifecycle, purchase/order-management, shipping integration, and order-verification portions of the platform surface.
+Taken together, that is **32 documented legacy security findings** directly addressed across the first 2 completed Lambdas, plus completed strict modernization and test-backed hardening for `EmailVerification`, `AuthRoute`, `GetAllPets`, `PetLostandFound`, `EyeUpload`, `PetDetailInfo`, `PetMedicalRecord`, `purchaseConfirmation`, `SFExpressRoutes`, `OrderVerification`, and `PetBiometricRoutes` covering the public verification, refresh-session, pet-access-control, pet-domain CRUD, pet-upload / analysis, extended pet-detail/source/adoption, medical-record lifecycle, purchase/order-management, shipping integration, order-verification, and pet-biometric route surfaces.
 
 A more accurate statement is qualitative rather than percentage-based: **a substantial portion of the known code-owned attack surface identified in the first 2 audited Lambdas, plus the core public verification, pet-medical-record, purchase/order-management, SF shipping, and order-verification surfaces, has now been meaningfully hardened**.
 
@@ -224,14 +226,14 @@ This is intentionally conservative and not stated as a hard 100%, because some r
 
 At the monorepo level, the hardening is still early.
 
-* **12 of 22** inventory-scoped Lambdas have been modernized to the new baseline
-* that means roughly **55%** of the in-plan Lambda fleet has received this full hardening treatment so far
-* roughly **45%** of in-plan Lambdas still require the same route-by-route security verification and refactor discipline
+* **13 of 22** inventory-scoped Lambdas have been modernized to the new baseline
+* that means roughly **59%** of the in-plan Lambda fleet has received this full hardening treatment so far
+* roughly **41%** of in-plan Lambdas still require the same route-by-route security verification and refactor discipline
 * plus **4 workspace Lambdas** are currently tracked as intentionally out-of-plan in the inventory
 
 So the correct interpretation is:
 
-* inside the 12 completed Lambdas, most of the known code-owned attack classes on those surfaces have been handled
+* inside the 13 completed Lambdas, most of the known code-owned attack classes on those surfaces have been handled
 * across the whole monorepo, the modernization program is still in an early-to-mid phase and broad residual risk remains until more Lambdas are refactored
 
 For management, this should be read as risk retirement in progress. This refactor stage did not finish the security program, but it already removed a meaningful amount of immediately actionable risk from 12 important production surfaces.
@@ -515,7 +517,7 @@ The remaining work may take meaningful time for structural reasons, not because 
 
 It also takes time because security hardening is not just file reorganization. Each Lambda must be treated as an attack surface, reviewed for broken auth, authorization gaps, input validation drift, data leakage, rate limiting, and route ambiguity before it can be considered safely modernized.
 
-According to [dev_docs/LAMBDA_REFACTOR_INVENTORY.md](dev_docs/LAMBDA_REFACTOR_INVENTORY.md), some Lambdas are still large or moderately coupled, including the remaining full-separation candidate `PetBiometricRoutes` and several medium-size handlers. Those Lambdas are likely to contain:
+According to [dev_docs/LAMBDA_REFACTOR_INVENTORY.md](dev_docs/LAMBDA_REFACTOR_INVENTORY.md), some Lambdas are still large or moderately coupled, especially the remaining medium-size handlers. Those Lambdas are likely to contain:
 
 * mixed routing, validation, DB access, and business logic in one file
 * duplicated but slightly divergent helper logic
@@ -545,7 +547,7 @@ This is why the work may feel slower than surface-level coding changes: secure m
 
 ## Conclusion
 
-As of 2026-04-21, the monorepo refactor effort has produced 12 strong reference implementations, 670 declared integration-style test cases across those refactored Lambdas plus 15 declared SFExpressRoutes unit test cases, 6 declared SMS unit test cases, 28 declared auth-workflow unit test cases, and 3 declared PetMedicalRecord aggregate unit test cases, and a verified pattern for continuing the remaining Lambda modernization work.
+As of 2026-04-21, the monorepo refactor effort has produced 13 strong reference implementations, 711 declared integration-style test cases across those refactored Lambdas plus 15 declared SFExpressRoutes unit test cases, 6 declared SMS unit test cases, 28 declared auth-workflow unit test cases, and 3 declared PetMedicalRecord aggregate unit test cases, and a verified pattern for continuing the remaining Lambda modernization work.
 
 The completed refactors show clear improvement across:
 
