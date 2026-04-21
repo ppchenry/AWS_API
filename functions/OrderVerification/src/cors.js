@@ -2,6 +2,12 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean)
   : [];
 
+/**
+ * Builds CORS headers for the current request origin when allowed.
+ *
+ * @param {import("aws-lambda").APIGatewayProxyEvent|Record<string, any>} event
+ * @returns {Record<string, string>}
+ */
 function corsHeaders(event) {
   const origin = event.headers?.origin || event.headers?.Origin;
   const normalizedOrigin = origin ? origin.trim() : null;
@@ -20,6 +26,12 @@ function corsHeaders(event) {
   };
 }
 
+/**
+ * Handles API Gateway preflight requests before auth or business logic.
+ *
+ * @param {import("aws-lambda").APIGatewayProxyEvent|Record<string, any>} event
+ * @returns {{statusCode:number, headers:Record<string,string>, body:string}|undefined}
+ */
 function handleOptions(event) {
   if (event.httpMethod !== "OPTIONS") return undefined;
 

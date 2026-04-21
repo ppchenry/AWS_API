@@ -52,6 +52,7 @@ function authJWT({ event }) {
 function _attachUserToEvent(event, payload) {
   event.user = payload;
   event.userId = payload.userId || payload.sub;
+  event.userEmail = payload.userEmail || payload.email;
   event.userRole = payload.userRole || payload.role;
 
   event.requestContext = event.requestContext || {};

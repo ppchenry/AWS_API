@@ -11,6 +11,12 @@
 - `PUT /v2/orderVerification/{tagId}` (auth required): Update tag verification fields and dispatch WhatsApp tracking template.
 - `DELETE /v2/orderVerification/{tagId}` (auth required): frozen route, returns 405.
 
+Ownership behavior:
+
+- `admin` and `developer` callers bypass order ownership checks.
+- Non-privileged callers on supplier-facing routes must match the linked order email from the JWT email claim.
+- `WHATSAPP_BEARER_TOKEN` is optional for read/update testing environments; missing token skips notification dispatch instead of blocking startup.
+
 ## Request Body
 
 ### PUT /v2/orderVerification/supplier/{orderId}
@@ -24,17 +30,14 @@ Accepted multipart fields:
 - `location`
 - `petHuman`
 - `pendingStatus` (boolean)
-- `updatedAt` (date string)
 - `qrUrl`
 - `petUrl`
 - `petContact`
-- `orderId`
 
 ### PUT /v2/orderVerification/{tagId}
 
 Accepted JSON fields:
 
-- `staffVerification` (boolean)
 - `contact`
 - `verifyDate` (date string)
 - `petName`
@@ -43,7 +46,6 @@ Accepted JSON fields:
 - `orderId`
 - `location`
 - `petHuman`
-- `createdAt` (date string)
 
 ## Response Shape
 
@@ -51,7 +53,8 @@ Success:
 
 ```json
 {
-  "success": true
+  "success": true,
+  "notificationDispatched": true
 }
 ```
 

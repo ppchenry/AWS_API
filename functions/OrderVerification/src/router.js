@@ -1,5 +1,18 @@
 const { createErrorResponse } = require("./utils/response");
 
+/**
+ * @typedef {Object} RouteContext
+ * @property {import("aws-lambda").APIGatewayProxyEvent} event
+ * @property {Record<string, any>|null} [body]
+ */
+
+/**
+ * Defers loading the service module until the route is actually invoked.
+ *
+ * @param {string} modulePath
+ * @param {string} exportName
+ * @returns {(ctx: RouteContext) => Promise<import("aws-lambda").APIGatewayProxyResult>}
+ */
 function lazyRoute(modulePath, exportName) {
   return async function routeHandler(ctx) {
     const service = require(modulePath);
@@ -18,6 +31,12 @@ const routes = {
   "DELETE /v2/orderVerification/{tagId}": null,
 };
 
+/**
+ * Resolves an incoming route to the mapped service handler.
+ *
+ * @param {RouteContext} routeContext
+ * @returns {Promise<import("aws-lambda").APIGatewayProxyResult>}
+ */
 async function routeRequest(routeContext) {
   const { event } = routeContext;
   const routeKey = `${event.httpMethod} ${event.resource}`;

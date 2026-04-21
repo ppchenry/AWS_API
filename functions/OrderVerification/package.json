@@ -28,7 +28,7 @@
     "zod": "^4.3.6"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node ../../node_modules/jest/bin/jest.js --runInBand --config ../../package.json --runTestsByPath ../../__tests__/test-orderverification.test.js"
   },
   "keywords": [],
   "author": "",

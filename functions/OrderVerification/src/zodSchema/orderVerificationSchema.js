@@ -1,6 +1,14 @@
 const { z } = require("zod");
+const { parseDDMMYYYY } = require("../utils/validators");
 
 const nullableTextField = z.string({ error: "orderVerification.errors.invalidField" }).trim().optional();
+
+const validDateField = z.union([
+  z.string({ error: "orderVerification.errors.invalidDate" }).trim().min(1, "orderVerification.errors.invalidDate"),
+  z.date({ error: "orderVerification.errors.invalidDate" }),
+]).refine((value) => parseDDMMYYYY(value) !== null, {
+  message: "orderVerification.errors.invalidDate",
+});
 
 const supplierUpdateSchema = z.object({
   contact: nullableTextField,
@@ -10,34 +18,21 @@ const supplierUpdateSchema = z.object({
   location: nullableTextField,
   petHuman: nullableTextField,
   pendingStatus: z.boolean({ error: "orderVerification.errors.invalidPendingStatus" }).optional(),
-  updatedAt: z.union([
-    z.string({ error: "orderVerification.errors.invalidDate" }).trim(),
-    z.date({ error: "orderVerification.errors.invalidDate" }),
-  ]).optional(),
   qrUrl: nullableTextField,
   petUrl: nullableTextField,
   petContact: nullableTextField,
-  orderId: nullableTextField,
-});
+}).strict();
 
 const tagUpdateSchema = z.object({
-  staffVerification: z.boolean({ error: "orderVerification.errors.invalidStaffVerification" }).optional(),
   contact: nullableTextField,
-  verifyDate: z.union([
-    z.string({ error: "orderVerification.errors.invalidDate" }).trim(),
-    z.date({ error: "orderVerification.errors.invalidDate" }),
-  ]).optional(),
+  verifyDate: validDateField.optional(),
   petName: nullableTextField,
   shortUrl: nullableTextField,
   masterEmail: nullableTextField,
   orderId: nullableTextField,
   location: nullableTextField,
   petHuman: nullableTextField,
-  createdAt: z.union([
-    z.string({ error: "orderVerification.errors.invalidDate" }).trim(),
-    z.date({ error: "orderVerification.errors.invalidDate" }),
-  ]).optional(),
-});
+}).strict();
 
 module.exports = {
   supplierUpdateSchema,

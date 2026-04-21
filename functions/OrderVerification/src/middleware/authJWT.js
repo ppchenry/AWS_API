@@ -2,6 +2,12 @@ const jwt = require("jsonwebtoken");
 const { createErrorResponse } = require("../utils/response");
 const { logWarn, logError } = require("../utils/logger");
 
+/**
+ * Verifies the bearer token and attaches the relevant claims to the event.
+ *
+ * @param {{ event: import("aws-lambda").APIGatewayProxyEvent }} args
+ * @returns {import("aws-lambda").APIGatewayProxyResult|null}
+ */
 function authJWT({ event }) {
   if (event.httpMethod === "OPTIONS") return null;
 
@@ -47,9 +53,17 @@ function authJWT({ event }) {
   }
 }
 
+/**
+ * Copies the JWT identity claims used by downstream middleware and services.
+ *
+ * @param {import("aws-lambda").APIGatewayProxyEvent & Record<string, any>} event
+ * @param {Record<string, any>} decoded
+ * @returns {void}
+ */
 function _attachUserToEvent(event, decoded) {
   event.user = decoded;
   event.userId = decoded.userId || decoded.sub;
+  event.userEmail = decoded.userEmail || decoded.email;
   event.userRole = decoded.userRole || decoded.role;
 }
 

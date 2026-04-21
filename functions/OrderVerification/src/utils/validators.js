@@ -1,17 +1,35 @@
 const mongoose = require("mongoose");
 
+/**
+ * @param {unknown} email
+ * @returns {unknown}
+ */
 function normalizeEmail(email) {
   return typeof email === "string" ? email.trim().toLowerCase() : email;
 }
 
+/**
+ * @param {unknown} phone
+ * @returns {unknown}
+ */
 function normalizePhone(phone) {
   return typeof phone === "string" ? phone.trim() : phone;
 }
 
+/**
+ * @param {string} id
+ * @returns {boolean}
+ */
 function isValidObjectId(id) {
   return mongoose.isValidObjectId(id);
 }
 
+/**
+ * Parses either ISO-like dates or DD/MM/YYYY date strings.
+ *
+ * @param {string|Date|number|null|undefined} dateString
+ * @returns {Date|null}
+ */
 function parseDDMMYYYY(dateString) {
   if (!dateString) return null;
 

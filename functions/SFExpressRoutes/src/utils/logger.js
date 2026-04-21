@@ -6,6 +6,7 @@ function getRequestLogContext(event) {
     method: event.httpMethod,
     resource: event.resource,
     userId: event.userId,
+    userEmail: event.userEmail,
     userRole: event.userRole,
   };
 }

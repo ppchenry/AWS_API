@@ -12,6 +12,7 @@ All routes require JWT authentication except `OPTIONS` preflight requests.
 
 - Auth: required
 - Description: Create an SF order and persist returned waybill number into matching order documents.
+- Authorization: non-privileged callers may only update orders whose stored `email` matches the JWT email claim.
 
 Request body:
 
@@ -65,6 +66,7 @@ Success response:
 
 - Auth: required
 - Description: Obtain address API bearer token from SF address service.
+- Request body: optional. Empty body or `{}` are both accepted.
 
 Request body:
 

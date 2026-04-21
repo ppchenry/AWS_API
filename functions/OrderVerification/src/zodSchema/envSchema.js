@@ -6,7 +6,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),
   JWT_BYPASS: z.enum(["true", "false"]).default("false"),
   ALLOWED_ORIGINS: z.string().min(1, "ALLOWED_ORIGINS is required"),
-  WHATSAPP_BEARER_TOKEN: z.string().min(1, "WHATSAPP_BEARER_TOKEN is required"),
+  WHATSAPP_BEARER_TOKEN: z.string().min(1, "WHATSAPP_BEARER_TOKEN is required").optional(),
 });
 
 module.exports = { envSchema };

@@ -10,6 +10,13 @@ const { logError } = require("./utils/logger");
 
 const PUBLIC_RESOURCES = [];
 
+/**
+ * Orchestrates the full OrderVerification request lifecycle.
+ *
+ * @param {import("aws-lambda").APIGatewayProxyEvent} event
+ * @param {import("aws-lambda").Context} context
+ * @returns {Promise<import("aws-lambda").APIGatewayProxyResult>}
+ */
 async function handleRequest(event, context) {
   context.callbackWaitsForEmptyEventLoop = false;
   event.awsRequestId = context.awsRequestId;

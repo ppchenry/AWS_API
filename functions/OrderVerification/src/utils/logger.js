@@ -1,3 +1,9 @@
+/**
+ * Extracts safe request metadata for structured logs.
+ *
+ * @param {Record<string, any>} [event]
+ * @returns {Record<string, any>|undefined}
+ */
 function getRequestLogContext(event) {
   if (!event) return undefined;
 
@@ -11,6 +17,12 @@ function getRequestLogContext(event) {
   };
 }
 
+/**
+ * Normalizes Error objects into JSON-safe log payloads.
+ *
+ * @param {Error & Record<string, any>} [error]
+ * @returns {Record<string, any>|undefined}
+ */
 function serializeError(error) {
   if (!error) return undefined;
 
@@ -22,6 +34,14 @@ function serializeError(error) {
   };
 }
 
+/**
+ * Writes a structured log entry to the matching console method.
+ *
+ * @param {"info"|"warn"|"error"} level
+ * @param {string} message
+ * @param {{ scope?: string, event?: Record<string, any>, error?: Error & Record<string, any>, extra?: Record<string, any> }} [options]
+ * @returns {void}
+ */
 function writeStructuredLog(level, message, options = {}) {
   const entry = {
     timestamp: new Date().toISOString(),
@@ -44,14 +64,26 @@ function writeStructuredLog(level, message, options = {}) {
   logger(JSON.stringify(entry));
 }
 
+/**
+ * @param {string} message
+ * @param {{ scope?: string, event?: Record<string, any>, error?: Error & Record<string, any>, extra?: Record<string, any> }} [options]
+ */
 function logInfo(message, options) {
   writeStructuredLog("info", message, options);
 }
 
+/**
+ * @param {string} message
+ * @param {{ scope?: string, event?: Record<string, any>, error?: Error & Record<string, any>, extra?: Record<string, any> }} [options]
+ */
 function logWarn(message, options) {
   writeStructuredLog("warn", message, options);
 }
 
+/**
+ * @param {string} message
+ * @param {{ scope?: string, event?: Record<string, any>, error?: Error & Record<string, any>, extra?: Record<string, any> }} [options]
+ */
 function logError(message, options) {
   writeStructuredLog("error", message, options);
 }

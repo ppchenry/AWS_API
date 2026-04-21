@@ -6,6 +6,13 @@ const { logInfo, logError } = require("../utils/logger");
 let conn = null;
 let connPromise = null;
 
+/**
+ * Creates and caches the Lambda MongoDB connection.
+ * Registers the Order and RateLimit models on first successful connect.
+ *
+ * @async
+ * @returns {Promise<typeof mongoose>}
+ */
 const connectToMongoDB = async () => {
   if (conn && mongoose.connection.readyState === 1) return conn;
   if (connPromise) return connPromise;
@@ -42,6 +49,12 @@ const connectToMongoDB = async () => {
   return connPromise;
 };
 
+/**
+ * Returns the shared read connection used by request handlers and services.
+ *
+ * @async
+ * @returns {Promise<typeof mongoose>}
+ */
 const getReadConnection = async () => {
   return await connectToMongoDB();
 };

@@ -10,6 +10,21 @@ const { logError } = require("./utils/logger");
 
 const PUBLIC_RESOURCES = [];
 
+/**
+ * Orchestrates the SFExpressRoutes Lambda request lifecycle.
+ *
+ * Order of execution:
+ * 1. OPTIONS preflight handling
+ * 2. JWT authentication
+ * 3. Cheap request guard validation
+ * 4. DB bootstrap
+ * 5. Exact route dispatch
+ *
+ * @async
+ * @param {import("aws-lambda").APIGatewayProxyEvent} event
+ * @param {import("aws-lambda").Context} context
+ * @returns {Promise<import("aws-lambda").APIGatewayProxyResult>}
+ */
 async function handleRequest(event, context) {
   context.callbackWaitsForEmptyEventLoop = false;
   event.awsRequestId = context.awsRequestId;

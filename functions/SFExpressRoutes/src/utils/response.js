@@ -1,6 +1,14 @@
 const { corsHeaders } = require("../cors");
 const { getTranslation, loadTranslations } = require("./i18n");
 
+/**
+ * Builds a standardized error response with translated error text and CORS headers.
+ *
+ * @param {number} statusCode
+ * @param {string} error
+ * @param {import("aws-lambda").APIGatewayProxyEvent & Record<string, any>} event
+ * @returns {import("aws-lambda").APIGatewayProxyResult}
+ */
 const createErrorResponse = (statusCode, error, event) => {
   const translations = loadTranslations(
     event.cookies?.language || event.queryStringParameters?.lang || "zh"
@@ -21,6 +29,15 @@ const createErrorResponse = (statusCode, error, event) => {
   };
 };
 
+/**
+ * Builds a standardized success response and merges any extra headers.
+ *
+ * @param {number} statusCode
+ * @param {import("aws-lambda").APIGatewayProxyEvent & Record<string, any>} event
+ * @param {Record<string, any>} [data]
+ * @param {Record<string, string>} [extraHeaders]
+ * @returns {import("aws-lambda").APIGatewayProxyResult}
+ */
 const createSuccessResponse = (statusCode, event, data = {}, extraHeaders = {}) => {
   return {
     statusCode,
