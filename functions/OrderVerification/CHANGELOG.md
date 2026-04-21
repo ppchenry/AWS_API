@@ -4,7 +4,7 @@
 
 - Refactored `OrderVerification` Lambda from a monolithic entrypoint into Tier 1 modular architecture.
 - Preserved route surface and core business intent for all existing endpoints.
-- Added a focused executable Jest baseline for handler lifecycle, ownership boundaries, schema contracts, and DB read projections.
+- Added a SAM-local Jest integration baseline for handler lifecycle, ownership boundaries, schema contracts, DB read projections, and persisted update behavior.
 
 ## Architecture Changes
 
@@ -20,6 +20,8 @@
 - Added request guard for malformed JSON while preserving multipart supplier updates, plus route-level path validation for `_id`.
 - Added schema-driven validation for PUT update payloads.
 - Added DB-backed ownership enforcement on supplier-facing flows using the linked order email and JWT email claim, with `admin`/`developer` bypass.
+- Restricted `GET /v2/orderVerification/getAllOrders` to `admin` and `developer`.
+- Documented route-level authorization, payload fields, sanitized read shapes, notification behavior, and error keys in `API.md`.
 
 ## Validation And Error Handling Improvements
 
@@ -49,18 +51,25 @@
 - Added lazy route loading to reduce cold-start work per invocation.
 - Centralized logging with structured JSON entries for CloudWatch triage.
 - Centralized locale-backed error translation resolution.
-- Added runnable OrderVerification Jest coverage (removed with intention).
+- Added runnable OrderVerification Jest coverage that exercises SAM-local HTTP routes plus a handler-level DB failure branch.
+
+## Verification
+
+- Added `__tests__/test-orderverification.test.js`.
+- Latest documented result: `39 / 39` tests passed against SAM local with MongoDB-backed setup.
+- The suite verifies admin/developer-only order listing, non-owner rejections, supplier fallback lookup, update persistence, sanitized output, frozen DELETE behavior, WhatsApp non-dispatch fallback, and structured `500` logging.
+- Full details are in `dev_docs/test_reports/ORDERVERIFICATION_TEST_REPORT.md`.
 
 ## Constraints And Deferred Work
 
 - `infra-owned`: enforce MongoDB unique index for `orderVerification.orderId` to remove race window fully.
 - `code-owned`: any future route-tier RBAC matrix is deferred until explicitly approved and regression-tested against the legacy contract.
 - `code-owned`: evaluate whether WhatsApp link endpoint should remain protected or become a constrained public route.
-- `code-owned`: a focused Jest regression baseline now exists, but a live SAM/integration suite at the UserRoutes breadth is still not in place.
+- `code-owned`: live WhatsApp provider delivery is not covered by the routine suite; the suite verifies graceful non-dispatch when the token is unavailable.
 
 ## Result Of This Stage
 
 - Lambda now follows the UserRoutes-style lifecycle and modular separation baseline.
 - Security and error handling posture is materially stronger while preserving API path contracts.
-- Executable regression coverage now exists for core handler, guard, schema, and projection behaviors.
+- Executable SAM-local regression coverage now exists for core handler, guard, schema, projection, ownership, and persistence behaviors.
 - Remaining risk is documented explicitly as deferred work items.

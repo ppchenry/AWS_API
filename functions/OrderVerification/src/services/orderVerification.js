@@ -38,6 +38,7 @@ const ORDER_READ_PROJECTION = [
   "_id",
   "tempId",
   "lastName",
+  "email",
   "phoneNumber",
   "petContact",
   "sfWayBillNumber",
@@ -151,7 +152,7 @@ async function updateSupplierOrderVerification({ event }) {
       return createErrorResponse(404, "orderVerification.errors.notFound", event);
     }
 
-    const parsedBody = await parse(event);
+    const { files: _files, ...parsedBody } = await parse(event);
     const parseResult = supplierUpdateSchema.safeParse(parsedBody || {});
     if (!parseResult.success) {
       return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error), event);
@@ -343,6 +344,10 @@ async function getWhatsAppOrderLink({ event }) {
  */
 async function getAllOrders({ event }) {
   try {
+    if (event.userRole !== "admin" && event.userRole !== "developer") {
+      return createErrorResponse(403, "others.unauthorized", event);
+    }
+
     const conn = await getReadConnection();
     const OrderVerification = conn.model("OrderVerification");
 

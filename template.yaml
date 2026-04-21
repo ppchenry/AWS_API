@@ -552,6 +552,10 @@ Resources:
           SMTP_PORT: ""
           SMTP_USER: ""
           SF_ADDRESS_API_KEY: ""
+          TEST_SF_TYPE_ID: ""
+          TEST_SF_AREA_ID: ""
+          TEST_SF_NET_CODE: ""
+          TEST_SF_WAYBILL_NO: ""
           NODE_ENV: "development"
 
   OrderVerification:

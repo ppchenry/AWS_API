@@ -19,6 +19,7 @@ This refactor modernizes `SFExpressRoutes` from a monolithic `index.js` into a f
 - Added request-level input validation via Zod for all route bodies.
 - Added route-level 405 handling for unsupported routes.
 - Added centralized, reusable SF service helpers for OAuth, std service calls, and PDF download.
+- Documented route-specific request contracts, rate limits, ownership behavior, and SF upstream error keys in `API.md`.
 
 ## Validation And Error Handling Improvements
 
@@ -37,6 +38,7 @@ This refactor modernizes `SFExpressRoutes` from a monolithic `index.js` into a f
 - Added per-action rate limiting on all SF external-service routes.
 - Switched SF address-service integrations to HTTPS endpoints.
 - Removed hardcoded SF address API key from source and moved to environment variable.
+- Added unit coverage for malformed SF upstream payloads, missing waybill data, missing cloud-print files, and waybill email-send failure handling.
 
 ## Performance And Maintainability Improvements
 
@@ -44,6 +46,14 @@ This refactor modernizes `SFExpressRoutes` from a monolithic `index.js` into a f
 - Added singleton DB connection with `maxPoolSize: 1` and concurrent cold-start protection.
 - Added focused DB queries using projection and lean reads where applicable.
 - Reduced coupling by isolating external API integrations into service helpers.
+
+## Verification
+
+- Added `__tests__/test-sfexpressroutes.test.js` for SAM-local HTTP coverage.
+- Added `__tests__/test-sfexpressroutes-unit.test.js` for focused service/middleware/handler failure branches.
+- Latest documented result: `26 / 31` integration tests passed with 5 intentionally gated live/DB tests skipped.
+- Latest documented unit result: `15 / 15` tests passed.
+- Full details are in `dev_docs/test_reports/SFEXPRESSROUTES_TEST_REPORT.md`.
 
 ## Constraints And Deferred Work
 

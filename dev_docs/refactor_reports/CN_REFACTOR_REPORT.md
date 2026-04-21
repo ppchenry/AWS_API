@@ -1,8 +1,8 @@
-# Monorepo 重構進度報告（2026-04-19）
+# Monorepo 重構進度報告（2026-04-21）
 
 ## 概述 (Overview)
 
-在目前這一階段的 Monorepo 現代化工程中，已完成 10 個 Lambda 函式的原位 (in-place) 重構：
+在目前這一階段的 Monorepo 現代化工程中，已完成 12 個 Lambda 函式的原位 (in-place) 重構：
 
 * `functions/UserRoutes`
 * `functions/PetBasicInfo`
@@ -14,6 +14,8 @@
 * `functions/PetDetailInfo`
 * `functions/PetMedicalRecord`
 * `functions/purchaseConfirmation`
+* `functions/SFExpressRoutes`
+* `functions/OrderVerification`
 
 此項工作隸屬於 [README.md](README.md) 中定義的 Monorepo 清理計劃，遵循 [dev_docs/REFACTOR_CHECKLIST.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/REFACTOR_CHECKLIST.md) 的現代化基準，並依據 [dev_docs/LAMBDA_REFACTOR_INVENTORY.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/LAMBDA_REFACTOR_INVENTORY.md) 的優先順序執行。
 
@@ -29,7 +31,9 @@
 * `PetDetailInfo`：`__tests__/test-petdetailinfo.test.js` 內 **82 項整合測試案例**
 * `PetMedicalRecord`：`__tests__/test-petmedicalrecord.test.js` 內 **65 項整合測試案例**，另有 `__tests__/test-petmedicalrecord-bloodtest-aggregate.test.js` 內 **3 項 blood-test aggregate 單元測試**
 * `purchaseConfirmation`：`__tests__/test-purchaseconfirmation.test.js` 內 **65 項整合測試案例**（63 項通過，2 項條件跳過）
-* 綜合總計：**10 個已重構 Lambda 共 600 項整合測試案例 + 6 項 SMS service 單元測試案例 + 28 項 auth-workflow 單元測試案例 + 3 項 PetMedicalRecord aggregate 單元測試**
+* `SFExpressRoutes`：`__tests__/test-sfexpressroutes.test.js` 內 **31 項整合測試案例**（26 項通過，5 項條件跳過），另有 `__tests__/test-sfexpressroutes-unit.test.js` 內 **15 項單元測試案例**
+* `OrderVerification`：`__tests__/test-orderverification.test.js` 內 **39 項整合測試案例**
+* 綜合總計：**12 個已重構 Lambda 共 670 項 integration-style 測試案例 + 15 項 SFExpressRoutes 單元測試案例 + 6 項 SMS service 單元測試案例 + 28 項 auth-workflow 單元測試案例 + 3 項 PetMedicalRecord aggregate 單元測試**
 
 以上數字為測試檔中「宣告的案例數」，本身不等同於同日完整執行紀錄。已完成的個別測試結果請參考 `dev_docs/test_reports/` 內各 Lambda 的測試報告。
 
@@ -44,11 +48,11 @@
 * `EmailVerification` 負責公開的 Email 身分證明流程，使用 **3-branch verify**：(1) 已認證使用者 → 綁定 email 到帳號，(2) 新使用者 → `{ verified: true, isNewUser: true }`，(3) 已註冊使用者 → 自動登入並發行 token
 * `AuthRoute` 負責 refresh token 輪替與短效 access token 更新
 
-核心進展是安全性加固。這一階段的工作並非單純的程式碼整潔化，而是在 9 個已重構的高價值 Lambda 介面上，實質降低已知受攻擊風險。這些風險包含未經授權的資料存取、帳戶或寵物刪除、帳號奪取、敏感資料外洩、暴力破解、水平越權與授權繞過。
+核心進展是安全性加固。這一階段的工作並非單純的程式碼整潔化，而是在 12 個已重構的高價值 Lambda 介面上，實質降低已知受攻擊風險。這些風險包含未經授權的資料存取、帳戶或寵物刪除、帳號奪取、敏感資料外洩、暴力破解、水平越權與授權繞過。
 
 ---
 
-## 截至 2026-04-20 的 Monorepo 現況 (Status)
+## 截至 2026-04-21 的 Monorepo 現況 (Status)
 
 專案初期處於 legacy 狀態，Lambda 之間存在大量重複 helper、混合 routing 與 business logic 的單體檔案，以及難以安全演進的隱性合約。
 
@@ -56,7 +60,7 @@
 
 目前進度：
 
-* 10 個模組化參考基準 Lambda
+* 12 個模組化參考基準 Lambda
 * 一套書面現代化標準
 * 一份以行數與風險為基礎的 Lambda 盤點清單
 * 已完成目標具備整合測試支撐
@@ -64,7 +68,7 @@
 
 依據 `dev_docs/LAMBDA_REFACTOR_INVENTORY.md`，目前正式納入重構統計範圍的是 **22 個** Lambda。`adoption_website`、`AuthorizerRoute`、`TestIPLambda`、`WhatsappRoute` 目前列為 out-of-plan。
 
-在此統計口徑下，已有 **10 / 22** 完成加固，約為 **45%**；仍有 **12 / 22**（約 **55%**）屬於 in-plan 待重構範圍。
+在此統計口徑下，已有 **12 / 22** 完成加固，約為 **55%**；仍有 **10 / 22**（約 **45%**）屬於 in-plan 待重構範圍。
 
 若以工作區全部 function folder 計算，目前共有 26 個 function folders；其中 4 個刻意排除於主要重構計劃之外，因此不應與主進度混算。
 
@@ -171,21 +175,23 @@ refresh 流程會：
 * `PetDetailInfo` 具備 82/82 passing integration suite，覆蓋 CORS、JWT auth、guard validation、ownership、detail-info、transfer lifecycle、NGO transfer、source/adoption lifecycle、duplicate handling、response shape、NoSQL injection prevention 與 cleanup
 * `PetMedicalRecord` 具備 65/65 passing integration suite，另有 3/3 passing blood-test aggregate 單元測試，覆蓋 CORS、JWT auth、guard validation、ownership、medical / medication / deworm / blood-test CRUD、schema strictness、response sanitization 與 schema-bound hard-delete semantics
 * `purchaseConfirmation` 具備 65 declared (63/63 passing, 2 skipped) integration suite，覆蓋 CORS、JWT auth、public-route bypass、RBAC、guard validation、dead-route dispatch、Zod validation (purchase + email schemas)、NoSQL injection、admin pagination、soft-cancel lifecycle、server-authoritative pricing、rate limiting 與 response shape consistency
+* `SFExpressRoutes` 具備 31-case integration suite（26 項通過，5 項 live/DB 條件測試跳過），另有 15/15 passing 單元測試，覆蓋 JWT、CORS、malformed body、route safety、request validation、rate limiting、SF token retrieval、ownership check、upstream SF failure、cloud-waybill failure 與 email side-effect failure
+* `OrderVerification` 具備 39/39 passing SAM-local integration suite，覆蓋 JWT、CORS、guard validation、admin/developer-only order listing、DB-backed ownership checks、supplier fallback lookup、update persistence、sanitized output、duplicate orderId rejection、frozen DELETE、WhatsApp non-dispatch fallback 與 structured handler failure logging
 
-合併來看，前 2 個完成審計的 Lambda 直接處理了 **32 項 documented legacy security findings**，另外 `EmailVerification`、`AuthRoute`、`GetAllPets`、`PetLostandFound`、`EyeUpload`、`PetDetailInfo`、`PetMedicalRecord`、`purchaseConfirmation` 也已完成嚴格現代化與測試支撐的安全加固。
+合併來看，前 2 個完成審計的 Lambda 直接處理了 **32 項 documented legacy security findings**，另外 `EmailVerification`、`AuthRoute`、`GetAllPets`、`PetLostandFound`、`EyeUpload`、`PetDetailInfo`、`PetMedicalRecord`、`purchaseConfirmation`、`SFExpressRoutes`、`OrderVerification` 也已完成嚴格現代化與測試支撐的安全加固。
 
-更準確的說法是定性評估，而不是宣稱固定百分比：已完成的 10 個 Lambda 在其自身 route surface 上，已大幅降低已知 code-owned attack classes。
+更準確的說法是定性評估，而不是宣稱固定百分比：已完成的 12 個 Lambda 在其自身 route surface 上，已大幅降低已知 code-owned attack classes。
 
 ### 2. 整體 Monorepo 的覆蓋程度
 
 在整個 monorepo 層級，現代化仍屬早期到中期階段：
 
-* inventory in-plan 目前 **10 / 22** 已完成
-* 約 **45%** 的 in-plan Lambda 已達新標準
-* 約 **55%** 仍需進行相同 route-by-route security verification 與 refactor discipline
+* inventory in-plan 目前 **12 / 22** 已完成
+* 約 **55%** 的 in-plan Lambda 已達新標準
+* 約 **45%** 仍需進行相同 route-by-route security verification 與 refactor discipline
 * 另有 **4 個** workspace Lambdas 目前列為 out-of-plan
 
-正確解讀是：已完成的 9 個 Lambda 內，大部分已知 code-owned attack classes 已被處理；但整個 monorepo 仍有廣泛 residual risk，直到更多 Lambda 完成重構。
+正確解讀是：已完成的 12 個 Lambda 內，大部分已知 code-owned attack classes 已被處理；但整個 monorepo 仍有廣泛 residual risk，直到更多 Lambda 完成重構。
 
 ---
 
@@ -209,6 +215,29 @@ refresh 流程會：
 * source/adoption update/delete 使用 `_id + petId` write scoping
 * response 使用 projection 與 sanitizer，避免 raw document leakage
 
+`SFExpressRoutes` 的加固項目包含：
+
+* 從 600 行級 legacy handler 拆分為 handler、router、middleware、config、service、utils、schema、model、locale 模組
+* create-order、cloud-waybill print、address token、area、netCode、pickup-location route 全部使用 exact route dispatch
+* active routes 全部受 JWT 保護，JWT bypass 僅限非 production
+* create-order 在寫入 waybill 到既有 order 時執行 DB-backed tempId ownership check
+* token、metadata、create-order、cloud-waybill route 具備 per-action rate limiting
+* 所有 request body 使用 Zod validation 與穩定 `sfExpress.*` error keys
+* SF address API key 改為環境變數，address-service call 使用 HTTPS
+* 單元測試覆蓋 upstream SF API failure、malformed payload、missing waybill、missing print file、email side-effect failure
+
+`OrderVerification` 的加固項目包含：
+
+* 從 580 行級 legacy handler 拆分為 handler、router、middleware、config、service、utils、schema、model、locale 模組
+* supplier、ordersInfo、WhatsApp-link、admin list、tag read/update、frozen DELETE route 全部使用 exact route dispatch
+* active routes 全部受 JWT 保護，supplier/ordersInfo/WhatsApp-link access 使用 DB-backed ownership checks
+* `GET /v2/orderVerification/getAllOrders` 僅允許 admin/developer
+* tag update 與 supplier update 使用 schema-backed validation，覆蓋 invalid date、invalid pendingStatus、empty multipart
+* 使用 allowlisted projections 與 sanitizer，避免 `discountProof` 等敏感欄位外洩
+* duplicate `orderId` update 回傳 `409`
+* WhatsApp tracking dispatch 與 DB update 隔離，provider failure 不回滾成功更新
+* SAM-local integration tests 覆蓋 ownership、persistence、sanitized output、CORS、JWT、route freezing、handler failure logging
+
 這些安全修復已由以下測試報告支撐：
 
 * [dev_docs/test_reports/USERROUTES_TEST_REPORT.md](dev_docs/test_reports/USERROUTES_TEST_REPORT.md)
@@ -221,6 +250,8 @@ refresh 流程會：
 * [dev_docs/test_reports/PETDETAILINFO_TEST_REPORT.md](dev_docs/test_reports/PETDETAILINFO_TEST_REPORT.md)
 * [dev_docs/test_reports/PETMEDICALRECORD_TEST_REPORT.md](dev_docs/test_reports/PETMEDICALRECORD_TEST_REPORT.md)
 * [dev_docs/test_reports/PURCHASECONFIRMATION_TEST_REPORT.md](dev_docs/test_reports/PURCHASECONFIRMATION_TEST_REPORT.md)
+* [dev_docs/test_reports/SFEXPRESSROUTES_TEST_REPORT.md](dev_docs/test_reports/SFEXPRESSROUTES_TEST_REPORT.md)
+* [dev_docs/test_reports/ORDERVERIFICATION_TEST_REPORT.md](dev_docs/test_reports/ORDERVERIFICATION_TEST_REPORT.md)
 
 ### 2. 性能改善 (Performance)
 
@@ -279,7 +310,7 @@ refresh 流程會：
 
 ## 結語
 
-截至 2026-04-20，Monorepo 重構工作已產出 10 個可作為基準的參考實作，並累積 **600 項整合測試案例 + 6 項 SMS service 單元測試案例 + 28 項 auth-workflow 單元測試案例 + 3 項 PetMedicalRecord aggregate 單元測試**（依 `__tests__` 測試檔統計）。
+截至 2026-04-21，Monorepo 重構工作已產出 12 個可作為基準的參考實作，並累積 **670 項 integration-style 測試案例 + 15 項 SFExpressRoutes 單元測試案例 + 6 項 SMS service 單元測試案例 + 28 項 auth-workflow 單元測試案例 + 3 項 PetMedicalRecord aggregate 單元測試**（依 `__tests__` 測試檔統計）。
 
 已完成 refactor 顯示出明確改善：
 
@@ -289,4 +320,4 @@ refresh 流程會：
 * 擴展性
 * 穩定性
 
-這不是最終架構，但它是通往最終架構前必要且正確的基礎。如果目標是在持續交付的同時保護業務，這份 2026-04-19 報告應被視為早期安全風險退場與工程複利累積，而非 cosmetic refactoring。
+這不是最終架構，但它是通往最終架構前必要且正確的基礎。如果目標是在持續交付的同時保護業務，這份 2026-04-21 報告應被視為早期安全風險退場與工程複利累積，而非 cosmetic refactoring。
