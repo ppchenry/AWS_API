@@ -1,0 +1,14 @@
+{
+  "others": {
+    "unauthorized": "Unauthorized",
+    "internalError": "Internal Server Error",
+    "methodNotAllowed": "Method not allowed",
+    "originNotAllowed": "Origin not allowed"
+  },
+  "adoption": {
+    "invalidPetIdFormat": "Invalid adoption pet id format",
+    "petNotFound": "Pet not found",
+    "invalidPage": "Invalid page parameter",
+    "invalidSearch": "Invalid search parameter"
+  }
+}

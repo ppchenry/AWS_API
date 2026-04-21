@@ -1,4 +1,12 @@
 {
+  "others": {
+    "unauthorized": "Unauthorized",
+    "forbidden": "Forbidden",
+    "internalError": "Internal server error",
+    "methodNotAllowed": "Method Not Allowed",
+    "invalidJSON": "Invalid JSON format",
+    "missingParams": "Missing required parameters"
+  },
   "common": {
     "invalidJSON": "Invalid JSON format"
   },
@@ -16,6 +24,8 @@
     "vaccineRecordNotFound": "Vaccine record not found",
     "putSuccess": "Pet vaccine record updated successfully",
     "deleteSuccess": "Pet vaccine record deleted successfully",
-    "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format"
+    "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
+    "noFieldsToUpdate": "No fields provided to update",
+    "invalidInput": "Invalid vaccine record input"
   }
 }

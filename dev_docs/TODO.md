@@ -1,3 +1,9 @@
 - [ ] add location param to ngo pet list query
 - [x] audit petmedicalrecord changes
 - [x] authflow lambdas test cases and docs clean up 
+- [ ] audit PetVaccineRecords changes against security checklist and deployment validation requirements
+- [ ] audit CreatePetBasicInfo changes against security checklist and partial-separation target
+- [ ] audit GetAdoption changes and confirm whether keep-simple structure is still sufficient
+- [ ] audit PetInfoByPetNumber changes against keep-simple checklist and auth/validation baseline
+- [ ] optimize test cases for PetVaccineRecords, CreatePetBasicInfo, GetAdoption, and PetInfoByPetNumber
+- [ ] deploy all refactored lambdas onto dev and run Postman verification for each deployed route set

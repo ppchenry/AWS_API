@@ -14,5 +14,15 @@
     "invalidImageUrlFormat": "breedimage 中的圖片 URL 格式無效",
     "duplicatePetNgoId": "具有 ngoPetId 的重複寵物",
     "duplicatePetTagId": "帶有 tagId 的重複寵物",
-    "success": "寵物添加成功"
+    "unknownField": "不允許未知欄位",
+    "success": "寵物添加成功",
+    "others": {
+        "unauthorized": "未授權",
+        "internalError": "伺服器內部錯誤",
+        "missingParams": "缺少必要的請求內容",
+        "methodNotAllowed": "不支援的請求方法",
+        "rateLimited": "請求過於頻繁",
+        "invalidInput": "輸入資料無效",
+        "originNotAllowed": "來源不被允許"
+    }
 }

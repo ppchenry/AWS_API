@@ -61,10 +61,10 @@ Suggested target shape:
 
 | Priority Tier | Lambda | Entry file | Lines | Recommendation |
 | --- | --- | --- | ---: | --- |
-| 1 medium | `AIChatBot` | `index.js` | 399 | partial separation likely enough unless logic is more coupled than size suggests |
+| x medium | `AIChatBot` | `index.js` | 399 | partial separation likely enough unless logic is more coupled than size suggests |
 | 2 medium | `PetVaccineRecords` | `index.js` | 373 | partial separation likely enough |
-| 3 medium | `CreatePetBasicInfo` | `index.js` | 317 | partial separation likely enough |
-| 4 medium | `GetBreed` | `index.js` | 301 | partial separation likely enough |
+| 1 medium | `CreatePetBasicInfo` | `index.js` | 317 | partial separation likely enough |
+| x medium | `GetBreed` | `index.js` | 301 | partial separation likely enough |
 
 ## Keep Simple Unless Risk Proves Otherwise
 
@@ -72,11 +72,11 @@ These are smaller Lambdas. They should still meet the refactor checklist for val
 
 | Size Tier | Lambda | Entry file | Lines | Recommendation |
 | --- | --- | ---: | --- |
-| 1 small | `LambdaProxyRoute` | `index.js` | 248 | keep simple unless control flow is unusually messy |
-| 2 small | `GetAdoption` | `index.js` | 220 | keep simple unless auth or branching is riskier than expected |
+| ? small | `LambdaProxyRoute` | `index.js` | 248 | keep simple unless control flow is unusually messy |
+| 4 small | `GetAdoption` | `index.js` | 220 | keep simple unless auth or branching is riskier than expected |
 | 3 small | `PetInfoByPetNumber` | `index.js` | 153 | keep simple |
-| 4 small | `PublicRoutes` | `index.js` | 133 | keep simple |
-| 5 small | `CreateFeedback` | `index.js` | 119 | keep simple |
+| x small | `PublicRoutes` | `index.js` | 133 | keep simple |
+| x small | `CreateFeedback` | `index.js` | 119 | keep simple |
 
 ## Full Inventory
 
@@ -111,18 +111,6 @@ These are smaller Lambdas. They should still meet the refactor checklist for val
 2. `AuthorizerRoute`: not required in the refactored auth cycle
 3. `TestIPLambda`: internal testing Lambda
 4. `WhatsappRoute`: hello-world placeholder
-
-## Suggested Working Order
-
-If the goal is to reduce structural risk quickly, the best next candidates are:
-
-1. `AIChatBot`
-2. `PetVaccineRecords`
-3. `CreatePetBasicInfo`
-4. `GetBreed`
-5. `LambdaProxyRoute`
-
-`SFExpressRoutes`, `OrderVerification`, and `PetBiometricRoutes` were previously the top full-separation candidates. They are now moved to the completed modularized group.
 
 ## Notes
 

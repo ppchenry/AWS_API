@@ -1,0 +1,14 @@
+{
+  "others": {
+    "unauthorized": "未授權",
+    "internalError": "伺服器內部錯誤",
+    "methodNotAllowed": "不支援的請求方法",
+    "originNotAllowed": "來源不被允許"
+  },
+  "adoption": {
+    "invalidPetIdFormat": "無效的領養寵物 ID 格式",
+    "petNotFound": "找不到寵物",
+    "invalidPage": "分頁參數無效",
+    "invalidSearch": "搜尋參數無效"
+  }
+}

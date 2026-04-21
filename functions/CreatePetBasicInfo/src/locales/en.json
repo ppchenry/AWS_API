@@ -14,5 +14,15 @@
     "invalidImageUrlFormat": "Invalid image URL format in breedimage",
     "duplicatePetNgoId": "Duplicate pet with ngoPetId",
     "duplicatePetTagId": "Duplicate pets with tagId",
-    "success": "Pet added successfully"
+    "unknownField": "Unknown field is not allowed",
+    "success": "Pet added successfully",
+    "others": {
+        "unauthorized": "Unauthorized",
+        "internalError": "Internal Server Error",
+        "missingParams": "Missing required request body",
+        "methodNotAllowed": "Method not allowed",
+        "rateLimited": "Too many requests",
+        "invalidInput": "Invalid input",
+        "originNotAllowed": "Origin not allowed"
+    }
 }

@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const PetSchema = new mongoose.Schema(
   {
-    // Pet Basic Info 
+    // Pet Basic Info
     userId: {
       type: mongoose.Schema.Types.ObjectId, // reference to another collection (user)
     },
