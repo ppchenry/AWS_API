@@ -13,6 +13,21 @@ It is not a perfect measure. Final priority should still consider route count, a
 - Medium-size Lambdas that likely need partial separation: 4
 - Smaller Lambdas that should usually stay simple: 5
 
+## AWS Lambda Dev Deployment Status
+
+Modularized status does not mean the Lambda has already been deployed to the AWS Lambda Dev server for Postman testing.
+
+Only the following refactored Lambdas have been deployed on the AWS Lambda Dev server for Postman testing so far:
+
+- `UserRoutes`
+- `GetAllPets`
+- `PetBasicInfo`
+- `EmailVerification`
+- `AuthRoute`
+- `EyeUpload`
+
+All other modularized Lambdas in this inventory still require AWS Lambda Dev deployment and Postman verification before they should be considered deployment-validated.
+
 ## Already Refactored
 
 These already match the stronger handler-based pattern.
