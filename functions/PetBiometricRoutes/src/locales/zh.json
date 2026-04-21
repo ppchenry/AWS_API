@@ -1,0 +1,34 @@
+{
+  "others": {
+    "invalidInput": "請求資料無效。",
+    "invalidJSON": "JSON 格式無效。",
+    "missingParams": "缺少參數。",
+    "methodNotAllowed": "此路徑不支援該請求方法。",
+    "internalError": "發生錯誤，請稍後再試。",
+    "unauthorized": "需要身份驗證，請先登入。",
+    "rateLimited": "請求過於頻繁，請稍後再試。",
+    "serviceUnavailable": "服務暫時無法使用，請稍後再試。"
+  },
+  "petBiometric": {
+    "forbidden": "你沒有權限存取這個寵物生物辨識資源。",
+    "invalidPetId": "寵物 ID 無效。",
+    "petNotFound": "找不到寵物。",
+    "notRegistered": "此寵物尚未登記生物辨識資料。",
+    "invalidCredentials": "找不到對應的 access key 與 secret key 使用者。",
+    "invalidImageUrl": "圖片 URL 格式無效。",
+    "unsupportedFormat": "不支援的圖片格式。",
+    "fileTooLarge": "圖片檔案過大。",
+    "fileTooSmall": "圖片檔案為空。",
+    "uploadFailed": "目前無法上傳圖片。",
+    "errors": {
+      "petIdRequired": "必須提供寵物 ID。",
+      "imageArrayRequired": "必須提供所有臉部圖片陣列。",
+      "accessKeyRequired": "必須提供 access key。",
+      "secretKeyRequired": "必須提供 secret key。",
+      "imageRequired": "必須提供 image_url 或 files[0]。",
+      "fileNameRequired": "必須提供檔案名稱。",
+      "contentTypeRequired": "必須提供檔案內容類型。",
+      "fileContentRequired": "必須提供檔案內容。"
+    }
+  }
+}

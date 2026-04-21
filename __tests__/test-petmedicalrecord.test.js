@@ -182,7 +182,7 @@ async function cleanupCreatedRecords() {
   if (state.bloodTestRecordId) {
     await req(
       "DELETE",
-      `/pets/${TEST_PET_ID}/blood-test-record/${state.bloodTestRecordId}`,
+      `/v2/pets/${TEST_PET_ID}/blood-test-record/${state.bloodTestRecordId}`,
       undefined,
       ownerHeaders
     ).catch(() => {});
@@ -337,7 +337,7 @@ describe("Guard validation", () => {
   test("rejects invalid record ID format with record-specific key", async () => {
     const res = await req(
       "PUT",
-      `/pets/${NONEXISTENT_PET_ID}/blood-test-record/bad-id`,
+      `/v2/pets/${NONEXISTENT_PET_ID}/blood-test-record/bad-id`,
       { heartworm: "negative" },
       strangerAuth()
     );
@@ -349,7 +349,7 @@ describe("Guard validation", () => {
     ["/pets/not-an-id/medical-record", "invalidPetIdFormat"],
     ["/pets/not-an-id/medication-record", "invalidPetIdFormat"],
     ["/pets/not-an-id/deworm-record", "invalidPetIdFormat"],
-    ["/pets/not-an-id/blood-test-record", "invalidPetIdFormat"],
+    ["/v2/pets/not-an-id/blood-test-record", "invalidPetIdFormat"],
   ])("GET %s rejects invalid pet id", async (path, errorKey) => {
     const res = await req("GET", path, undefined, strangerAuth());
     expect(res.status).toBe(400);
@@ -360,7 +360,7 @@ describe("Guard validation", () => {
     [`/pets/${NONEXISTENT_PET_ID}/medical-record/bad-id`, { medicalPlace: "x" }, "medicalRecord.invalidMedicalIdFormat"],
     [`/pets/${NONEXISTENT_PET_ID}/medication-record/bad-id`, { drugName: "x" }, "medicationRecord.invalidMedicationIdFormat"],
     [`/pets/${NONEXISTENT_PET_ID}/deworm-record/bad-id`, { frequency: 1 }, "dewormRecord.invalidDewormIdFormat"],
-    [`/pets/${NONEXISTENT_PET_ID}/blood-test-record/bad-id`, { heartworm: "negative" }, "bloodTest.invalidBloodTestIdFormat"],
+    [`/v2/pets/${NONEXISTENT_PET_ID}/blood-test-record/bad-id`, { heartworm: "negative" }, "bloodTest.invalidBloodTestIdFormat"],
   ])("PUT %s rejects invalid record id", async (path, body, errorKey) => {
     const res = await req("PUT", path, body, strangerAuth());
     expect(res.status).toBe(400);
@@ -673,7 +673,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
   ownerTest("owner creates blood-test record successfully", async () => {
     const res = await req(
       "POST",
-      `/pets/${TEST_PET_ID}/blood-test-record`,
+      `/v2/pets/${TEST_PET_ID}/blood-test-record`,
       {
         bloodTestDate: "2024-01-15",
         heartworm: "negative",
@@ -689,7 +689,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
   ownerTest("blood-test create rejects invalid date", async () => {
     const res = await req(
       "POST",
-      `/pets/${TEST_PET_ID}/blood-test-record`,
+      `/v2/pets/${TEST_PET_ID}/blood-test-record`,
       {
         bloodTestDate: "2024-02-31",
         heartworm: "negative",
@@ -703,7 +703,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
   ownerTest("blood-test update rejects unknown fields", async () => {
     const res = await req(
       "PUT",
-      `/pets/${TEST_PET_ID}/blood-test-record/${NONEXISTENT_RECORD_ID}`,
+      `/v2/pets/${TEST_PET_ID}/blood-test-record/${NONEXISTENT_RECORD_ID}`,
       { injected: { "$gt": "" } },
       ownerAuth()
     );
@@ -713,7 +713,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
   ownerTest("blood-test update returns not-found on nonexistent record", async () => {
     const res = await req(
       "PUT",
-      `/pets/${TEST_PET_ID}/blood-test-record/${NONEXISTENT_RECORD_ID}`,
+      `/v2/pets/${TEST_PET_ID}/blood-test-record/${NONEXISTENT_RECORD_ID}`,
       { heartworm: "negative" },
       ownerAuth()
     );
@@ -724,7 +724,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
   ownerTest("blood-test list returns stable success shape", async () => {
     const res = await req(
       "GET",
-      `/pets/${TEST_PET_ID}/blood-test-record`,
+      `/v2/pets/${TEST_PET_ID}/blood-test-record`,
       undefined,
       ownerAuth()
     );
@@ -771,7 +771,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
   ownerTest("blood-test delete returns 404 on record mismatch", async () => {
     const res = await req(
       "DELETE",
-      `/pets/${TEST_PET_ID}/blood-test-record/${NONEXISTENT_OTHER_RECORD_ID}`,
+      `/v2/pets/${TEST_PET_ID}/blood-test-record/${NONEXISTENT_OTHER_RECORD_ID}`,
       undefined,
       ownerAuth()
     );
@@ -839,7 +839,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
     expect(state.bloodTestRecordId).toBeTruthy();
     const res = await req(
       "DELETE",
-      `/pets/${TEST_PET_ID}/blood-test-record/${state.bloodTestRecordId}`,
+      `/v2/pets/${TEST_PET_ID}/blood-test-record/${state.bloodTestRecordId}`,
       undefined,
       ownerAuth()
     );
@@ -900,7 +900,7 @@ describe("Schema strictness and sanitization", () => {
   ownerTest("blood-test strict schema rejects NoSQL-style operator object", async () => {
     const res = await req(
       "POST",
-      `/pets/${TEST_PET_ID}/blood-test-record`,
+      `/v2/pets/${TEST_PET_ID}/blood-test-record`,
       {
         heartworm: { "$gt": "" },
       },

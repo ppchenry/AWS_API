@@ -37,10 +37,10 @@ const routes = {
   "DELETE /pets/{petID}/deworm-record/{dewormID}": lazyRoute("./services/deworm", "deleteDewormRecord"),
 
   // Blood test records
-  "GET /pets/{petID}/blood-test-record": lazyRoute("./services/bloodTest", "getBloodTestRecords"),
-  "POST /pets/{petID}/blood-test-record": lazyRoute("./services/bloodTest", "createBloodTestRecord"),
-  "PUT /pets/{petID}/blood-test-record/{bloodTestID}": lazyRoute("./services/bloodTest", "updateBloodTestRecord"),
-  "DELETE /pets/{petID}/blood-test-record/{bloodTestID}": lazyRoute("./services/bloodTest", "deleteBloodTestRecord"),
+  "GET /v2/pets/{petID}/blood-test-record": lazyRoute("./services/bloodTest", "getBloodTestRecords"),
+  "POST /v2/pets/{petID}/blood-test-record": lazyRoute("./services/bloodTest", "createBloodTestRecord"),
+  "PUT /v2/pets/{petID}/blood-test-record/{bloodTestID}": lazyRoute("./services/bloodTest", "updateBloodTestRecord"),
+  "DELETE /v2/pets/{petID}/blood-test-record/{bloodTestID}": lazyRoute("./services/bloodTest", "deleteBloodTestRecord"),
 };
 
 /**

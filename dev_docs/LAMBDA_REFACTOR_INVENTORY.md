@@ -7,9 +7,9 @@ It is not a perfect measure. Final priority should still consider route count, a
 ## Summary
 
 - Total in-plan Lambda entry files checked: 22
-- Already modularized with `src/handler.js`: 12
-- Remaining Lambdas needing review: 10
-- Clear full-separation candidates: 1
+- Already modularized with `src/handler.js`: 13
+- Remaining Lambdas needing review: 9
+- Clear full-separation candidates: 0
 - Medium-size Lambdas that likely need partial separation: 4
 - Smaller Lambdas that should usually stay simple: 5
 
@@ -46,21 +46,7 @@ These already match the stronger handler-based pattern.
 | `purchaseConfirmation` | `index.js` | 2 | already modularized |
 | `SFExpressRoutes` | `index.js` | 3 | already modularized |
 | `OrderVerification` | `index.js` | 4 | already modularized |
-
-## Full Separation Recommended
-
-This Lambda is large enough that the full UserRoutes or PetBasicInfo style separation is likely worth the effort.
-
-Suggested target shape:
-
-- thin `index.js`
-- `src/handler.js`
-- `src/router.js` when multi-route
-- middleware, services, utils, config split where it reduces risk
-
-| Priority | Lambda | Entry file | Lines | Recommendation |
-| --- | --- | --- | ---: | --- |
-| 1 | `PetBiometricRoutes` | `index.js` | 546 | strong candidate for full modular split |
+| `PetBiometricRoutes` | `index.js` | 3 | already modularized |
 
 ## Partial Separation Recommended
 
@@ -108,7 +94,7 @@ These are smaller Lambdas. They should still meet the refactor checklist for val
 | `purchaseConfirmation` | `index.js` | 2 | yes | already modularized |
 | `SFExpressRoutes` | `index.js` | 3 | yes | already modularized |
 | `OrderVerification` | `index.js` | 4 | yes | already modularized |
-| `PetBiometricRoutes` | `index.js` | 546 | no | full separation |
+| `PetBiometricRoutes` | `index.js` | 3 | yes | already modularized |
 | `AIChatBot` | `index.js` | 399 | no | partial separation |
 | `PetVaccineRecords` | `index.js` | 373 | no | partial separation |
 | `CreatePetBasicInfo` | `index.js` | 317 | no | partial separation |
@@ -130,13 +116,13 @@ These are smaller Lambdas. They should still meet the refactor checklist for val
 
 If the goal is to reduce structural risk quickly, the best next candidates are:
 
-1. `PetBiometricRoutes`
-2. `AIChatBot`
-3. `PetVaccineRecords`
-4. `CreatePetBasicInfo`
-5. `GetBreed`
+1. `AIChatBot`
+2. `PetVaccineRecords`
+3. `CreatePetBasicInfo`
+4. `GetBreed`
+5. `LambdaProxyRoute`
 
-`SFExpressRoutes` and `OrderVerification` were previously the top full-separation candidates. They are now moved to the completed modularized group.
+`SFExpressRoutes`, `OrderVerification`, and `PetBiometricRoutes` were previously the top full-separation candidates. They are now moved to the completed modularized group.
 
 ## Notes
 

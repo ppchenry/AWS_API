@@ -46,7 +46,7 @@ async function syncBloodTestPetSummary({
 }
 
 /**
- * GET /pets/{petID}/blood-test-record
+ * GET /v2/pets/{petID}/blood-test-record
  */
 async function getBloodTestRecords({ event }) {
   const scope = "services.bloodTest.getBloodTestRecords";
@@ -72,7 +72,7 @@ async function getBloodTestRecords({ event }) {
 }
 
 /**
- * POST /pets/{petID}/blood-test-record
+ * POST /v2/pets/{petID}/blood-test-record
  */
 async function createBloodTestRecord({ event, body }) {
   const scope = "services.bloodTest.createBloodTestRecord";
@@ -126,7 +126,7 @@ async function createBloodTestRecord({ event, body }) {
 }
 
 /**
- * PUT /pets/{petID}/blood-test-record/{bloodTestID}
+ * PUT /v2/pets/{petID}/blood-test-record/{bloodTestID}
  */
 async function updateBloodTestRecord({ event, body }) {
   const scope = "services.bloodTest.updateBloodTestRecord";
@@ -188,7 +188,7 @@ async function updateBloodTestRecord({ event, body }) {
 }
 
 /**
- * DELETE /pets/{petID}/blood-test-record/{bloodTestID}
+ * DELETE /v2/pets/{petID}/blood-test-record/{bloodTestID}
  */
 async function deleteBloodTestRecord({ event }) {
   const scope = "services.bloodTest.deleteBloodTestRecord";
