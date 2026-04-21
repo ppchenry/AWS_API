@@ -1,6 +1,6 @@
 # Lambda In-Situ Modernization Spec
 
-This document is the authoritative refactor specification for the mass In-Situ Modernization of the 23 remaining Lambdas in this monorepo. The baseline for every dimension — security, structure, performance, maintainability, scalability, stability, documentation — is the current `functions/UserRoutes` implementation after its full security audit and 102-test integration suite.
+This document is the authoritative refactor specification for the mass In-Situ Modernization of the inventory-scoped Lambdas in this monorepo. Use `dev_docs/LAMBDA_REFACTOR_INVENTORY.md` for the current completed/remaining count. The baseline for every dimension — security, structure, performance, maintainability, scalability, stability, documentation — is the current `functions/UserRoutes` implementation after its full security audit and integration suite.
 
 Feed this file directly to an LLM as a system prompt. Replace the placeholders in the Direct Prompt Template below, attach the target Lambda files, and instruct the model to execute.
 
