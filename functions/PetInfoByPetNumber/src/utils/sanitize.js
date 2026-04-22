@@ -14,6 +14,12 @@ const PUBLIC_PET_FIELDS = [
 ];
 
 function sanitizePet(pet) {
+  if (!pet) {
+    return PUBLIC_PET_FIELDS.reduce((safePet, field) => {
+      safePet[field] = null;
+      return safePet;
+    }, {});
+  }
   const raw = typeof pet.toObject === "function" ? pet.toObject() : pet;
   return PUBLIC_PET_FIELDS.reduce((safePet, field) => {
     safePet[field] = raw?.[field] ?? null;

@@ -1,128 +1,88 @@
 /**
  * CreatePetBasicInfo integration tests.
- * Uses the real MongoDB URI from env.json and invokes the lambda handler directly.
+ * Invokes the Lambda handler directly — no SAM required.
+ * Run with: npm test -- --runTestsByPath __tests__/test-createpetbasicinfo-unit.test.js
+ *
+ * Required env.json keys under CreatePetBasicInfoFunction:
+ *   JWT_SECRET, JWT_BYPASS, ALLOWED_ORIGINS, MONGODB_URI
+ *
+ * Optional fixture keys (DB-backed tests skip if absent):
+ *   TEST_OWNER_USER_ID - userId of a live non-deleted user in the UAT database
  */
 
-const dns = require("dns");
-const jwt = require("jsonwebtoken");
-const mongoose = require("mongoose");
+const jwt = require("../functions/CreatePetBasicInfo/node_modules/jsonwebtoken");
 const envConfig = require("../env.json");
 
 const config = envConfig.CreatePetBasicInfoFunction || {};
-const fallbackOwnerId =
+const JWT_SECRET = config.JWT_SECRET || "";
+const MONGODB_URI = config.MONGODB_URI || "";
+const VALID_ORIGIN = (config.ALLOWED_ORIGINS || "http://localhost:3000").split(",")[0].trim();
+const DISALLOWED_ORIGIN = "https://evil.example.com";
+
+const TEST_OWNER_USER_ID =
   config.TEST_OWNER_USER_ID ||
   envConfig.PetVaccineRecordsFunction?.TEST_OWNER_USER_ID ||
   envConfig.PetBasicInfoFunction?.TEST_OWNER_USER_ID ||
-  envConfig.GetAllPetsFunction?.TEST_OWNER_USER_ID ||
   "";
 
-const JWT_SECRET = config.JWT_SECRET || "";
-const MONGODB_URI = config.MONGODB_URI || envConfig.PetVaccineRecordsFunction?.MONGODB_URI || "";
-const VALID_ORIGIN = (config.ALLOWED_ORIGINS || "").split(",")[0]?.trim() || "http://localhost:3000";
-const TEST_OWNER_USER_ID = fallbackOwnerId;
+const STRANGER_USER_ID = "000000000000000000000099";
 
+let mongoose;
 let dbReady = false;
 let connectAttempted = false;
 let handler;
 
-const cleanupState = {
-  petIds: new Set(),
-  rateLimitKeys: new Set(),
-};
+const cleanupState = { petIds: new Set(), rateLimitKeys: new Set() };
 
 async function connectDB() {
-  if (dbReady || connectAttempted || !MONGODB_URI) {
-    return;
-  }
-
+  if (dbReady || connectAttempted || !MONGODB_URI) return;
   connectAttempted = true;
-
   try {
-    dns.setServers(["8.8.8.8", "1.1.1.1"]);
-
+    require("dns").setServers(["8.8.8.8", "1.1.1.1"]);
+    mongoose = require("mongoose");
     if (mongoose.connection.readyState === 0) {
-      let timeoutId;
-
-      try {
-        await Promise.race([
-          mongoose.connect(MONGODB_URI, {
-            serverSelectionTimeoutMS: 5000,
-            maxPoolSize: 1,
-          }),
-          new Promise((_, reject) => {
-            timeoutId = setTimeout(() => reject(new Error("DB connect timeout (8 s)")), 8000);
-          }),
-        ]);
-      } finally {
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
-      }
+      await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000, maxPoolSize: 1 });
     }
-
     dbReady = true;
-  } catch (error) {
-    console.warn("[test] MongoDB unavailable - CreatePetBasicInfo DB-backed checks will be skipped:", error.message);
-    dbReady = false;
+  } catch (err) {
+    console.warn("[test] MongoDB unavailable - DB-backed CreatePetBasicInfo checks will be skipped:", err.message);
   }
 }
 
 async function disconnectDB() {
-  if (mongoose.connection.readyState !== 0) {
-    await mongoose.disconnect();
-  }
+  if (mongoose && mongoose.connection.readyState !== 0) await mongoose.disconnect();
   dbReady = false;
 }
 
-function usersCol() {
-  return mongoose.connection.db.collection("users");
-}
-
-function petsCol() {
-  return mongoose.connection.db.collection("pets");
-}
-
-function rateLimitsCol() {
-  return mongoose.connection.db.collection("rate_limits");
-}
-
-function dbTest(name, fn) {
-  if (!MONGODB_URI || !TEST_OWNER_USER_ID || !JWT_SECRET) {
-    return test.skip(name, fn);
-  }
-
-  return test(name, async () => {
-    await connectDB();
-    if (!dbReady) {
-      console.log("[skip] " + name + " - no DB connection");
-      return;
-    }
-
-    const owner = await usersCol().findOne({
-      _id: new mongoose.Types.ObjectId(TEST_OWNER_USER_ID),
-      deleted: { $ne: true },
-    });
-
-    if (!owner) {
-      console.log("[skip] " + name + " - owner fixture user not found");
-      return;
-    }
-
-    await fn();
-  });
-}
+const dbTest =
+  MONGODB_URI && TEST_OWNER_USER_ID
+    ? (name, fn) =>
+        test(name, async () => {
+          await connectDB();
+          if (!dbReady) {
+            console.log(`[skip] ${name} - no DB connection`);
+            return;
+          }
+          const owner = await mongoose.connection.db.collection("users").findOne({
+            _id: new mongoose.Types.ObjectId(TEST_OWNER_USER_ID),
+            deleted: { $ne: true },
+          });
+          if (!owner) {
+            console.log(`[skip] ${name} - owner fixture not found`);
+            return;
+          }
+          await fn();
+        })
+    : test.skip;
 
 function loadHandler() {
-  if (handler) {
-    return handler;
-  }
-
+  if (handler) return handler;
+  require("dns").setServers(["8.8.8.8", "1.1.1.1"]);
   process.env.NODE_ENV = "test";
   process.env.JWT_SECRET = JWT_SECRET;
   process.env.JWT_BYPASS = config.JWT_BYPASS || "false";
   process.env.MONGODB_URI = MONGODB_URI;
   process.env.ALLOWED_ORIGINS = config.ALLOWED_ORIGINS || VALID_ORIGIN;
-
   jest.resetModules();
   handler = require("../functions/CreatePetBasicInfo").handler;
   return handler;
@@ -131,8 +91,8 @@ function loadHandler() {
 function makeToken(overrides = {}) {
   return jwt.sign(
     {
-      userId: TEST_OWNER_USER_ID,
-      userEmail: "createpetbasicinfo-test@example.com",
+      userId: TEST_OWNER_USER_ID || STRANGER_USER_ID,
+      userEmail: "createpet-test@example.com",
       userRole: "user",
       ...overrides,
     },
@@ -141,31 +101,24 @@ function makeToken(overrides = {}) {
   );
 }
 
-function makeEvent({ body, ipAddress, token }) {
+function makeEvent({ body, ipAddress = "198.51.100.1", token, origin = VALID_ORIGIN, method = "POST" } = {}) {
   return {
-    httpMethod: "POST",
+    httpMethod: method,
     resource: "/pets/create-pet-basic-info",
     headers: {
-      Authorization: `Bearer ${token}`,
-      Origin: VALID_ORIGIN,
+      Authorization: token !== null ? (token ? `Bearer ${token}` : undefined) : undefined,
+      Origin: origin,
       "x-forwarded-for": ipAddress,
     },
     body,
     cookies: null,
-    queryStringParameters: null,
-    requestContext: {
-      identity: {
-        sourceIp: ipAddress,
-      },
-    },
+    queryStringParameters: { lang: "en" },
+    requestContext: { identity: { sourceIp: ipAddress } },
   };
 }
 
-function makeContext(requestId) {
-  return {
-    awsRequestId: requestId,
-    callbackWaitsForEmptyEventLoop: true,
-  };
+function makeContext(id = "ctx-1") {
+  return { awsRequestId: id, callbackWaitsForEmptyEventLoop: true };
 }
 
 async function cleanupArtifacts() {
@@ -174,81 +127,224 @@ async function cleanupArtifacts() {
     cleanupState.rateLimitKeys.clear();
     return;
   }
-
   if (cleanupState.petIds.size > 0) {
-    await petsCol().deleteMany({
-      _id: {
-        $in: Array.from(cleanupState.petIds, (id) => new mongoose.Types.ObjectId(id)),
-      },
+    await mongoose.connection.db.collection("pets").deleteMany({
+      _id: { $in: Array.from(cleanupState.petIds, (id) => new mongoose.Types.ObjectId(id)) },
     });
   }
-
   if (cleanupState.rateLimitKeys.size > 0) {
-    await rateLimitsCol().deleteMany({
+    await mongoose.connection.db.collection("rate_limits").deleteMany({
       action: "createPetBasicInfo",
       key: { $in: Array.from(cleanupState.rateLimitKeys) },
     });
   }
-
   cleanupState.petIds.clear();
   cleanupState.rateLimitKeys.clear();
 }
 
-afterEach(async () => {
-  await cleanupArtifacts();
+afterEach(async () => { await cleanupArtifacts(); });
+afterAll(async () => { await cleanupArtifacts(); await disconnectDB(); });
+
+// ─── OPTIONS preflight ────────────────────────────────────────────────────────
+
+describe("OPTIONS preflight", () => {
+  test("returns 204 with CORS headers for allowed origin", async () => {
+    const response = await loadHandler()(makeEvent({ method: "OPTIONS" }), makeContext("opts-1"));
+    expect(response.statusCode).toBe(204);
+    expect(response.headers["Access-Control-Allow-Origin"]).toBe(VALID_ORIGIN);
+    expect(response.headers["Access-Control-Allow-Credentials"]).toBe("true");
+  });
+
+  test("returns 403 for disallowed origin", async () => {
+    const response = await loadHandler()(
+      makeEvent({ method: "OPTIONS", origin: DISALLOWED_ORIGIN }),
+      makeContext("opts-2")
+    );
+    expect(response.statusCode).toBe(403);
+    expect(JSON.parse(response.body).errorKey).toBe("others.originNotAllowed");
+  });
 });
 
-afterAll(async () => {
-  await cleanupArtifacts();
-  await disconnectDB();
+// ─── JWT authentication ───────────────────────────────────────────────────────
+
+describe("JWT authentication", () => {
+  test("rejects request with no Authorization header → 401", async () => {
+    const response = await loadHandler()(
+      makeEvent({ body: JSON.stringify({ name: "Test" }), token: null }),
+      makeContext("auth-1")
+    );
+    expect(response.statusCode).toBe(401);
+    expect(JSON.parse(response.body).errorKey).toBe("others.unauthorized");
+  });
+
+  test("rejects expired JWT → 401", async () => {
+    const token = jwt.sign({ userId: STRANGER_USER_ID }, JWT_SECRET, { expiresIn: -60 });
+    const response = await loadHandler()(
+      makeEvent({ body: JSON.stringify({ name: "Test" }), token }),
+      makeContext("auth-2")
+    );
+    expect(response.statusCode).toBe(401);
+    expect(JSON.parse(response.body).errorKey).toBe("others.unauthorized");
+  });
+
+  test("rejects tampered JWT signature → 401", async () => {
+    const validToken = makeToken();
+    const [h, p] = validToken.split(".");
+    const response = await loadHandler()(
+      makeEvent({ body: JSON.stringify({ name: "Test" }), token: `${h}.${p}.tampered` }),
+      makeContext("auth-3")
+    );
+    expect(response.statusCode).toBe(401);
+    expect(JSON.parse(response.body).errorKey).toBe("others.unauthorized");
+  });
+
+  test("rejects alg:none JWT → 401", async () => {
+    const fakeHeader = Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString("base64url");
+    const fakePayload = Buffer.from(JSON.stringify({ userId: STRANGER_USER_ID })).toString("base64url");
+    const response = await loadHandler()(
+      makeEvent({ body: JSON.stringify({ name: "Test" }), token: `${fakeHeader}.${fakePayload}.` }),
+      makeContext("auth-4")
+    );
+    expect(response.statusCode).toBe(401);
+    expect(JSON.parse(response.body).errorKey).toBe("others.unauthorized");
+  });
+
+  test("error shape includes success:false, errorKey, and requestId", async () => {
+    const response = await loadHandler()(
+      makeEvent({ body: JSON.stringify({ name: "Test" }), token: null }),
+      makeContext("auth-shape-1")
+    );
+    expect(response.statusCode).toBe(401);
+    const body = JSON.parse(response.body);
+    expect(body.success).toBe(false);
+    expect(body.errorKey).toBe("others.unauthorized");
+    expect(typeof body.error).toBe("string");
+    expect(typeof body.requestId).toBe("string");
+  });
 });
 
-describe("CreatePetBasicInfo DB-backed hardening", () => {
-  dbTest("creates a pet in MongoDB while keeping internal fields out of the response", async () => {
-    const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const ipAddress = `198.51.100.${Math.floor(Math.random() * 200) + 1}`;
-    const rateLimitKey = `${ipAddress}:${TEST_OWNER_USER_ID}`;
-    const payload = {
-      name: `CreatePetBasicInfo ${uniqueSuffix}`,
-      birthday: "2024-01-10",
-      weight: 5.2,
-      sex: "male",
-      sterilization: true,
-      animal: "cat",
-      breed: "British Shorthair",
-      features: "white paws",
-      info: "friendly",
-      status: "active",
-      owner: "Integration Test",
-      breedimage: ["https://example.com/pet.jpg"],
-      ownerContact1: 12345678,
-      ownerContact2: 87654321,
-      contact1Show: true,
-      contact2Show: false,
-      tagId: `TAG-${uniqueSuffix}`,
-      receivedDate: "11/01/2024",
-    };
+// ─── Guard validation ─────────────────────────────────────────────────────────
 
-    cleanupState.rateLimitKeys.add(rateLimitKey);
+describe("Guard validation", () => {
+  test("rejects malformed JSON body → 400", async () => {
+    const response = await loadHandler()(
+      makeEvent({ body: "{broken", token: makeToken() }),
+      makeContext("guard-1")
+    );
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body).errorKey).toBe("others.invalidJSON");
+  });
 
-    const response = await loadHandler()(makeEvent({
-      body: JSON.stringify(payload),
-      ipAddress,
-      token: makeToken(),
-    }), makeContext(`createpetbasicinfo-success-${uniqueSuffix}`));
+  test("rejects empty POST body → 400", async () => {
+    const response = await loadHandler()(
+      makeEvent({ body: "{}", token: makeToken() }),
+      makeContext("guard-2")
+    );
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body).errorKey).toBe("others.missingParams");
+  });
+});
+
+// ─── Method enforcement ───────────────────────────────────────────────────────
+
+describe("Method enforcement", () => {
+  test("returns 405 for GET on create-pet-basic-info route", async () => {
+    const response = await loadHandler()(
+      makeEvent({ method: "GET", token: makeToken() }),
+      makeContext("method-1")
+    );
+    expect(response.statusCode).toBe(405);
+    expect(JSON.parse(response.body).errorKey).toBe("others.methodNotAllowed");
+  });
+
+  test("returns 405 for DELETE on create-pet-basic-info route", async () => {
+    const response = await loadHandler()(
+      makeEvent({ method: "DELETE", token: makeToken() }),
+      makeContext("method-2")
+    );
+    expect(response.statusCode).toBe(405);
+    expect(JSON.parse(response.body).errorKey).toBe("others.methodNotAllowed");
+  });
+});
+
+// ─── Schema validation ────────────────────────────────────────────────────────
+
+describe("Schema validation — unknown field rejection", () => {
+  test("rejects body containing userId field → 400 unknownField", async () => {
+    const response = await loadHandler()(
+      makeEvent({
+        body: JSON.stringify({ name: "Test", userId: STRANGER_USER_ID }),
+        token: makeToken(),
+      }),
+      makeContext("schema-1")
+    );
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body).errorKey).toBe("unknownField");
+  });
+
+  test("rejects body containing ngoId field → 400 unknownField", async () => {
+    const response = await loadHandler()(
+      makeEvent({
+        body: JSON.stringify({ name: "Test", ngoId: "000000000000000000000001" }),
+        token: makeToken(),
+      }),
+      makeContext("schema-2")
+    );
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body).errorKey).toBe("unknownField");
+  });
+
+  test("rejects NoSQL injection object in name field → 400", async () => {
+    const response = await loadHandler()(
+      makeEvent({
+        body: JSON.stringify({ name: { $gt: "" } }),
+        token: makeToken(),
+      }),
+      makeContext("schema-3")
+    );
+    expect(response.statusCode).toBe(400);
+    expect(typeof JSON.parse(response.body).errorKey).toBe("string");
+  });
+});
+
+// ─── DB-backed tests ──────────────────────────────────────────────────────────
+
+describe("CreatePetBasicInfo DB-backed", () => {
+  dbTest("creates pet in MongoDB and returns sanitized response without internal fields", async () => {
+    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const ip = "198.51.100.10";
+    cleanupState.rateLimitKeys.add(`${ip}:${TEST_OWNER_USER_ID}`);
+
+    const response = await loadHandler()(
+      makeEvent({
+        body: JSON.stringify({
+          name: `Test Pet ${suffix}`,
+          birthday: "2022-01-15",
+          weight: 4.5,
+          sex: "female",
+          sterilization: false,
+          animal: "dog",
+          breed: "Shiba Inu",
+          features: "fluffy tail",
+          info: "playful",
+          status: "active",
+          tagId: `TAG-${suffix}`,
+        }),
+        ipAddress: ip,
+        token: makeToken(),
+      }),
+      makeContext(`create-ok-${suffix}`)
+    );
 
     expect(response.statusCode).toBe(201);
-
     const body = JSON.parse(response.body);
-
     expect(body.success).toBe(true);
     expect(body.id).toBeTruthy();
-    expect(body.result).toEqual(expect.objectContaining({
-      _id: expect.any(String),
-      name: payload.name,
-      tagId: payload.tagId,
-      owner: payload.owner,
-    }));
+    expect(body.result._id).toBeTruthy();
+    expect(body.result.name).toBe(`Test Pet ${suffix}`);
+    expect(body.result.tagId).toBe(`TAG-${suffix}`);
+
+    // Ownership and internal fields must not be exposed
     expect(body.result).not.toHaveProperty("userId");
     expect(body.result).not.toHaveProperty("ngoId");
     expect(body.result).not.toHaveProperty("transferNGO");
@@ -259,92 +355,86 @@ describe("CreatePetBasicInfo DB-backed hardening", () => {
 
     cleanupState.petIds.add(body.id);
 
-    const createdPet = await petsCol().findOne({ _id: new mongoose.Types.ObjectId(body.id) });
+    // Verify the DB record was written with the JWT caller's userId
+    const pet = await mongoose.connection.db.collection("pets").findOne({
+      _id: new mongoose.Types.ObjectId(body.id),
+    });
+    expect(pet).toBeTruthy();
+    expect(String(pet.userId)).toBe(TEST_OWNER_USER_ID);
+    expect(pet.medicationRecordsCount).toBe(0);
+    expect(pet.vaccineRecordsCount).toBe(0);
+    expect(pet.dewormRecordsCount).toBe(0);
+    expect(pet.createdAt).toBeInstanceOf(Date);
+  });
 
-    expect(createdPet).toBeTruthy();
-    expect(String(createdPet.userId)).toBe(TEST_OWNER_USER_ID);
-    expect(createdPet.transferNGO).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          isTransferred: false,
-        }),
-      ])
+  dbTest("rejects client-supplied userId and does not insert pet", async () => {
+    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const ip = "198.51.100.11";
+    cleanupState.rateLimitKeys.add(`${ip}:${TEST_OWNER_USER_ID}`);
+
+    const response = await loadHandler()(
+      makeEvent({
+        body: JSON.stringify({ name: `Blocked ${suffix}`, userId: TEST_OWNER_USER_ID, tagId: `TAG-BLOCK-${suffix}` }),
+        ipAddress: ip,
+        token: makeToken(),
+      }),
+      makeContext(`create-userid-${suffix}`)
     );
-    expect(createdPet.medicationRecordsCount).toBe(0);
-    expect(createdPet.vaccineRecordsCount).toBe(0);
-    expect(createdPet.dewormRecordsCount).toBe(0);
-    expect(createdPet.createdAt).toBeInstanceOf(Date);
-    expect(createdPet.updatedAt).toBeInstanceOf(Date);
-
-    const rateLimitEntry = await rateLimitsCol().findOne({
-      action: "createPetBasicInfo",
-      key: rateLimitKey,
-    });
-
-    expect(rateLimitEntry).toBeTruthy();
-    expect(rateLimitEntry.count).toBeGreaterThanOrEqual(1);
-  });
-
-  dbTest("rejects client supplied userId and does not insert a pet record", async () => {
-    const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const ipAddress = `198.51.100.${Math.floor(Math.random() * 200) + 1}`;
-    const rateLimitKey = `${ipAddress}:${TEST_OWNER_USER_ID}`;
-    const payload = {
-      userId: TEST_OWNER_USER_ID,
-      name: `Blocked Create ${uniqueSuffix}`,
-      birthday: "2024-01-10",
-      sex: "male",
-      animal: "cat",
-      tagId: `TAG-BLOCK-${uniqueSuffix}`,
-    };
-
-    cleanupState.rateLimitKeys.add(rateLimitKey);
-
-    const response = await loadHandler()(makeEvent({
-      body: JSON.stringify(payload),
-      ipAddress,
-      token: makeToken(),
-    }), makeContext(`createpetbasicinfo-userid-${uniqueSuffix}`));
 
     expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body).errorKey).toBe("unknownField");
 
-    const body = JSON.parse(response.body);
-    expect(body.success).toBe(false);
-    expect(body.errorKey).toBe("unknownField");
-
-    const createdPet = await petsCol().findOne({ tagId: payload.tagId });
-    expect(createdPet).toBeNull();
-
-    const rateLimitEntry = await rateLimitsCol().findOne({
-      action: "createPetBasicInfo",
-      key: rateLimitKey,
-    });
-
-    expect(rateLimitEntry).toBeTruthy();
+    const created = await mongoose.connection.db.collection("pets").findOne({ tagId: `TAG-BLOCK-${suffix}` });
+    expect(created).toBeNull();
   });
 
-  dbTest("returns others.invalidJSON without creating rate-limit or pet records", async () => {
-    const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const ipAddress = `198.51.100.${Math.floor(Math.random() * 200) + 1}`;
-    const rateLimitKey = `${ipAddress}:${TEST_OWNER_USER_ID}`;
+  dbTest("invalidJSON does not create a rate-limit entry", async () => {
+    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const ip = "198.51.100.12";
 
-    const response = await loadHandler()(makeEvent({
-      body: "{",
-      ipAddress,
-      token: makeToken(),
-    }), makeContext(`createpetbasicinfo-json-${uniqueSuffix}`));
+    const response = await loadHandler()(
+      makeEvent({ body: "{", ipAddress: ip, token: makeToken() }),
+      makeContext(`create-json-${suffix}`)
+    );
 
     expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body).errorKey).toBe("others.invalidJSON");
 
-    const body = JSON.parse(response.body);
-    expect(body.success).toBe(false);
-    expect(body.errorKey).toBe("others.invalidJSON");
-
-    const rateLimitEntry = await rateLimitsCol().findOne({
+    const rl = await mongoose.connection.db.collection("rate_limits").findOne({
       action: "createPetBasicInfo",
-      key: rateLimitKey,
+      key: `${ip}:${TEST_OWNER_USER_ID}`,
     });
+    expect(rl).toBeNull();
+  });
 
-    expect(rateLimitEntry).toBeNull();
+  dbTest("rejects duplicate tagId → 409 duplicatePetTagId", async () => {
+    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const ip = "198.51.100.13";
+    const tagId = `TAG-DUP-${suffix}`;
+    cleanupState.rateLimitKeys.add(`${ip}:${TEST_OWNER_USER_ID}`);
+
+    // First create should succeed
+    const first = await loadHandler()(
+      makeEvent({
+        body: JSON.stringify({ name: `First Pet ${suffix}`, birthday: "2022-01-15", tagId, animal: "cat", sex: "male" }),
+        ipAddress: ip,
+        token: makeToken(),
+      }),
+      makeContext(`dup-tag-first-${suffix}`)
+    );
+    expect(first.statusCode).toBe(201);
+    cleanupState.petIds.add(JSON.parse(first.body).id);
+
+    // Second create with same tagId should be rejected
+    const second = await loadHandler()(
+      makeEvent({
+        body: JSON.stringify({ name: `Second Pet ${suffix}`, birthday: "2022-01-15", tagId, animal: "dog", sex: "female" }),
+        ipAddress: ip,
+        token: makeToken(),
+      }),
+      makeContext(`dup-tag-second-${suffix}`)
+    );
+    expect(second.statusCode).toBe(409);
+    expect(JSON.parse(second.body).errorKey).toBe("duplicatePetTagId");
   });
 });

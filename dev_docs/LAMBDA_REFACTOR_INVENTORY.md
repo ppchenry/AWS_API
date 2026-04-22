@@ -7,11 +7,11 @@ It is not a perfect measure. Final priority should still consider route count, a
 ## Summary
 
 - Total in-plan Lambda entry files checked: 22
-- Already modularized with `src/handler.js`: 13
-- Remaining Lambdas needing review: 9
+- Already modularized with `src/handler.js`: 17
+- Remaining Lambdas needing review: 5 (all marked out-of-scope by manager)
 - Clear full-separation candidates: 0
-- Medium-size Lambdas that likely need partial separation: 4
-- Smaller Lambdas that should usually stay simple: 5
+- Medium-size Lambdas marked not required: 2
+- Smaller Lambdas marked not required: 3
 
 ## AWS Lambda Dev Deployment Status
 
@@ -47,6 +47,10 @@ These already match the stronger handler-based pattern.
 | `SFExpressRoutes` | `index.js` | 3 | already modularized |
 | `OrderVerification` | `index.js` | 4 | already modularized |
 | `PetBiometricRoutes` | `index.js` | 3 | already modularized |
+| `PetVaccineRecords` | `index.js` | 3 | already modularized |
+| `CreatePetBasicInfo` | `index.js` | 3 | already modularized |
+| `GetAdoption` | `index.js` | 3 | already modularized |
+| `PetInfoByPetNumber` | `index.js` | 3 | already modularized |
 
 ## Partial Separation Recommended
 
@@ -61,10 +65,8 @@ Suggested target shape:
 
 | Priority Tier | Lambda | Entry file | Lines | Recommendation |
 | --- | --- | --- | ---: | --- |
-| x medium | `AIChatBot` | `index.js` | 399 | partial separation likely enough unless logic is more coupled than size suggests |
-| 2 medium | `PetVaccineRecords` | `index.js` | 373 | partial separation likely enough |
-| 1 medium | `CreatePetBasicInfo` | `index.js` | 317 | partial separation likely enough |
-| x medium | `GetBreed` | `index.js` | 301 | partial separation likely enough |
+| x medium — not required | `AIChatBot` | `index.js` | 399 | not required by manager |
+| x medium — not required | `GetBreed` | `index.js` | 301 | not required by manager |
 
 ## Keep Simple Unless Risk Proves Otherwise
 
@@ -72,11 +74,9 @@ These are smaller Lambdas. They should still meet the refactor checklist for val
 
 | Size Tier | Lambda | Entry file | Lines | Recommendation |
 | --- | --- | ---: | --- |
-| ? small | `LambdaProxyRoute` | `index.js` | 248 | keep simple unless control flow is unusually messy |
-| 4 small | `GetAdoption` | `index.js` | 220 | keep simple unless auth or branching is riskier than expected |
-| 3 small | `PetInfoByPetNumber` | `index.js` | 153 | keep simple |
-| x small | `PublicRoutes` | `index.js` | 133 | keep simple |
-| x small | `CreateFeedback` | `index.js` | 119 | keep simple |
+| x small — not required | `LambdaProxyRoute` | `index.js` | 248 | not required by manager |
+| x small — not required | `PublicRoutes` | `index.js` | 133 | not required by manager |
+| x small — not required | `CreateFeedback` | `index.js` | 119 | not required by manager |
 
 ## Full Inventory
 
