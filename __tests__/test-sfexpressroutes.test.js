@@ -228,7 +228,7 @@ describe("SFExpressRoutes direct handler and router safety nets", () => {
 
     const body = JSON.parse(response.body);
     expect(response.statusCode).toBe(405);
-    expect(body.errorKey).toBe("others.methodNotAllowed");
+    expect(body.errorKey).toBe("common.methodNotAllowed");
   });
 });
 
@@ -236,7 +236,7 @@ describe("SFExpressRoutes authentication", () => {
   test("rejects missing Authorization header -> 401", async () => {
     const res = await req("POST", "/sf-express-routes/get-token", {});
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects garbage Authorization token -> 401", async () => {
@@ -244,13 +244,13 @@ describe("SFExpressRoutes authentication", () => {
       Authorization: "Bearer this.is.garbage",
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects expired JWT -> 401", async () => {
     const res = await req("POST", "/sf-express-routes/get-area", { token: "abc" }, expiredAuth());
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects JWT with wrong algorithm (none) -> 401", async () => {
@@ -270,7 +270,7 @@ describe("SFExpressRoutes authentication", () => {
       Authorization: `Bearer ${noneToken}`,
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("error response shape includes success, errorKey, error, requestId", async () => {
@@ -297,7 +297,7 @@ describe("SFExpressRoutes authentication", () => {
       Authorization: `Bearer ${tampered}`,
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 });
 
@@ -305,7 +305,7 @@ describe("SFExpressRoutes request guard", () => {
   test("rejects malformed JSON body -> 400", async () => {
     const res = await rawReq("POST", "/sf-express-routes/get-area", '{"token":"broken"', tokenAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidJSON");
+    expect(res.body.errorKey).toBe("common.invalidJSON");
   });
 
   test.each([
@@ -317,7 +317,7 @@ describe("SFExpressRoutes request guard", () => {
   ])("rejects empty body for POST %s -> 400", async (path) => {
     const res = await req("POST", path, {}, tokenAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   });
 
   test("returns 403 for disallowed CORS preflight origin", async () => {
@@ -354,7 +354,7 @@ describe("POST /sf-express-routes/create-order", () => {
       address: "Tsuen Wan",
     }, tokenAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("sfExpress.validation.lastNameRequired");
+    expect(res.body.errorKey).toBe("sfExpressRoutes.errors.validation.lastNameRequired");
   });
 
   test("rejects missing phoneNumber -> 400", async () => {
@@ -363,7 +363,7 @@ describe("POST /sf-express-routes/create-order", () => {
       address: "Tsuen Wan",
     }, tokenAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("sfExpress.validation.phoneNumberRequired");
+    expect(res.body.errorKey).toBe("sfExpressRoutes.errors.validation.phoneNumberRequired");
   });
 
   test("rejects missing address -> 400", async () => {
@@ -372,7 +372,7 @@ describe("POST /sf-express-routes/create-order", () => {
       phoneNumber: "91234567",
     }, tokenAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("sfExpress.validation.addressRequired");
+    expect(res.body.errorKey).toBe("sfExpressRoutes.errors.validation.addressRequired");
   });
 
   dbTest("rejects tempId owned by a different email -> 403", async () => {
@@ -399,7 +399,7 @@ describe("POST /sf-express-routes/create-order", () => {
         userEmail: `other_${TEST_TS}@test.com`,
       }));
       expect(res.status).toBe(403);
-      expect(res.body.errorKey).toBe("others.unauthorized");
+      expect(res.body.errorKey).toBe("common.unauthorized");
     } finally {
       await orders.deleteMany({ tempId });
     }
@@ -423,7 +423,7 @@ describe("POST /sf-express-routes/create-order", () => {
       address: "Blocked Address",
     }, headers);
     expect(res.status).toBe(429);
-    expect(res.body.errorKey).toBe("others.rateLimited");
+    expect(res.body.errorKey).toBe("common.rateLimited");
   });
 });
 
@@ -433,7 +433,7 @@ describe("POST /sf-express-routes/get-area", () => {
       token: "",
     }, tokenAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("sfExpress.validation.tokenRequired");
+    expect(res.body.errorKey).toBe("sfExpressRoutes.errors.validation.tokenRequired");
   });
 
   liveTest("returns area list -> 200", process.env.RUN_SFEXPRESS_LIVE_TESTS === "true", async () => {
@@ -462,7 +462,7 @@ describe("POST /sf-express-routes/get-netCode", () => {
       areaId: 2,
     }, tokenAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("sfExpress.validation.typeIdRequired");
+    expect(res.body.errorKey).toBe("sfExpressRoutes.errors.validation.typeIdRequired");
   });
 
   test("rejects missing areaId -> 400", async () => {
@@ -471,7 +471,7 @@ describe("POST /sf-express-routes/get-netCode", () => {
       typeId: 1,
     }, tokenAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("sfExpress.validation.areaIdRequired");
+    expect(res.body.errorKey).toBe("sfExpressRoutes.errors.validation.areaIdRequired");
   });
 
   liveTest(
@@ -505,7 +505,7 @@ describe("POST /sf-express-routes/get-pickup-locations", () => {
       lang: "en",
     }, tokenAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("sfExpress.validation.netCodeListRequired");
+    expect(res.body.errorKey).toBe("sfExpressRoutes.errors.validation.netCodeListRequired");
   });
 
   liveTest(
@@ -537,7 +537,7 @@ describe("POST /v2/sf-express-routes/print-cloud-waybill", () => {
       waybillNo: "",
     }, tokenAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("sfExpress.validation.waybillNoRequired");
+    expect(res.body.errorKey).toBe("sfExpressRoutes.errors.validation.waybillNoRequired");
   });
 
   liveTest(

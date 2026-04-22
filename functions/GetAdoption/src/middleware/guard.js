@@ -14,7 +14,7 @@ async function validateAdoptionRequest({ event }) {
     if (!id || !isValidObjectId(id)) {
       return {
         isValid: false,
-        error: createErrorResponse(400, "adoption.invalidPetIdFormat", event),
+        error: createErrorResponse(400, "getAdoption.errors.invalidPetIdFormat", event),
       };
     }
 
@@ -29,7 +29,7 @@ async function validateAdoptionRequest({ event }) {
     if (queryParams.page !== undefined && page === null) {
       return {
         isValid: false,
-        error: createErrorResponse(400, "adoption.invalidPage", event),
+        error: createErrorResponse(400, "getAdoption.errors.invalidPage", event),
       };
     }
 
@@ -37,7 +37,7 @@ async function validateAdoptionRequest({ event }) {
     if (search.length > 100) {
       return {
         isValid: false,
-        error: createErrorResponse(400, "adoption.invalidSearch", event),
+        error: createErrorResponse(400, "getAdoption.errors.invalidSearch", event),
       };
     }
 

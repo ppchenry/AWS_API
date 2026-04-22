@@ -26,7 +26,7 @@ async function updatePetEye({ event, body }) {
       windowSec: 60,
     });
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     // Zod validation
@@ -34,7 +34,7 @@ async function updatePetEye({ event, body }) {
     if (!parseResult.success) {
       return createErrorResponse(
         400,
-        getFirstZodIssueMessage(parseResult.error, "updatePetEye.missingRequiredFields"),
+        getFirstZodIssueMessage(parseResult.error, "getAllPets.errors.updatePetEye.missingRequiredFields"),
         event
       );
     }
@@ -44,21 +44,21 @@ async function updatePetEye({ event, body }) {
 
     // Validate petId format
     if (!isValidObjectId(petId)) {
-      return createErrorResponse(400, "updatePetEye.invalidPetIdFormat", event);
+      return createErrorResponse(400, "getAllPets.errors.updatePetEye.invalidPetIdFormat", event);
     }
 
     // Validate date format
     if (!isValidDateFormat(date)) {
-      return createErrorResponse(400, "updatePetEye.invalidDateFormat", event);
+      return createErrorResponse(400, "getAllPets.errors.updatePetEye.invalidDateFormat", event);
     }
 
     // Validate image URLs
     if (!isValidImageUrl(leftEyeImage1PublicAccessUrl)) {
-      return createErrorResponse(400, "updatePetEye.invalidImageUrlFormat", event);
+      return createErrorResponse(400, "getAllPets.errors.updatePetEye.invalidImageUrlFormat", event);
     }
 
     if (!isValidImageUrl(rightEyeImage1PublicAccessUrl)) {
-      return createErrorResponse(400, "updatePetEye.invalidImageUrlFormat", event);
+      return createErrorResponse(400, "getAllPets.errors.updatePetEye.invalidImageUrlFormat", event);
     }
 
     const Pet = mongoose.model("Pet");
@@ -83,7 +83,7 @@ async function updatePetEye({ event, body }) {
       return createSuccessResponse(201, event, {
         message: getTranslation(
           loadTranslations(event.cookies?.language || "zh"),
-          "updatePetEye.success"
+          "getAllPets.success.updatePetEye.updated"
         ),
         result: sanitizePet(updatedPet),
       });
@@ -93,20 +93,20 @@ async function updatePetEye({ event, body }) {
     const pet = await Pet.findOne({ _id: petId }).select("userId deleted").lean();
 
     if (!pet) {
-      return createErrorResponse(404, "updatePetEye.petNotFound", event);
+      return createErrorResponse(404, "getAllPets.errors.updatePetEye.petNotFound", event);
     }
     if (pet.deleted === true) {
-      return createErrorResponse(410, "updatePetEye.petDeleted", event);
+      return createErrorResponse(410, "getAllPets.errors.updatePetEye.petDeleted", event);
     }
     // Pet exists and is not deleted, so the caller doesn't own it.
-    return createErrorResponse(403, "others.unauthorized", event);
+    return createErrorResponse(403, "common.unauthorized", event);
   } catch (error) {
     logError("Failed to update pet eye", {
       scope: "services.updatePetEye.updatePetEye",
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

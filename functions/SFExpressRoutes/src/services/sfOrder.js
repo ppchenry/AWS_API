@@ -20,7 +20,7 @@ async function createOrder({ event, body }) {
       identifier: getRateLimitKey(event),
     });
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     const parseResult = createOrderSchema.safeParse(body);
@@ -89,7 +89,7 @@ async function createOrder({ event, body }) {
 
     const trackingNumber = apiResultData.msgData?.waybillNoInfoList?.[0]?.waybillNo;
     if (!trackingNumber) {
-      return createErrorResponse(500, "sfExpress.errors.missingWaybill", event);
+      return createErrorResponse(500, "sfExpressRoutes.errors.missingWaybill", event);
     }
 
     const matchedTempIds = authorization.orders.map((order) => order.tempId).filter(Boolean);
@@ -118,9 +118,9 @@ async function createOrder({ event, body }) {
       error,
     });
 
-    const errorKey = error.message && error.message.includes("sfExpress.")
+    const errorKey = error.message && error.message.includes("sfExpressRoutes.")
       ? error.message
-      : "others.internalError";
+      : "common.internalError";
 
     return createErrorResponse(500, errorKey, event);
   }

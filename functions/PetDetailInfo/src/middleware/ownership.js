@@ -19,14 +19,14 @@ async function authorizeOwnership({ event }) {
     .lean();
 
   if (!pet) {
-    return createErrorResponse(404, "petNotFound", event);
+    return createErrorResponse(404, "petDetailInfo.errors.petNotFound", event);
   }
 
   const isOwner = pet.userId && String(pet.userId) === String(event.userId);
   const isNgo = callerNgoId && pet.ngoId && String(pet.ngoId) === String(event.ngoId);
 
   if (!isOwner && !isNgo) {
-    return createErrorResponse(403, "others.forbidden", event);
+    return createErrorResponse(403, "common.forbidden", event);
   }
 
   // Attach verified pet so services can skip the ownership re-fetch

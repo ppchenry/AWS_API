@@ -26,13 +26,13 @@ async function getDewormRecords({ event }) {
       .lean();
 
     return createSuccessResponse(200, event, {
-      message: "dewormRecord.getSuccess",
+      message: "petMedicalRecord.success.dewormRecord.getSuccess",
       form: { deworm: records.map(sanitizeRecord) },
       petId: petID,
     });
   } catch (error) {
     logError("Failed to get deworm records", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -52,14 +52,14 @@ async function createDewormRecord({ event, body }) {
     }
     const data = parseResult.data;
     if (Object.keys(data).length === 0) {
-      return createErrorResponse(400, "dewormRecord.noFieldsToUpdate", event);
+      return createErrorResponse(400, "petMedicalRecord.errors.dewormRecord.noFieldsToUpdate", event);
     }
 
     if (data.date && !isValidDateFormat(data.date)) {
-      return createErrorResponse(400, "dewormRecord.invalidDateFormat", event);
+      return createErrorResponse(400, "petMedicalRecord.errors.dewormRecord.invalidDateFormat", event);
     }
     if (data.nextDewormDate && !isValidDateFormat(data.nextDewormDate)) {
-      return createErrorResponse(400, "dewormRecord.invalidDateFormat", event);
+      return createErrorResponse(400, "petMedicalRecord.errors.dewormRecord.invalidDateFormat", event);
     }
 
     const DewormRecords = mongoose.model("Deworm_Records");
@@ -86,14 +86,14 @@ async function createDewormRecord({ event, body }) {
     });
 
     return createSuccessResponse(200, event, {
-      message: "dewormRecord.postSuccess",
+      message: "petMedicalRecord.success.dewormRecord.created",
       form: sanitizeRecord(newRecord),
       petId: petID,
       dewormRecordId: newRecord._id,
     });
   } catch (error) {
     logError("Failed to create deworm record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -115,10 +115,10 @@ async function updateDewormRecord({ event, body }) {
     const data = parseResult.data;
 
     if (data.date && !isValidDateFormat(data.date)) {
-      return createErrorResponse(400, "dewormRecord.invalidDateFormat", event);
+      return createErrorResponse(400, "petMedicalRecord.errors.dewormRecord.invalidDateFormat", event);
     }
     if (data.nextDewormDate && !isValidDateFormat(data.nextDewormDate)) {
-      return createErrorResponse(400, "dewormRecord.invalidDateFormat", event);
+      return createErrorResponse(400, "petMedicalRecord.errors.dewormRecord.invalidDateFormat", event);
     }
 
     const DewormRecords = mongoose.model("Deworm_Records");
@@ -135,7 +135,7 @@ async function updateDewormRecord({ event, body }) {
     if (data.notification !== undefined) updateFields.notification = data.notification;
 
     if (Object.keys(updateFields).length === 0) {
-      return createErrorResponse(400, "dewormRecord.noFieldsToUpdate", event);
+      return createErrorResponse(400, "petMedicalRecord.errors.dewormRecord.noFieldsToUpdate", event);
     }
 
     const updated = await DewormRecords.findOneAndUpdate(
@@ -148,7 +148,7 @@ async function updateDewormRecord({ event, body }) {
     ).lean();
 
     if (!updated) {
-      return createErrorResponse(404, "dewormRecord.dewormRecordNotFound", event);
+      return createErrorResponse(404, "petMedicalRecord.errors.dewormRecord.notFound", event);
     }
 
     const latestDewormRecords = await DewormRecords.find({ petId: petID })
@@ -162,14 +162,14 @@ async function updateDewormRecord({ event, body }) {
     });
 
     return createSuccessResponse(200, event, {
-      message: "dewormRecord.putSuccess",
+      message: "petMedicalRecord.success.dewormRecord.updated",
       petId: petID,
       dewormRecordId: dewormID,
       form: sanitizeRecord(updated),
     });
   } catch (error) {
     logError("Failed to update deworm record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -190,7 +190,7 @@ async function deleteDewormRecord({ event }) {
     const deleted = await DewormRecords.deleteOne({ _id: dewormID, petId: petID });
 
     if (deleted.deletedCount === 0) {
-      return createErrorResponse(404, "dewormRecord.dewormRecordNotFound", event);
+      return createErrorResponse(404, "petMedicalRecord.errors.dewormRecord.notFound", event);
     }
 
     const [count, latest] = await Promise.all([
@@ -204,12 +204,12 @@ async function deleteDewormRecord({ event }) {
     });
 
     return createSuccessResponse(200, event, {
-      message: "dewormRecord.deleteSuccess",
+      message: "petMedicalRecord.success.dewormRecord.deleted",
       id: petID,
     });
   } catch (error) {
     logError("Failed to delete deworm record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

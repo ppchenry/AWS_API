@@ -32,7 +32,7 @@ async function submitPurchaseConfirmation({ event }) {
       windowSec: 3600,
     });
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     // 2. Parse multipart form data
@@ -41,7 +41,7 @@ async function submitPurchaseConfirmation({ event }) {
     // 3. Zod validation
     const parseResult = purchaseConfirmationSchema.safeParse(parsed);
     if (!parseResult.success) {
-      return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error, "purchase.errors.missingRequiredFields"), event);
+      return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error, "purchaseConfirmation.errors.purchase.missingRequiredFields"), event);
     }
 
     const {
@@ -92,13 +92,13 @@ async function submitPurchaseConfirmation({ event }) {
     // 5. Duplicate tempId guard
     const Order = mongoose.model("Order");
     if (await Order.findOne({ tempId }, { _id: 1 }).lean()) {
-      return createErrorResponse(409, "purchase.errors.duplicateOrder", event);
+      return createErrorResponse(409, "purchaseConfirmation.errors.purchase.duplicateOrder", event);
     }
 
     // 6. Resolve canonical price (server-authoritative — shopCode is required)
     const priceResult = await resolveCanonicalPrice({ shopCode });
     if (!priceResult) {
-      return createErrorResponse(400, "purchase.errors.invalidShopCode", event);
+      return createErrorResponse(400, "purchaseConfirmation.errors.purchase.invalidShopCode", event);
     }
     const { canonicalPrice } = priceResult;
 
@@ -113,7 +113,7 @@ async function submitPurchaseConfirmation({ event }) {
       });
     } catch (saveErr) {
       if (saveErr.code === 11000) {
-        return createErrorResponse(409, "purchase.errors.duplicateOrder", event);
+        return createErrorResponse(409, "purchaseConfirmation.errors.purchase.duplicateOrder", event);
       }
       throw saveErr;
     }
@@ -202,13 +202,13 @@ async function submitPurchaseConfirmation({ event }) {
     });
   } catch (error) {
     if (error.code === "INVALID_FILE_TYPE") {
-      return createErrorResponse(400, "purchase.errors.invalidFileType", event);
+      return createErrorResponse(400, "purchaseConfirmation.errors.purchase.invalidFileType", event);
     }
     if (error.code === "FILE_TOO_LARGE") {
-      return createErrorResponse(400, "purchase.errors.fileTooLarge", event);
+      return createErrorResponse(400, "purchaseConfirmation.errors.purchase.fileTooLarge", event);
     }
     logError("submitPurchaseConfirmation failed", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

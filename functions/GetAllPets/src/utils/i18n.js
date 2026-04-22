@@ -24,7 +24,7 @@ const loadTranslations = (lang = "en") => {
 /**
  * Resolves a dot-separated key against a translations object.
  * @param {Record<string, any>} translations - Loaded translations
- * @param {string} key - Dot-separated translation key (e.g. 'others.unauthorized')
+ * @param {string} key - Dot-separated translation key (e.g. 'common.unauthorized')
  * @returns {string} Translated string, or the key itself if not found
  */
 const getTranslation = (translations, key) => {

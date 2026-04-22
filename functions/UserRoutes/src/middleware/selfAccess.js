@@ -11,7 +11,7 @@ const SELF_ACCESS_POLICIES = {
 };
 
 function createUnauthorizedResponse(event) {
-  return createErrorResponse(403, 'others.unauthorized', event);
+  return createErrorResponse(403, 'common.unauthorized', event);
 }
 
 /**

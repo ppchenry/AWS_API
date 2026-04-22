@@ -180,13 +180,13 @@ describe("JWT authentication on protected routes", () => {
   test("rejects request with no Authorization header → 401", async () => {
     const res = await req("GET", `/pets/pet-list/${NONEXISTENT_ID}`);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects expired JWT → 401", async () => {
     const res = await req("GET", `/pets/pet-list/${NONEXISTENT_ID}`, undefined, expiredAuth());
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects garbage Bearer token → 401", async () => {
@@ -194,7 +194,7 @@ describe("JWT authentication on protected routes", () => {
       Authorization: "Bearer this.is.garbage",
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects token without Bearer prefix → 401", async () => {
@@ -203,7 +203,7 @@ describe("JWT authentication on protected routes", () => {
       Authorization: token,
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects tampered JWT signature → 401", async () => {
@@ -214,7 +214,7 @@ describe("JWT authentication on protected routes", () => {
       Authorization: `Bearer ${tampered}`,
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects alg:none token → 401", async () => {
@@ -225,14 +225,14 @@ describe("JWT authentication on protected routes", () => {
       Authorization: `Bearer ${noneToken}`,
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("NGO pet list does NOT require JWT (public route)", async () => {
     const res = await req("GET", `/pets/pet-list-ngo/${NONEXISTENT_ID}`);
     // 404 (no pets) proves it passed auth — not 401
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("ngoPath.noPetsFound");
+    expect(res.body.errorKey).toBe("getAllPets.errors.ngoPath.noPetsFound");
   });
 });
 
@@ -261,7 +261,7 @@ describe("Guard: malformed body", () => {
       strangerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidJSON");
+    expect(res.body.errorKey).toBe("common.invalidJSON");
   });
 
   test("rejects invalid JSON on PUT updatePetEye → 400 invalidJSON", async () => {
@@ -272,19 +272,19 @@ describe("Guard: malformed body", () => {
       strangerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidJSON");
+    expect(res.body.errorKey).toBe("common.invalidJSON");
   });
 
   test("rejects empty body on POST deletePet → 400 missingParams", async () => {
     const res = await req("POST", "/pets/deletePet", {}, strangerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   });
 
   test("rejects empty body on PUT updatePetEye → 400 missingParams", async () => {
     const res = await req("PUT", "/pets/updatePetEye", {}, strangerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   });
 });
 
@@ -294,7 +294,7 @@ describe("Guard: path parameter validation", () => {
   test("rejects invalid ngoId format → 400", async () => {
     const res = await req("GET", "/pets/pet-list-ngo/not-an-objectid");
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("ngoPath.invalidNgoIdFormat");
+    expect(res.body.errorKey).toBe("getAllPets.errors.ngoPath.invalidNgoIdFormat");
   });
 
   test("rejects invalid userId format → 400", async () => {
@@ -305,7 +305,7 @@ describe("Guard: path parameter validation", () => {
       Authorization: `Bearer ${matchingToken}`,
     });
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("getPetsByUser.invalidUserIdFormat");
+    expect(res.body.errorKey).toBe("getAllPets.errors.getPetsByUser.invalidUserIdFormat");
   });
 });
 
@@ -316,7 +316,7 @@ describe("Self-access enforcement on GET /pets/pet-list/{userId}", () => {
     // strangerToken has userId 000...002 but path has NONEXISTENT_ID (000...001)
     const res = await req("GET", `/pets/pet-list/${NONEXISTENT_ID}`, undefined, strangerAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("passes self-access when JWT userId matches path userId", async () => {
@@ -343,13 +343,13 @@ describe("POST /pets/deletePet — validation", () => {
   test("rejects empty petId string → 400", async () => {
     const res = await req("POST", "/pets/deletePet", { petId: "" }, strangerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("deleteStatus.missingPetId");
+    expect(res.body.errorKey).toBe("getAllPets.errors.deleteStatus.missingPetId");
   });
 
   test("rejects invalid petId format → 400", async () => {
     const res = await req("POST", "/pets/deletePet", { petId: "not-an-objectid" }, strangerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("deleteStatus.invalidPetIdFormat");
+    expect(res.body.errorKey).toBe("getAllPets.errors.deleteStatus.invalidPetIdFormat");
   });
 
   test("rejects extra fields via .strict() → 400", async () => {
@@ -363,7 +363,7 @@ describe("POST /pets/deletePet — validation", () => {
   test("returns 404 for nonexistent petId with valid format", async () => {
     const res = await req("POST", "/pets/deletePet", { petId: NONEXISTENT_ID }, strangerAuth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("deleteStatus.petNotFound");
+    expect(res.body.errorKey).toBe("getAllPets.errors.deleteStatus.petNotFound");
   });
 });
 
@@ -380,7 +380,7 @@ describe("PUT /pets/updatePetEye — validation", () => {
   test("rejects missing required fields → 400", async () => {
     const res = await req("PUT", "/pets/updatePetEye", { petId: NONEXISTENT_ID }, strangerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("updatePetEye.missingRequiredFields");
+    expect(res.body.errorKey).toBe("getAllPets.errors.updatePetEye.missingRequiredFields");
   });
 
   test("rejects invalid petId format → 400", async () => {
@@ -389,7 +389,7 @@ describe("PUT /pets/updatePetEye — validation", () => {
       petId: "not-an-objectid",
     }, strangerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("updatePetEye.invalidPetIdFormat");
+    expect(res.body.errorKey).toBe("getAllPets.errors.updatePetEye.invalidPetIdFormat");
   });
 
   test("rejects invalid date format → 400", async () => {
@@ -398,7 +398,7 @@ describe("PUT /pets/updatePetEye — validation", () => {
       date: "not-a-date",
     }, strangerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("updatePetEye.invalidDateFormat");
+    expect(res.body.errorKey).toBe("getAllPets.errors.updatePetEye.invalidDateFormat");
   });
 
   test("rejects invalid image URL → 400", async () => {
@@ -407,7 +407,7 @@ describe("PUT /pets/updatePetEye — validation", () => {
       leftEyeImage1PublicAccessUrl: "not-a-url",
     }, strangerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("updatePetEye.invalidImageUrlFormat");
+    expect(res.body.errorKey).toBe("getAllPets.errors.updatePetEye.invalidImageUrlFormat");
   });
 
   test("rejects extra fields via .strict() → 400", async () => {
@@ -421,7 +421,7 @@ describe("PUT /pets/updatePetEye — validation", () => {
   test("returns 404 for nonexistent petId with all valid fields", async () => {
     const res = await req("PUT", "/pets/updatePetEye", validBody, strangerAuth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("updatePetEye.petNotFound");
+    expect(res.body.errorKey).toBe("getAllPets.errors.updatePetEye.petNotFound");
   });
 });
 
@@ -443,7 +443,7 @@ describe("Write-path rate limiting", () => {
         }
       );
       expect(res.status).toBe(404);
-      expect(res.body.errorKey).toBe("deleteStatus.petNotFound");
+      expect(res.body.errorKey).toBe("getAllPets.errors.deleteStatus.petNotFound");
     }
 
     const limited = await req(
@@ -456,7 +456,7 @@ describe("Write-path rate limiting", () => {
       }
     );
     expect(limited.status).toBe(429);
-    expect(limited.body.errorKey).toBe("others.rateLimited");
+    expect(limited.body.errorKey).toBe("common.rateLimited");
   }, 90000);
 
   test("PUT /pets/updatePetEye returns 429 after exceeding the fixed window", async () => {
@@ -480,7 +480,7 @@ describe("Write-path rate limiting", () => {
         }
       );
       expect(res.status).toBe(404);
-      expect(res.body.errorKey).toBe("updatePetEye.petNotFound");
+      expect(res.body.errorKey).toBe("getAllPets.errors.updatePetEye.petNotFound");
     }
 
     const limited = await req(
@@ -493,7 +493,7 @@ describe("Write-path rate limiting", () => {
       }
     );
     expect(limited.status).toBe(429);
-    expect(limited.body.errorKey).toBe("others.rateLimited");
+    expect(limited.body.errorKey).toBe("common.rateLimited");
   }, 90000);
 });
 
@@ -503,7 +503,7 @@ describe("GET /pets/pet-list-ngo/{ngoId} — Tier 1", () => {
   test("returns 404 for valid ngoId with no pets", async () => {
     const res = await req("GET", `/pets/pet-list-ngo/${NONEXISTENT_ID}`);
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("ngoPath.noPetsFound");
+    expect(res.body.errorKey).toBe("getAllPets.errors.ngoPath.noPetsFound");
   });
 
   test("includes CORS headers on the response", async () => {
@@ -545,7 +545,7 @@ describe("GET /pets/pet-list-ngo/{ngoId} — Tier 2", () => {
   ngoTest("search=nonexistent returns 404 with correct error key", async () => {
     const res = await req("GET", `/pets/pet-list-ngo/${TEST_NGO_ID}?search=ZZZZNOEXIST99`);
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("ngoPath.noPetsFound");
+    expect(res.body.errorKey).toBe("getAllPets.errors.ngoPath.noPetsFound");
   });
 
   ngoTest("search=dog filters results to matching searchable fields", async () => {
@@ -649,7 +649,7 @@ describe("GET /pets/pet-list-ngo/{ngoId} — Tier 2", () => {
   ngoTest("page beyond last returns 404", async () => {
     const res = await req("GET", `/pets/pet-list-ngo/${TEST_NGO_ID}?page=9999`);
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("ngoPath.noPetsFound");
+    expect(res.body.errorKey).toBe("getAllPets.errors.ngoPath.noPetsFound");
   });
 });
 
@@ -676,7 +676,7 @@ describe("GET /pets/pet-list/{userId} — Tier 2", () => {
   petTest("returns 403 for a stranger JWT on another user's pet list", async () => {
     const res = await req("GET", `/pets/pet-list/${TEST_OWNER_USER_ID}`, undefined, strangerAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   petTest("high page returns 200 with empty form array", async () => {
@@ -694,7 +694,7 @@ describe("POST /pets/deletePet — ownership", () => {
   petTest("returns 403 for a stranger JWT on another user's pet", async () => {
     const res = await req("POST", "/pets/deletePet", { petId: TEST_PET_ID }, strangerAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 });
 
@@ -709,7 +709,7 @@ describe("PUT /pets/updatePetEye — ownership", () => {
       rightEyeImage1PublicAccessUrl: "https://example.com/right.jpg",
     }, strangerAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 });
 
@@ -729,7 +729,7 @@ describe("POST /pets/deletePet — lifecycle", () => {
     // Second delete → already deleted
     const reDel = await req("POST", "/pets/deletePet", { petId: DISPOSABLE_PET_ID }, ownerAuth());
     expect(reDel.status).toBe(409);
-    expect(reDel.body.errorKey).toBe("deleteStatus.petAlreadyDeleted");
+    expect(reDel.body.errorKey).toBe("getAllPets.errors.deleteStatus.petAlreadyDeleted");
   });
 });
 
@@ -745,7 +745,7 @@ describe("PUT /pets/updatePetEye — deleted pet", () => {
       rightEyeImage1PublicAccessUrl: "https://example.com/right.jpg",
     }, ownerAuth());
     expect(res.status).toBe(410);
-    expect(res.body.errorKey).toBe("updatePetEye.petDeleted");
+    expect(res.body.errorKey).toBe("getAllPets.errors.updatePetEye.petDeleted");
   });
 });
 

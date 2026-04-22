@@ -69,7 +69,7 @@ async function handleRequest(event, context) {
     });
     return createErrorResponse(
       500, 
-      "others.internalError", 
+      "common.internalError", 
       event
     );
   }

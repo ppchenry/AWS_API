@@ -6,9 +6,9 @@ const { z } = require("zod");
  */
 const generateCodeSchema = z.object({
   email: z
-    .string({ required_error: "missingEmailParams" })
-    .min(1, "missingEmailParams")
-    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "invalidEmailFormat"),
+    .string({ required_error: "emailVerification.errors.missingEmailParams" })
+    .min(1, "emailVerification.errors.missingEmailParams")
+    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "emailVerification.errors.invalidEmailFormat"),
   lang: z.string().optional(),
 });
 
@@ -20,11 +20,11 @@ const verifyCodeSchema = z.object({
   email: z
     .string({ required_error: "missingParams" })
     .min(1, "missingParams")
-    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "invalidEmailFormat"),
+    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "emailVerification.errors.invalidEmailFormat"),
   resetCode: z
     .string({ required_error: "missingParams" })
     .min(1, "missingParams")
-    .regex(/^\d{6}$/, "invalidResetCodeFormat"),
+    .regex(/^\d{6}$/, "emailVerification.errors.invalidResetCodeFormat"),
   lang: z.string().optional(),
 });
 

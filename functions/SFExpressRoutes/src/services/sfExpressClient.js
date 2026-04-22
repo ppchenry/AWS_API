@@ -52,17 +52,17 @@ async function callSfService({ serviceCode, msgData, accessToken, url = SF_SERVI
   });
 
   if (response.status < 200 || response.status >= 300) {
-    throw new Error("sfExpress.errors.sfApiError");
+    throw new Error("sfExpressRoutes.errors.sfApiError");
   }
 
   if (response.body.apiResultCode !== "A1000") {
-    throw new Error("sfExpress.errors.sfApiError");
+    throw new Error("sfExpressRoutes.errors.sfApiError");
   }
 
   try {
     return JSON.parse(response.body.apiResultData || "{}");
   } catch (_error) {
-    throw new Error("sfExpress.errors.invalidSfResponse");
+    throw new Error("sfExpressRoutes.errors.invalidSfResponse");
   }
 }
 
@@ -79,7 +79,7 @@ async function downloadPdf(url, token) {
       },
       (res) => {
         if (res.statusCode !== 200) {
-          reject(new Error("sfExpress.errors.sfApiError"));
+          reject(new Error("sfExpressRoutes.errors.sfApiError"));
           return;
         }
 

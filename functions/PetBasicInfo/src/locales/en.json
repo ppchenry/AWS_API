@@ -1,5 +1,5 @@
 {
-  "others": {
+  "common": {
     "unauthorized": "Unauthorized",
     "internalError": "Internal Server Error",
     "rateLimited": "Too many requests. Please try again later."

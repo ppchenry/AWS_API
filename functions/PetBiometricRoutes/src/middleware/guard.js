@@ -31,7 +31,7 @@ async function validatePetBiometricRequest({ event }) {
     } catch (error) {
       return {
         isValid: false,
-        error: createErrorResponse(400, "others.invalidJSON", event),
+        error: createErrorResponse(400, "common.invalidJSON", event),
       };
     }
   }
@@ -39,7 +39,7 @@ async function validatePetBiometricRequest({ event }) {
   if (ROUTES_REQUIRING_BODY.has(routeKey) && (!parsedBody || Object.keys(parsedBody).length === 0)) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "others.missingParams", event),
+      error: createErrorResponse(400, "common.missingParams", event),
     };
   }
 
@@ -51,7 +51,7 @@ async function validatePetBiometricRequest({ event }) {
   ) {
     return {
       isValid: false,
-      error: createErrorResponse(403, "petBiometric.forbidden", event),
+      error: createErrorResponse(403, "petBiometricRoutes.errors.forbidden", event),
     };
   }
 
@@ -60,7 +60,7 @@ async function validatePetBiometricRequest({ event }) {
     if (!isValidObjectId(petId)) {
       return {
         isValid: false,
-        error: createErrorResponse(400, "petBiometric.invalidPetId", event),
+        error: createErrorResponse(400, "petBiometricRoutes.errors.invalidPetId", event),
       };
     }
   }

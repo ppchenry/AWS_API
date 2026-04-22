@@ -18,7 +18,7 @@ async function getUserPetList({ event }) {
     const userId = event.pathParameters?.userId;
 
     if (!userId) {
-      return createErrorResponse(400, "getPetsByUser.missingUserId", event);
+      return createErrorResponse(400, "getAllPets.errors.getPetsByUser.missingUserId", event);
     }
 
     // Self-access is enforced by guard.js + selfAccess.js (pathUserId policy).
@@ -44,7 +44,7 @@ async function getUserPetList({ event }) {
     return createSuccessResponse(200, event, {
       message: getTranslation(
         loadTranslations(event.cookies?.language || "zh"),
-        "getPetsByUser.success"
+        "getAllPets.success.getPetsByUser.retrieved"
       ),
       form: sanitizePets(pets),
       total: totalNumber,
@@ -55,7 +55,7 @@ async function getUserPetList({ event }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

@@ -27,11 +27,11 @@ async function generateSmsCode({ event, body }) {
         scope: "services.sms.generateSmsCode",
         event,
       });
-      return createErrorResponse(503, "others.serviceUnavailable", event);
+      return createErrorResponse(503, "common.serviceUnavailable", event);
     }
     const parseResult = smsCodeSchema.safeParse(body);
     if (!parseResult.success) {
-      return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error, "verification.invalidPhoneFormat"), event);
+      return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error, "userRoutes.errors.verification.invalidPhoneFormat"), event);
     }
     const phoneNumber = normalizePhone(parseResult.data.phoneNumber);
 
@@ -43,7 +43,7 @@ async function generateSmsCode({ event, body }) {
       windowSec: 10 * 60,
     });
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     await client.verify.v2.services(twilioVerifyServiceSid).verifications.create({
@@ -63,7 +63,7 @@ async function generateSmsCode({ event, body }) {
         phoneNumber: body?.phoneNumber,
       },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -81,7 +81,7 @@ async function verifySmsCode({ event, body }) {
         scope: "services.sms.verifySmsCode",
         event,
       });
-      return createErrorResponse(503, "others.serviceUnavailable", event);
+      return createErrorResponse(503, "common.serviceUnavailable", event);
     }
     const User = mongoose.model("User");
     
@@ -101,7 +101,7 @@ async function verifySmsCode({ event, body }) {
       windowSec: 10 * 60,
     });
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     // 2. Twilio Check
@@ -112,11 +112,11 @@ async function verifySmsCode({ event, body }) {
     // 3. Handle Failures Early
     if (status !== "approved") {
       const errorMap = {
-        pending: "verification.codeIncorrect",
-        canceled: "verification.codeExpired",
-        expired: "verification.codeExpired"
+        pending: "userRoutes.errors.verification.codeIncorrect",
+        canceled: "userRoutes.errors.verification.codeExpired",
+        expired: "userRoutes.errors.verification.codeExpired"
       };
-      return createErrorResponse(400, errorMap[status] || "verification.failed", event);
+      return createErrorResponse(400, errorMap[status] || "userRoutes.errors.verification.failed", event);
     }
 
     // 4. Store SMS verification record (proof for register endpoint).
@@ -138,7 +138,7 @@ async function verifySmsCode({ event, body }) {
     if (event.userId) {
       const currentUser = await User.findOne({ _id: event.userId, deleted: false }).lean();
       if (!currentUser) {
-        return createErrorResponse(401, "others.unauthorized", event);
+        return createErrorResponse(401, "common.unauthorized", event);
       }
 
       const phoneOwner = await User.findOne({
@@ -147,7 +147,7 @@ async function verifySmsCode({ event, body }) {
         _id: { $ne: currentUser._id },
       }).lean();
       if (phoneOwner) {
-        return createErrorResponse(409, "phoneRegister.userExist", event);
+        return createErrorResponse(409, "userRoutes.errors.phoneRegister.userExist", event);
       }
 
       await User.findOneAndUpdate(
@@ -228,7 +228,7 @@ async function verifySmsCode({ event, body }) {
         phoneNumber: body?.phoneNumber,
       },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

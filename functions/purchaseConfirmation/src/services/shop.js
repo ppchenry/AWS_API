@@ -20,7 +20,7 @@ async function getShopInfo({ event }) {
     });
   } catch (error) {
     logError("getShopInfo failed", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

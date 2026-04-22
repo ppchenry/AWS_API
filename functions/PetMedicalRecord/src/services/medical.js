@@ -26,13 +26,13 @@ async function getMedicalRecords({ event }) {
       .lean();
 
     return createSuccessResponse(200, event, {
-      message: "medicalRecord.getSuccess",
+      message: "petMedicalRecord.success.medicalRecord.getSuccess",
       form: { medical: records.map(sanitizeRecord) },
       petId: petID,
     });
   } catch (error) {
     logError("Failed to get medical records", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -52,11 +52,11 @@ async function createMedicalRecord({ event, body }) {
     }
     const data = parseResult.data;
     if (Object.keys(data).length === 0) {
-      return createErrorResponse(400, "medicalRecord.noFieldsToUpdate", event);
+      return createErrorResponse(400, "petMedicalRecord.errors.medicalRecord.noFieldsToUpdate", event);
     }
 
     if (data.medicalDate && !isValidDateFormat(data.medicalDate)) {
-      return createErrorResponse(400, "medicalRecord.invalidDateFormat", event);
+      return createErrorResponse(400, "petMedicalRecord.errors.medicalRecord.invalidDateFormat", event);
     }
 
     const MedicalRecords = mongoose.model("Medical_Records");
@@ -76,14 +76,14 @@ async function createMedicalRecord({ event, body }) {
     });
 
     return createSuccessResponse(200, event, {
-      message: "medicalRecord.postSuccess",
+      message: "petMedicalRecord.success.medicalRecord.created",
       form: sanitizeRecord(newRecord),
       petId: petID,
       medicalRecordId: newRecord._id,
     });
   } catch (error) {
     logError("Failed to create medical record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -105,7 +105,7 @@ async function updateMedicalRecord({ event, body }) {
     const data = parseResult.data;
 
     if (data.medicalDate && !isValidDateFormat(data.medicalDate)) {
-      return createErrorResponse(400, "medicalRecord.invalidDateFormat", event);
+      return createErrorResponse(400, "petMedicalRecord.errors.medicalRecord.invalidDateFormat", event);
     }
 
     const MedicalRecords = mongoose.model("Medical_Records");
@@ -118,7 +118,7 @@ async function updateMedicalRecord({ event, body }) {
     if (data.medicalSolution !== undefined) updateFields.medicalSolution = data.medicalSolution;
 
     if (Object.keys(updateFields).length === 0) {
-      return createErrorResponse(400, "medicalRecord.noFieldsToUpdate", event);
+      return createErrorResponse(400, "petMedicalRecord.errors.medicalRecord.noFieldsToUpdate", event);
     }
 
     const updated = await MedicalRecords.findOneAndUpdate(
@@ -128,18 +128,18 @@ async function updateMedicalRecord({ event, body }) {
     ).lean();
 
     if (!updated) {
-      return createErrorResponse(404, "medicalRecord.medicalRecordNotFound", event);
+      return createErrorResponse(404, "petMedicalRecord.errors.medicalRecord.notFound", event);
     }
 
     return createSuccessResponse(200, event, {
-      message: "medicalRecord.putSuccess",
+      message: "petMedicalRecord.success.medicalRecord.updated",
       petId: petID,
       medicalRecordId: medicalID,
       form: sanitizeRecord(updated),
     });
   } catch (error) {
     logError("Failed to update medical record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -160,19 +160,19 @@ async function deleteMedicalRecord({ event }) {
     const deleted = await MedicalRecords.deleteOne({ _id: medicalID, petId: petID });
 
     if (deleted.deletedCount === 0) {
-      return createErrorResponse(404, "medicalRecord.medicalRecordNotFound", event);
+      return createErrorResponse(404, "petMedicalRecord.errors.medicalRecord.notFound", event);
     }
 
     const count = await MedicalRecords.countDocuments({ petId: petID });
     await Pets.findByIdAndUpdate(petID, { medicalRecordsCount: count });
 
     return createSuccessResponse(200, event, {
-      message: "medicalRecord.deleteSuccess",
+      message: "petMedicalRecord.success.medicalRecord.deleted",
       id: petID,
     });
   } catch (error) {
     logError("Failed to delete medical record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

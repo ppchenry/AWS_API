@@ -27,7 +27,7 @@ async function validateRequest({ event }) {
     } catch (_error) {
       return {
         isValid: false,
-        error: createErrorResponse(400, "others.invalidJSON", event),
+        error: createErrorResponse(400, "common.invalidJSON", event),
       };
     }
   }
@@ -35,7 +35,7 @@ async function validateRequest({ event }) {
   if (BODY_REQUIRED_ROUTES.has(routeKey) && (!parsedBody || Object.keys(parsedBody).length === 0)) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "others.missingParams", event),
+      error: createErrorResponse(400, "common.missingParams", event),
     };
   }
 

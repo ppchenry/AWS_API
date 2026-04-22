@@ -16,7 +16,7 @@ async function validatePetDetailRequest({ event }) {
     if (!callerRole || callerRole.toLowerCase() !== "ngo") {
       return {
         isValid: false,
-        error: createErrorResponse(403, "others.ngoOnly", event),
+        error: createErrorResponse(403, "common.ngoOnly", event),
       };
     }
   }
@@ -41,7 +41,7 @@ async function validatePetDetailRequest({ event }) {
   ) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "others.missingParams", event),
+      error: createErrorResponse(400, "common.missingParams", event),
     };
   }
 
@@ -50,14 +50,14 @@ async function validatePetDetailRequest({ event }) {
   if (!petID) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "missingPetId", event),
+      error: createErrorResponse(400, "petDetailInfo.errors.missingPetId", event),
     };
   }
 
   if (!isValidObjectId(petID)) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "invalidPetIdFormat", event),
+      error: createErrorResponse(400, "petDetailInfo.errors.invalidPetIdFormat", event),
     };
   }
 
@@ -66,7 +66,7 @@ async function validatePetDetailRequest({ event }) {
   if (transferId !== undefined && !isValidObjectId(transferId)) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "transferPath.invalidTransferIdFormat", event),
+      error: createErrorResponse(400, "petDetailInfo.errors.transferPath.invalidIdFormat", event),
     };
   }
 
@@ -74,7 +74,7 @@ async function validatePetDetailRequest({ event }) {
   if (sourceId !== undefined && !isValidObjectId(sourceId)) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "petSource.invalidSourceIdFormat", event),
+      error: createErrorResponse(400, "petDetailInfo.errors.petSource.invalidSourceIdFormat", event),
     };
   }
 
@@ -82,7 +82,7 @@ async function validatePetDetailRequest({ event }) {
   if (adoptionId !== undefined && !isValidObjectId(adoptionId)) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "petAdoption.invalidAdoptionIdFormat", event),
+      error: createErrorResponse(400, "petDetailInfo.errors.petAdoption.invalidAdoptionIdFormat", event),
     };
   }
 

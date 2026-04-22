@@ -20,7 +20,7 @@ async function validatePetRequest({ event }) {
     } catch {
       return {
         isValid: false,
-        error: createErrorResponse(400, "others.invalidJSON", event),
+        error: createErrorResponse(400, "common.invalidJSON", event),
       };
     }
   }
@@ -32,7 +32,7 @@ async function validatePetRequest({ event }) {
   ) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "others.missingParams", event),
+      error: createErrorResponse(400, "common.missingParams", event),
     };
   }
 
@@ -56,14 +56,14 @@ async function validatePetRequest({ event }) {
   if (ngoId && !isValidObjectId(ngoId)) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "ngoPath.invalidNgoIdFormat", event),
+      error: createErrorResponse(400, "getAllPets.errors.ngoPath.invalidNgoIdFormat", event),
     };
   }
 
   if (userId && !isValidObjectId(userId)) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "getPetsByUser.invalidUserIdFormat", event),
+      error: createErrorResponse(400, "getAllPets.errors.getPetsByUser.invalidUserIdFormat", event),
     };
   }
 

@@ -113,7 +113,7 @@ async function getSupplierOrderVerification({ event }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -172,7 +172,7 @@ async function updateSupplierOrderVerification({ event }) {
     if (payload.petUrl) setFields.petUrl = payload.petUrl;
 
     if (Object.keys(setFields).length === 0 && !payload.petContact) {
-      return createErrorResponse(400, "others.missingParams", event);
+      return createErrorResponse(400, "common.missingParams", event);
     }
 
     if (payload.petContact && existingOrderVerification.orderId) {
@@ -203,7 +203,7 @@ async function updateSupplierOrderVerification({ event }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -252,7 +252,7 @@ async function getOrderInfo({ event }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -291,7 +291,7 @@ async function getWhatsAppOrderLink({ event }) {
         const callerEmail = normalizeEmail(event.userEmail || event.user?.userEmail || event.user?.email);
         const ownerEmail = normalizeEmail(orderVerify.masterEmail);
         if (!callerEmail || !ownerEmail || callerEmail !== ownerEmail) {
-          return createErrorResponse(403, "others.unauthorized", event);
+          return createErrorResponse(403, "common.unauthorized", event);
         }
       }
     }
@@ -332,7 +332,7 @@ async function getWhatsAppOrderLink({ event }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -345,7 +345,7 @@ async function getWhatsAppOrderLink({ event }) {
 async function getAllOrders({ event }) {
   try {
     if (event.userRole !== "admin" && event.userRole !== "developer") {
-      return createErrorResponse(403, "others.unauthorized", event);
+      return createErrorResponse(403, "common.unauthorized", event);
     }
 
     const conn = await getReadConnection();
@@ -369,7 +369,7 @@ async function getAllOrders({ event }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -430,7 +430,7 @@ async function getTagOrderVerification({ event }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -698,7 +698,7 @@ async function updateTagOrderVerification({ event, body }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

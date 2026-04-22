@@ -144,7 +144,7 @@ describe("UserRoutes SMS service", () => {
     });
 
     expect(result.statusCode).toBe(503);
-    expect(result.body.errorKey).toBe("others.serviceUnavailable");
+    expect(result.body.errorKey).toBe("common.serviceUnavailable");
   });
 
   test("verifySmsCode marks an existing unverified user as verified and issues tokens", async () => {
@@ -205,7 +205,7 @@ describe("UserRoutes SMS service", () => {
     });
 
     expect(result.statusCode).toBe(400);
-    expect(result.body.errorKey).toBe("verification.codeIncorrect");
+    expect(result.body.errorKey).toBe("userRoutes.errors.verification.codeIncorrect");
   });
 
   test("verifySmsCode maps expired Twilio status to codeExpired", async () => {
@@ -217,6 +217,6 @@ describe("UserRoutes SMS service", () => {
     });
 
     expect(result.statusCode).toBe(400);
-    expect(result.body.errorKey).toBe("verification.codeExpired");
+    expect(result.body.errorKey).toBe("userRoutes.errors.verification.codeExpired");
   });
 });

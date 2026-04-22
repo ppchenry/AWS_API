@@ -40,7 +40,7 @@ async function handleRequest(event, context) {
 
     const routeKey = `${event.httpMethod} ${event.resource}`;
     if (routeKey !== ROUTE_KEY) {
-      return createErrorResponse(405, "others.methodNotAllowed", event);
+      return createErrorResponse(405, "common.methodNotAllowed", event);
     }
 
     const readConn = await getReadConnection();
@@ -64,7 +64,7 @@ async function handleRequest(event, context) {
       },
     });
 
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

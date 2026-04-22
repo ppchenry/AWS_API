@@ -223,7 +223,7 @@ describe("POST /account/register", () => {
       email: `nofirst_${Date.now()}@test.com`,
     });
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("register.errors.firstNameRequired");
+    expect(res.body.errorKey).toBe("userRoutes.errors.register.errors.firstNameRequired");
   });
 
   test("rejects missing email and phone → 400", async () => {
@@ -232,7 +232,7 @@ describe("POST /account/register", () => {
       lastName: "User",
     });
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("register.errors.emailOrPhoneRequired");
+    expect(res.body.errorKey).toBe("userRoutes.errors.register.errors.emailOrPhoneRequired");
   });
 
   test("rejects invalid email format → 400", async () => {
@@ -242,7 +242,7 @@ describe("POST /account/register", () => {
       email: "not-an-email",
     });
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("register.errors.invalidEmailFormat");
+    expect(res.body.errorKey).toBe("userRoutes.errors.register.errors.invalidEmailFormat");
   });
 
   test("rejects NoSQL injection object in email field → 400", async () => {
@@ -273,7 +273,7 @@ describe("POST /account/register", () => {
       email: `burst_register_${TEST_TS}_blocked@test.com`,
     }, headers);
     expect(blocked.status).toBe(429);
-    expect(blocked.body.errorKey).toBe("others.rateLimited");
+    expect(blocked.body.errorKey).toBe("common.rateLimited");
   });
 });
 
@@ -286,19 +286,19 @@ describe("POST /account/login", () => {
       password: "Test1234!",
     });
     expect(res.status).toBe(405);
-    expect(res.body.errorKey).toBe("others.methodNotAllowed");
+    expect(res.body.errorKey).toBe("common.methodNotAllowed");
   });
 
   test("rejects malformed JSON body → 400 (guard fires before routing)", async () => {
     const res = await rawReq("POST", "/account/login", '{"email":"broken"');
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidJSON");
+    expect(res.body.errorKey).toBe("common.invalidJSON");
   });
 
   test("rejects missing Authorization header on protected route → 401", async () => {
     const res = await req("GET", `/account/${state.userId}`);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects garbage Authorization token on protected route → 401", async () => {
@@ -306,13 +306,13 @@ describe("POST /account/login", () => {
       Authorization: "Bearer this.is.garbage",
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects expired JWT on protected route → 401", async () => {
     const res = await req("GET", `/account/${state.userId}`, undefined, expiredAuth());
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 });
 
@@ -322,13 +322,13 @@ describe("POST /account/login-2", () => {
   test("returns 405 for deprecated endpoint", async () => {
     const res = await req("POST", "/account/login-2", { email: state.email });
     expect(res.status).toBe(405);
-    expect(res.body.errorKey).toBe("others.methodNotAllowed");
+    expect(res.body.errorKey).toBe("common.methodNotAllowed");
   });
 
   test("still rejects empty body before routing → 400", async () => {
     const res = await req("POST", "/account/login-2", {});
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   });
 });
 
@@ -344,7 +344,7 @@ describe("GET /account/{userId}", () => {
   test("returns 403 for a different userId (self-access enforced)", async () => {
     const res = await req("GET", "/account/000000000000000000000000", undefined, auth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 });
 
@@ -362,13 +362,13 @@ describe("PUT /account", () => {
   test("rejects missing userId → 400", async () => {
     const res = await req("PUT", "/account", { firstName: "No ID" }, auth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidPUT");
+    expect(res.body.errorKey).toBe("userRoutes.errors.invalidPUT");
   });
 
   test("rejects mismatched userId → 403 (self-access enforced)", async () => {
     const res = await req("PUT", "/account", { userId: "000000000000000000000000", firstName: "Bad" }, auth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects invalid email format → 400", async () => {
@@ -377,13 +377,13 @@ describe("PUT /account", () => {
       email: "not-an-email",
     }, auth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidEmailFormat");
+    expect(res.body.errorKey).toBe("common.invalidEmailFormat");
   });
 
   test("rejects malformed JSON body → 400", async () => {
     const res = await rawReq("PUT", "/account", '{"userId":"broken"', auth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidJSON");
+    expect(res.body.errorKey).toBe("common.invalidJSON");
   });
 
   test("rejects NoSQL injection object in email field → 400", async () => {
@@ -406,7 +406,7 @@ describe("PUT /account/update-password", () => {
       newPassword: "NewTest1234!",
     }, auth());
     expect(res.status).toBe(405);
-    expect(res.body.errorKey).toBe("others.methodNotAllowed");
+    expect(res.body.errorKey).toBe("common.methodNotAllowed");
   });
 });
 
@@ -427,7 +427,7 @@ describe("POST /account/update-image", () => {
       image: "not-a-url",
     }, auth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("updateImage.invalidImageUrl");
+    expect(res.body.errorKey).toBe("userRoutes.errors.updateImage.invalidImageUrl");
   });
 
   test("rejects missing userId → 400", async () => {
@@ -435,7 +435,7 @@ describe("POST /account/update-image", () => {
       image: "https://example.com/photo.jpg",
     }, auth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("updateImage.invalidUserId");
+    expect(res.body.errorKey).toBe("userRoutes.errors.updateImage.invalidUserId");
   });
 });
 
@@ -452,7 +452,7 @@ describe("Not implemented routes", () => {
     // non-empty body needed to pass the guard's empty-body check
     const res = await req(method, path, { dummy: true });
     expect(res.status).toBe(405);
-    expect(res.body.errorKey).toBe("others.methodNotAllowed");
+    expect(res.body.errorKey).toBe("common.methodNotAllowed");
   });
 });
 
@@ -495,7 +495,7 @@ describe("POST /account/register-ngo", () => {
       address: "456 Test Street",
     });
     expect(res.status).toBe(409);
-    expect(res.body.errorKey).toBe("phoneRegister.userExist");
+    expect(res.body.errorKey).toBe("userRoutes.errors.phoneRegister.userExist");
   });
 
   test("rejects email already registered by a normal user → 409", async () => {
@@ -512,7 +512,7 @@ describe("POST /account/register-ngo", () => {
       address: "Existing User Street",
     });
     expect(res.status).toBe(409);
-    expect(res.body.errorKey).toBe("phoneRegister.userExist");
+    expect(res.body.errorKey).toBe("userRoutes.errors.phoneRegister.userExist");
   });
 
   test("rejects duplicate NGO phone → 409", async () => {
@@ -529,7 +529,7 @@ describe("POST /account/register-ngo", () => {
       address: "Phone Conflict Street",
     });
     expect(res.status).toBe(409);
-    expect(res.body.errorKey).toBe("emailRegister.existWithPhone");
+    expect(res.body.errorKey).toBe("userRoutes.errors.emailRegister.existWithPhone");
   });
 
   test("rejects duplicate business registration number → 409", async () => {
@@ -546,7 +546,7 @@ describe("POST /account/register-ngo", () => {
       address: "Business Reg Conflict Street",
     });
     expect(res.status).toBe(409);
-    expect(res.body.errorKey).toBe("registerNgo.duplicateBusinessReg");
+    expect(res.body.errorKey).toBe("userRoutes.errors.registerNgo.duplicateBusinessReg");
   });
 
   test("rejects password mismatch → 400", async () => {
@@ -563,7 +563,7 @@ describe("POST /account/register-ngo", () => {
       address: "789 Test Street",
     });
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("registerNgo.errors.passwordMismatch");
+    expect(res.body.errorKey).toBe("userRoutes.errors.registerNgo.errors.passwordMismatch");
   });
 
   test("rejects missing required fields → 400", async () => {
@@ -573,7 +573,7 @@ describe("POST /account/register-ngo", () => {
       confirmPassword: "Test1234!",
     });
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("registerNgo.errors.lastNameRequired");
+    expect(res.body.errorKey).toBe("userRoutes.errors.registerNgo.errors.lastNameRequired");
   });
 
   test("rejects invalid phone format → 400", async () => {
@@ -590,7 +590,7 @@ describe("POST /account/register-ngo", () => {
       address: "101 Test Street",
     });
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("emailRegister.invalidPhoneFormat");
+    expect(res.body.errorKey).toBe("userRoutes.errors.emailRegister.invalidPhoneFormat");
   });
 
   test("rejects NoSQL injection object in NGO email field → 400", async () => {
@@ -642,7 +642,7 @@ describe("POST /account/register-ngo", () => {
       address: "Blocked NGO Street",
     }, headers);
     expect(blocked.status).toBe(429);
-    expect(blocked.body.errorKey).toBe("others.rateLimited");
+    expect(blocked.body.errorKey).toBe("common.rateLimited");
   });
 });
 
@@ -668,7 +668,7 @@ describe("POST /account/login (NGO)", () => {
       password: state.ngoPassword,
     });
     expect(res.status).toBe(405);
-    expect(res.body.errorKey).toBe("others.methodNotAllowed");
+    expect(res.body.errorKey).toBe("common.methodNotAllowed");
   });
 });
 
@@ -690,13 +690,13 @@ describe("GET /account/user-list", () => {
   test("rejects regular user token → 403", async () => {
     const res = await req("GET", "/account/user-list", undefined, auth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects missing Authorization header → 401", async () => {
     const res = await req("GET", "/account/user-list");
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 });
 
@@ -712,25 +712,25 @@ describe("GET /account/edit-ngo/{ngoId}", () => {
   test("rejects regular user token → 403", async () => {
     const res = await req("GET", `/account/edit-ngo/${state.ngoId}`, undefined, auth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects missing Authorization header → 401", async () => {
     const res = await req("GET", `/account/edit-ngo/${state.ngoId}`);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects invalid ngoId format → 400", async () => {
     const res = await req("GET", "/account/edit-ngo/not-a-valid-id", undefined, ngoAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("ngo.invalidId");
+    expect(res.body.errorKey).toBe("userRoutes.errors.ngo.invalidId");
   });
 
   test("returns 404 for non-existent ngoId", async () => {
     const res = await req("GET", "/account/edit-ngo/000000000000000000000000", undefined, ngoAuth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("ngo.notFound");
+    expect(res.body.errorKey).toBe("userRoutes.errors.ngo.notFound");
   });
 });
 
@@ -747,7 +747,7 @@ describe("PUT /account/edit-ngo/{ngoId}", () => {
       ngoProfile: { description: "Should fail" },
     }, auth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects missing Authorization header → 401", async () => {
@@ -755,7 +755,7 @@ describe("PUT /account/edit-ngo/{ngoId}", () => {
       ngoProfile: { description: "Should fail" },
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects duplicate user email → 409", async () => {
@@ -763,7 +763,7 @@ describe("PUT /account/edit-ngo/{ngoId}", () => {
       userProfile: { email: state.email },
     }, ngoAuth());
     expect(res.status).toBe(409);
-    expect(res.body.errorKey).toBe("others.emailExists");
+    expect(res.body.errorKey).toBe("userRoutes.errors.emailExists");
   });
 
   test("rejects duplicate registrationNumber → 409", async () => {
@@ -789,7 +789,7 @@ describe("PUT /account/edit-ngo/{ngoId}", () => {
       ngoProfile: { registrationNumber: secondBr },
     }, ngoAuth());
     expect(res.status).toBe(409);
-    expect(res.body.errorKey).toBe("others.registrationNumberExists");
+    expect(res.body.errorKey).toBe("userRoutes.errors.registrationNumberExists");
   });
 });
 
@@ -802,25 +802,25 @@ describe("GET /account/edit-ngo/{ngoId}/pet-placement-options", () => {
   test("rejects regular user token → 403", async () => {
     const res = await req("GET", `/account/edit-ngo/${state.ngoId}/pet-placement-options`, undefined, auth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects missing Authorization header → 401", async () => {
     const res = await req("GET", `/account/edit-ngo/${state.ngoId}/pet-placement-options`);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects invalid ngoId format → 400", async () => {
     const res = await req("GET", "/account/edit-ngo/not-a-valid-id/pet-placement-options", undefined, ngoAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("ngo.invalidId");
+    expect(res.body.errorKey).toBe("userRoutes.errors.ngo.invalidId");
   });
 
   test("returns 404 for non-existent ngoId", async () => {
     const res = await req("GET", "/account/edit-ngo/000000000000000000000000/pet-placement-options", undefined, ngoAuth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("ngo.notFound");
+    expect(res.body.errorKey).toBe("userRoutes.errors.ngo.notFound");
   });
 });
 
@@ -875,7 +875,7 @@ describe("POST /account/delete-user-with-email", () => {
     const res = await req("POST", "/account/delete-user-with-email", {},
       sacToken ? { Authorization: `Bearer ${sacToken}` } : {});
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   });
 
   test("rejects mismatched email → 403 (self-access enforced)", async () => {
@@ -883,7 +883,7 @@ describe("POST /account/delete-user-with-email", () => {
       { email: "other@test.com" },
       sacToken ? { Authorization: `Bearer ${sacToken}` } : {});
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("deletes user by email → 200", async () => {
@@ -898,7 +898,7 @@ describe("POST /account/delete-user-with-email", () => {
       { email: SAC_EMAIL },
       sacToken ? { Authorization: `Bearer ${sacToken}` } : {});
     expect(res.status).toBe(409);
-    expect(res.body.errorKey).toBe("deleteAccount.userAlreadyDeleted");
+    expect(res.body.errorKey).toBe("userRoutes.errors.deleteAccount.userAlreadyDeleted");
   });
 });
 
@@ -916,7 +916,7 @@ describe("POST /account/generate-sms-code", () => {
   test("rejects missing phoneNumber → 400", async () => {
     const res = await req("POST", "/account/generate-sms-code", {});
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   });
 
   test("rejects invalid phone format → 400", async () => {
@@ -924,7 +924,7 @@ describe("POST /account/generate-sms-code", () => {
       phoneNumber: "not-a-phone",
     });
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("verification.invalidPhoneFormat");
+    expect(res.body.errorKey).toBe("userRoutes.errors.verification.invalidPhoneFormat");
   });
 });
 
@@ -936,7 +936,7 @@ describe("POST /account/verify-sms-code", () => {
       phoneNumber: "+85252668385",
     });
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("verification.missingCodeParams");
+    expect(res.body.errorKey).toBe("userRoutes.errors.verification.missingCodeParams");
   });
 
   test("rejects missing phoneNumber → 400", async () => {
@@ -944,7 +944,7 @@ describe("POST /account/verify-sms-code", () => {
       code: "123456",
     });
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("verification.invalidPhoneFormat");
+    expect(res.body.errorKey).toBe("userRoutes.errors.verification.invalidPhoneFormat");
   });
 
   test("rejects invalid phone format → 400", async () => {
@@ -953,7 +953,7 @@ describe("POST /account/verify-sms-code", () => {
       code: "123456",
     });
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("verification.invalidPhoneFormat");
+    expect(res.body.errorKey).toBe("userRoutes.errors.verification.invalidPhoneFormat");
   });
 
   // test("rejects wrong code → 400", async () => {
@@ -963,7 +963,7 @@ describe("POST /account/verify-sms-code", () => {
   //     code: "000000",
   //   });
   //   expect(res.status).toBe(400);
-  //   expect(res.body.errorKey).toBe("verification.codeIncorrect");
+  //   expect(res.body.errorKey).toBe("userRoutes.errors.verification.codeIncorrect");
   // });
 });
 
@@ -979,7 +979,7 @@ describe("Security", () => {
       Authorization: `Bearer ${tampered}`,
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("JWT with wrong algorithm (none) → 401", async () => {
@@ -991,7 +991,7 @@ describe("Security", () => {
       Authorization: `Bearer ${noneToken}`,
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("completely arbitrary string as Bearer token → 401", async () => {
@@ -999,7 +999,7 @@ describe("Security", () => {
       Authorization: "Bearer thisisnotavalidtoken",
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   // ── Self-access enforcement (all protected routes) ─────────────────────────
@@ -1010,7 +1010,7 @@ describe("Security", () => {
       firstName: "Hacker",
     }, auth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("PUT /account/update-password returns 405 (frozen route)", async () => {
@@ -1020,7 +1020,7 @@ describe("Security", () => {
       newPassword: "NewPass123!",
     }, auth());
     expect(res.status).toBe(405);
-    expect(res.body.errorKey).toBe("others.methodNotAllowed");
+    expect(res.body.errorKey).toBe("common.methodNotAllowed");
   });
 
   test("POST /account/update-image with another user's userId → 403", async () => {
@@ -1029,7 +1029,7 @@ describe("Security", () => {
       image: "https://example.com/img.jpg",
     }, auth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("POST /account/delete-user-with-email with another user's email → 403", async () => {
@@ -1037,7 +1037,7 @@ describe("Security", () => {
       email: "someoneelse@test.com",
     }, auth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("PUT /account rejects email already used by NGO account → 409", async () => {
@@ -1046,7 +1046,7 @@ describe("Security", () => {
       email: state.ngoEmail,
     }, auth());
     expect(res.status).toBe(409);
-    expect(res.body.errorKey).toBe("others.emailExists");
+    expect(res.body.errorKey).toBe("userRoutes.errors.emailExists");
   });
 
   // ── Mass assignment prevention ─────────────────────────────────────────────
@@ -1097,7 +1097,7 @@ describe("Security", () => {
       password: "anything",
     });
     expect(res.status).toBe(405);
-    expect(res.body.errorKey).toBe("others.methodNotAllowed");
+    expect(res.body.errorKey).toBe("common.methodNotAllowed");
   });
 
   test("login with NoSQL injection in password field → 405 (frozen)", async () => {
@@ -1106,7 +1106,7 @@ describe("Security", () => {
       password: { $gt: "" },
     });
     expect(res.status).toBe(405);
-    expect(res.body.errorKey).toBe("others.methodNotAllowed");
+    expect(res.body.errorKey).toBe("common.methodNotAllowed");
   });
 });
 
@@ -1116,7 +1116,7 @@ describe("DELETE /account/{userId}", () => {
   test("returns 403 for a different userId (self-access enforced)", async () => {
     const res = await req("DELETE", "/account/000000000000000000000000", undefined, auth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects invalid userId format → 403 (self-access fires before format check)", async () => {
@@ -1124,7 +1124,7 @@ describe("DELETE /account/{userId}", () => {
     // that cannot equal the JWT userId will always fail the identity check first.
     const res = await req("DELETE", "/account/not-a-valid-id", undefined, auth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("deletes the test user", async () => {
@@ -1140,7 +1140,7 @@ describe("DELETE /account/{userId}", () => {
   test("deleted user token can no longer fetch profile → 404", async () => {
     const res = await req("GET", `/account/${state.userId}`, undefined, auth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("others.getUserNotFound");
+    expect(res.body.errorKey).toBe("userRoutes.errors.getUserNotFound");
   });
 
   test("deleted user cannot log in (login frozen) → 405", async () => {
@@ -1149,12 +1149,12 @@ describe("DELETE /account/{userId}", () => {
       password: "anything",
     });
     expect(res.status).toBe(405);
-    expect(res.body.errorKey).toBe("others.methodNotAllowed");
+    expect(res.body.errorKey).toBe("common.methodNotAllowed");
   });
 
   test("second delete on already deleted user returns 404", async () => {
     const res = await req("DELETE", `/account/${state.userId}`, undefined, auth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("others.getUserNotFound");
+    expect(res.body.errorKey).toBe("userRoutes.errors.getUserNotFound");
   });
 });

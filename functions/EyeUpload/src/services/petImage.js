@@ -36,7 +36,7 @@ async function createPetBasicInfoWithImage({ event }) {
       windowSec: 300,
     });
     if (!rl.allowed) {
-      return createErrorResponse(429, "eyeUpload.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     const User = mongoose.model("User");
@@ -67,21 +67,21 @@ async function createPetBasicInfoWithImage({ event }) {
     }).lean();
 
     if (!user) {
-      return createErrorResponse(404, "eyeUpload.userNotFound", event);
+      return createErrorResponse(404, "eyeUpload.errors.userNotFound", event);
     }
 
     // NGO pet ID generation — restricted to ngo role with verified ngoId claim
     let ngoPetId = "";
     if (validated.ngoId) {
       if (event.userRole !== "ngo") {
-        return createErrorResponse(403, "eyeUpload.ngoRoleRequired", event);
+        return createErrorResponse(403, "eyeUpload.errors.ngoRoleRequired", event);
       }
       // JWT must carry an ngoId claim — reject if missing or mismatched
       if (!event.ngoId) {
-        return createErrorResponse(403, "eyeUpload.ngoIdClaimRequired", event);
+        return createErrorResponse(403, "eyeUpload.errors.ngoIdClaimRequired", event);
       }
       if (String(event.ngoId) !== String(validated.ngoId)) {
-        return createErrorResponse(403, "eyeUpload.forbidden", event);
+        return createErrorResponse(403, "eyeUpload.errors.forbidden", event);
       }
 
       const counter = await NgoCounter.findOneAndUpdate(
@@ -97,7 +97,7 @@ async function createPetBasicInfoWithImage({ event }) {
     if (ngoPetId) {
       const existing = await Pet.findOne({ ngoPetId }).lean();
       if (existing) {
-        return createErrorResponse(409, "eyeUpload.duplicateNgoPetId", event);
+        return createErrorResponse(409, "eyeUpload.errors.duplicateNgoPetId", event);
       }
     }
 
@@ -164,7 +164,7 @@ async function createPetBasicInfoWithImage({ event }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -187,7 +187,7 @@ async function updatePetImage({ event }) {
       windowSec: 300,
     });
     if (!rl.allowed) {
-      return createErrorResponse(429, "eyeUpload.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     const form = await parse(event);
@@ -206,11 +206,11 @@ async function updatePetImage({ event }) {
     const petId = validated.petId;
 
     if (!petId) {
-      return createErrorResponse(400, "eyeUpload.petIdRequired", event);
+      return createErrorResponse(400, "eyeUpload.errors.petIdRequired", event);
     }
 
     if (!mongoose.isValidObjectId(petId)) {
-      return createErrorResponse(400, "eyeUpload.invalidObjectId", event);
+      return createErrorResponse(400, "eyeUpload.errors.invalidObjectId", event);
     }
 
     // DB-backed ownership check via selfAccess helper
@@ -232,7 +232,7 @@ async function updatePetImage({ event }) {
       } catch {
         return createErrorResponse(
           400,
-          "eyeUpload.invalidRemovedIndices",
+          "eyeUpload.errors.invalidRemovedIndices",
           event
         );
       }
@@ -242,7 +242,7 @@ async function updatePetImage({ event }) {
       ) {
         return createErrorResponse(
           400,
-          "eyeUpload.invalidRemovedIndices",
+          "eyeUpload.errors.invalidRemovedIndices",
           event
         );
       }
@@ -306,11 +306,11 @@ async function updatePetImage({ event }) {
     // ngoId mutation: caller must be NGO owner AND destination org must match JWT ngoId
     if (validated.ngoId !== undefined) {
       if (!isNgoOwner) {
-        return createErrorResponse(403, "eyeUpload.forbidden", event);
+        return createErrorResponse(403, "eyeUpload.errors.forbidden", event);
       }
       // Destination org must match JWT claim — prevents cross-org reassignment
       if (String(event.ngoId) !== String(validated.ngoId)) {
-        return createErrorResponse(403, "eyeUpload.forbidden", event);
+        return createErrorResponse(403, "eyeUpload.errors.forbidden", event);
       }
       pet.ngoId = validated.ngoId;
     }
@@ -318,11 +318,11 @@ async function updatePetImage({ event }) {
     // Duplicate ngoPetId check — only NGO callers may change ngoPetId
     if (validated.ngoPetId !== undefined && validated.ngoPetId !== pet.ngoPetId) {
       if (!isNgoOwner) {
-        return createErrorResponse(403, "eyeUpload.forbidden", event);
+        return createErrorResponse(403, "eyeUpload.errors.forbidden", event);
       }
       const duplicate = await Pet.findOne({ ngoPetId: validated.ngoPetId }).lean();
       if (duplicate) {
-        return createErrorResponse(409, "eyeUpload.duplicateNgoPetId", event);
+        return createErrorResponse(409, "eyeUpload.errors.duplicateNgoPetId", event);
       }
       pet.ngoPetId = validated.ngoPetId;
     }
@@ -335,7 +335,7 @@ async function updatePetImage({ event }) {
     });
   } catch (error) {
     logError("Update pet image failed", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

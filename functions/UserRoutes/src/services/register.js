@@ -74,7 +74,7 @@ async function register({ event, body }) {
       windowSec: 10 * 60,
     });
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     // 1. Zod Validation
@@ -124,7 +124,7 @@ async function register({ event, body }) {
 
       if (existingUser) {
         const isPhoneConflict = normalizedPhoneNumber && existingUser.phoneNumber === normalizedPhoneNumber;
-        const errorKey = isPhoneConflict ? 'phoneRegister.userExist' : 'phoneRegister.existWithEmail';
+        const errorKey = isPhoneConflict ? 'userRoutes.errors.phoneRegister.userExist' : 'userRoutes.errors.phoneRegister.existWithEmail';
         return createErrorResponse(409, errorKey, event);
       }
     }
@@ -193,7 +193,7 @@ async function register({ event, body }) {
         phoneNumber: body?.phoneNumber,
       },
     });
-    return createErrorResponse(500, 'others.internalError', event);
+    return createErrorResponse(500, 'common.internalError', event);
   }
 }
 
@@ -216,7 +216,7 @@ async function registerNgo({ event, body }) {
       windowSec: 10 * 60,
     });
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     // 1. Zod Validation (replaces manual field checks)
@@ -245,17 +245,17 @@ async function registerNgo({ event, body }) {
     // 2. Duplicate checks (findOne + lean for performance)
     const existingUser = await UserRead.findOne({ email: normalizedEmail, deleted: false }).lean();
     if (existingUser) {
-      return createErrorResponse(409, 'phoneRegister.userExist', event);
+      return createErrorResponse(409, 'userRoutes.errors.phoneRegister.userExist', event);
     }
 
     const existingUserWithPhone = await UserRead.findOne({ phoneNumber: normalizedPhoneNumber, deleted: false }).lean();
     if (existingUserWithPhone) {
-      return createErrorResponse(409, 'emailRegister.existWithPhone', event);
+      return createErrorResponse(409, 'userRoutes.errors.emailRegister.existWithPhone', event);
     }
 
     const existingNgo = await Ngo.findOne({ registrationNumber: businessRegistrationNumber }).lean();
     if (existingNgo) {
-      return createErrorResponse(409, 'registerNgo.duplicateBusinessReg', event);
+      return createErrorResponse(409, 'userRoutes.errors.registerNgo.duplicateBusinessReg', event);
     }
 
     // 3. Hash password
@@ -358,7 +358,7 @@ async function registerNgo({ event, body }) {
         ngoName: body?.ngoName,
       },
     });
-    return createErrorResponse(500, 'others.internalError', event);
+    return createErrorResponse(500, 'common.internalError', event);
   }
 }
 

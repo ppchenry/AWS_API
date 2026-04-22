@@ -18,7 +18,7 @@ const SELF_ACCESS_POLICIES = {
  * @returns {object} API Gateway error response
  */
 function createForbiddenResponse(event) {
-  return createErrorResponse(403, "others.unauthorized", event);
+  return createErrorResponse(403, "common.unauthorized", event);
 }
 
 /**

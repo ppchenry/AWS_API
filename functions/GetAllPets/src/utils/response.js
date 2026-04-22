@@ -5,7 +5,7 @@ const { logWarn } = require("./logger");
 /**
  * Builds a standardised error response with CORS headers, translated error message, and requestId.
  * @param {number} statusCode - HTTP status code
- * @param {string} error - Dot-separated error key (e.g. 'others.unauthorized')
+ * @param {string} error - Dot-separated error key (e.g. 'common.unauthorized')
  * @param {object} event - API Gateway event
  * @returns {object} API Gateway-compatible response object
  */

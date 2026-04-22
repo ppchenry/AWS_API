@@ -24,19 +24,19 @@ async function updatePassword({ event, body }) {
 
     // 2. Logic: Check if passwords are the same BEFORE hitting the DB
     if (oldPassword === newPassword) {
-      return createErrorResponse(400, "updatePassword.passwordUnchanged", event);
+      return createErrorResponse(400, "userRoutes.errors.updatePassword.passwordUnchanged", event);
     }
 
     // 3. Database Retrieval
     const user = await User.findOne({ _id: userId, deleted: false });
     if (!user) {
-      return createErrorResponse(404, "updatePassword.userNotFound", event);
+      return createErrorResponse(404, "userRoutes.errors.updatePassword.userNotFound", event);
     }
 
     // 4. Password Verification
     const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
     if (!isPasswordValid) {
-      return createErrorResponse(400, "updatePassword.currentPasswordInvalid", event);
+      return createErrorResponse(400, "userRoutes.errors.updatePassword.currentPasswordInvalid", event);
     }
 
     // 5. Hashing & Saving (Using the .env SALT_ROUNDS)
@@ -58,7 +58,7 @@ async function updatePassword({ event, body }) {
         userId: body?.userId,
       },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -81,7 +81,7 @@ async function updateUserImage({ event, body }) {
       { new: true, lean: true }
     );
     if (!updatedUser) {
-      return createErrorResponse(404, "updateImage.userNotFound", event);
+      return createErrorResponse(404, "userRoutes.errors.updateImage.userNotFound", event);
     }
     return createSuccessResponse(200, event, {
       message: "Image updated successfully",
@@ -96,7 +96,7 @@ async function updateUserImage({ event, body }) {
         userId: body?.userId,
       },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

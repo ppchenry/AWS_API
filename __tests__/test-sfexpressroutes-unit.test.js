@@ -72,7 +72,7 @@ describe("SFExpressRoutes service failure coverage", () => {
 
     const body = JSON.parse(response.body);
     expect(response.statusCode).toBe(500);
-    expect(body.errorKey).toBe("others.internalError");
+    expect(body.errorKey).toBe("common.internalError");
   });
 
   test("getToken returns 500 when address token fetch throws", async () => {
@@ -90,7 +90,7 @@ describe("SFExpressRoutes service failure coverage", () => {
 
     const body = JSON.parse(response.body);
     expect(response.statusCode).toBe(500);
-    expect(body.errorKey).toBe("others.internalError");
+    expect(body.errorKey).toBe("common.internalError");
   });
 
   test("getArea returns 500 when upstream call throws", async () => {
@@ -112,7 +112,7 @@ describe("SFExpressRoutes service failure coverage", () => {
 
     const body = JSON.parse(response.body);
     expect(response.statusCode).toBe(500);
-    expect(body.errorKey).toBe("others.internalError");
+    expect(body.errorKey).toBe("common.internalError");
   });
 
   test("getNetCode returns 500 when upstream call throws", async () => {
@@ -134,7 +134,7 @@ describe("SFExpressRoutes service failure coverage", () => {
 
     const body = JSON.parse(response.body);
     expect(response.statusCode).toBe(500);
-    expect(body.errorKey).toBe("others.internalError");
+    expect(body.errorKey).toBe("common.internalError");
   });
 
   test("getPickupLocations returns 500 when upstream call throws", async () => {
@@ -156,7 +156,7 @@ describe("SFExpressRoutes service failure coverage", () => {
 
     const body = JSON.parse(response.body);
     expect(response.statusCode).toBe(500);
-    expect(body.errorKey).toBe("others.internalError");
+    expect(body.errorKey).toBe("common.internalError");
   });
 
   test("createOrder returns 500 sfExpress.errors.sfApiError when SF service call fails", async () => {
@@ -175,7 +175,7 @@ describe("SFExpressRoutes service failure coverage", () => {
 
     jest.doMock("../functions/SFExpressRoutes/src/services/sfExpressClient", () => ({
       getAccessToken: jest.fn().mockResolvedValue("access-token"),
-      callSfService: jest.fn().mockRejectedValue(new Error("sfExpress.errors.sfApiError")),
+      callSfService: jest.fn().mockRejectedValue(new Error("sfExpressRoutes.errors.sfApiError")),
     }));
 
     const { createOrder } = require("../functions/SFExpressRoutes/src/services/sfOrder");
@@ -195,7 +195,7 @@ describe("SFExpressRoutes service failure coverage", () => {
 
     const body = JSON.parse(response.body);
     expect(response.statusCode).toBe(500);
-    expect(body.errorKey).toBe("sfExpress.errors.sfApiError");
+    expect(body.errorKey).toBe("sfExpressRoutes.errors.sfApiError");
   });
 
   test("createOrder returns 500 when SF response is missing waybill", async () => {
@@ -236,14 +236,14 @@ describe("SFExpressRoutes service failure coverage", () => {
 
     const body = JSON.parse(response.body);
     expect(response.statusCode).toBe(500);
-    expect(body.errorKey).toBe("sfExpress.errors.missingWaybill");
+    expect(body.errorKey).toBe("sfExpressRoutes.errors.missingWaybill");
   });
 
   test("printCloudWaybill returns 500 sfExpress.errors.invalidSfResponse when SF payload is malformed", async () => {
     jest.doMock("../functions/SFExpressRoutes/src/services/sfExpressClient", () => ({
       SF_CLOUD_PRINT_URL: "https://example.com/cloud-print",
       getAccessToken: jest.fn().mockResolvedValue("access-token"),
-      callSfService: jest.fn().mockRejectedValue(new Error("sfExpress.errors.invalidSfResponse")),
+      callSfService: jest.fn().mockRejectedValue(new Error("sfExpressRoutes.errors.invalidSfResponse")),
       downloadPdf: jest.fn(),
     }));
 
@@ -258,7 +258,7 @@ describe("SFExpressRoutes service failure coverage", () => {
 
     const body = JSON.parse(response.body);
     expect(response.statusCode).toBe(500);
-    expect(body.errorKey).toBe("sfExpress.errors.invalidSfResponse");
+    expect(body.errorKey).toBe("sfExpressRoutes.errors.invalidSfResponse");
   });
 
   test("printCloudWaybill returns 500 when SF response has no files", async () => {
@@ -283,7 +283,7 @@ describe("SFExpressRoutes service failure coverage", () => {
 
     const body = JSON.parse(response.body);
     expect(response.statusCode).toBe(500);
-    expect(body.errorKey).toBe("sfExpress.errors.missingPrintFile");
+    expect(body.errorKey).toBe("sfExpressRoutes.errors.missingPrintFile");
   });
 
   test("printCloudWaybill returns 500 others.internalError when email send fails", async () => {
@@ -314,7 +314,7 @@ describe("SFExpressRoutes service failure coverage", () => {
 
     const body = JSON.parse(response.body);
     expect(response.statusCode).toBe(500);
-    expect(body.errorKey).toBe("others.internalError");
+    expect(body.errorKey).toBe("common.internalError");
   });
 });
 
@@ -429,7 +429,7 @@ describe("SFExpressRoutes middleware and handler hardening", () => {
 
     const body = JSON.parse(response.body);
     expect(response.statusCode).toBe(500);
-    expect(body.errorKey).toBe("others.internalError");
+    expect(body.errorKey).toBe("common.internalError");
   });
 
   test("handler allows JWT bypass only in non-production", async () => {

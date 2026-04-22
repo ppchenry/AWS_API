@@ -149,7 +149,7 @@ describe("OPTIONS preflight", () => {
       { awsRequestId: "aws-opts-2" }
     );
     expect(response.statusCode).toBe(403);
-    expect(JSON.parse(response.body).errorKey).toBe("others.originNotAllowed");
+    expect(JSON.parse(response.body).errorKey).toBe("common.originNotAllowed");
   });
 
   test("returns 403 when Origin header is absent", async () => {
@@ -158,7 +158,7 @@ describe("OPTIONS preflight", () => {
       { awsRequestId: "aws-opts-3" }
     );
     expect(response.statusCode).toBe(403);
-    expect(JSON.parse(response.body).errorKey).toBe("others.originNotAllowed");
+    expect(JSON.parse(response.body).errorKey).toBe("common.originNotAllowed");
   });
 });
 
@@ -189,7 +189,7 @@ describe("Guard validation", () => {
       { awsRequestId: "aws-guard-3" }
     );
     expect(response.statusCode).toBe(400);
-    expect(JSON.parse(response.body).errorKey).toBe("others.invalidPathParam");
+    expect(JSON.parse(response.body).errorKey).toBe("common.invalidPathParam");
   });
 
   test("error shape includes success:false, errorKey, and CORS header", async () => {
@@ -215,7 +215,7 @@ describe("Method enforcement", () => {
       { awsRequestId: "aws-meth-1" }
     );
     expect(response.statusCode).toBe(405);
-    expect(JSON.parse(response.body).errorKey).toBe("others.methodNotAllowed");
+    expect(JSON.parse(response.body).errorKey).toBe("common.methodNotAllowed");
   });
 
   test("returns 405 for POST", async () => {
@@ -224,7 +224,7 @@ describe("Method enforcement", () => {
       { awsRequestId: "aws-meth-2" }
     );
     expect(response.statusCode).toBe(405);
-    expect(JSON.parse(response.body).errorKey).toBe("others.methodNotAllowed");
+    expect(JSON.parse(response.body).errorKey).toBe("common.methodNotAllowed");
   });
 
   test("returns 405 for PUT", async () => {
@@ -233,7 +233,7 @@ describe("Method enforcement", () => {
       { awsRequestId: "aws-meth-3" }
     );
     expect(response.statusCode).toBe(405);
-    expect(JSON.parse(response.body).errorKey).toBe("others.methodNotAllowed");
+    expect(JSON.parse(response.body).errorKey).toBe("common.methodNotAllowed");
   });
 });
 

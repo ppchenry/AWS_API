@@ -144,7 +144,7 @@ async function sendPtagDetectionEmail({ event, body }) {
   try {
     const parseResult = ptagDetectionEmailSchema.safeParse(body);
     if (!parseResult.success) {
-      return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error, "email.errors.missingFields"), event);
+      return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error, "purchaseConfirmation.errors.email.missingFields"), event);
     }
 
     const { name, tagId, dateTime, locationURL, email } = parseResult.data;
@@ -168,7 +168,7 @@ async function sendPtagDetectionEmail({ event, body }) {
     return createSuccessResponse(200, event, { message: "Email sent successfully." });
   } catch (error) {
     logError("sendPtagDetectionEmail failed", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

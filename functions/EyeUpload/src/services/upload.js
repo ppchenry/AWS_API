@@ -38,23 +38,23 @@ async function uploadImage({ event }) {
       windowSec: 300,
     });
     if (!rl.allowed) {
-      return createErrorResponse(429, "eyeUpload.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     const formData = await parse(event);
     const files = formData.files || [];
 
     if (files.length === 0) {
-      return createErrorResponse(400, "eyeUpload.noFilesUploaded", event);
+      return createErrorResponse(400, "eyeUpload.errors.noFilesUploaded", event);
     }
 
     if (files.length > MAX_FILES) {
-      return createErrorResponse(400, "eyeUpload.tooManyFiles", event);
+      return createErrorResponse(400, "eyeUpload.errors.tooManyFiles", event);
     }
 
     // Validate FIRST file (which is the one we upload), not any file
     if (!ALLOWED_IMAGE_TYPES.has(files[0].contentType)) {
-      return createErrorResponse(400, "eyeUpload.invalidImageFormat", event);
+      return createErrorResponse(400, "eyeUpload.errors.invalidImageFormat", event);
     }
 
     const multerStyleFile = {
@@ -72,7 +72,7 @@ async function uploadImage({ event }) {
     });
   } catch (error) {
     logError("Upload image failed", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -95,24 +95,24 @@ async function uploadPetBreedImage({ event }) {
       windowSec: 300,
     });
     if (!rl.allowed) {
-      return createErrorResponse(429, "eyeUpload.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     const formData = await parse(event);
     const file = formData.files?.[0];
 
     if (!file) {
-      return createErrorResponse(400, "eyeUpload.noFilesUploaded", event);
+      return createErrorResponse(400, "eyeUpload.errors.noFilesUploaded", event);
     }
 
     if (!ALLOWED_IMAGE_TYPES.has(file.contentType)) {
-      return createErrorResponse(400, "eyeUpload.invalidImageFormat", event);
+      return createErrorResponse(400, "eyeUpload.errors.invalidImageFormat", event);
     }
 
     // Allowlist-based folder validation
     const rawPath = (formData.url || "").trim();
     if (!rawPath) {
-      return createErrorResponse(400, "eyeUpload.invalidFolder", event);
+      return createErrorResponse(400, "eyeUpload.errors.invalidFolder", event);
     }
 
     // Extract the top-level folder segment and validate against allowlist
@@ -120,12 +120,12 @@ async function uploadPetBreedImage({ event }) {
     const topFolder = segments[0];
 
     if (!ALLOWED_UPLOAD_PREFIXES.has(topFolder)) {
-      return createErrorResponse(400, "eyeUpload.invalidFolder", event);
+      return createErrorResponse(400, "eyeUpload.errors.invalidFolder", event);
     }
 
     // Reject path traversal attempts
     if (segments.some((s) => s === ".." || s === ".")) {
-      return createErrorResponse(400, "eyeUpload.invalidFolder", event);
+      return createErrorResponse(400, "eyeUpload.errors.invalidFolder", event);
     }
 
     const multerStyleFile = {
@@ -142,7 +142,7 @@ async function uploadPetBreedImage({ event }) {
     });
   } catch (error) {
     logError("Upload pet breed image failed", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

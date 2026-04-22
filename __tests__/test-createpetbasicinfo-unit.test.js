@@ -161,7 +161,7 @@ describe("OPTIONS preflight", () => {
       makeContext("opts-2")
     );
     expect(response.statusCode).toBe(403);
-    expect(JSON.parse(response.body).errorKey).toBe("others.originNotAllowed");
+    expect(JSON.parse(response.body).errorKey).toBe("common.originNotAllowed");
   });
 });
 
@@ -174,7 +174,7 @@ describe("JWT authentication", () => {
       makeContext("auth-1")
     );
     expect(response.statusCode).toBe(401);
-    expect(JSON.parse(response.body).errorKey).toBe("others.unauthorized");
+    expect(JSON.parse(response.body).errorKey).toBe("common.unauthorized");
   });
 
   test("rejects expired JWT → 401", async () => {
@@ -184,7 +184,7 @@ describe("JWT authentication", () => {
       makeContext("auth-2")
     );
     expect(response.statusCode).toBe(401);
-    expect(JSON.parse(response.body).errorKey).toBe("others.unauthorized");
+    expect(JSON.parse(response.body).errorKey).toBe("common.unauthorized");
   });
 
   test("rejects tampered JWT signature → 401", async () => {
@@ -195,7 +195,7 @@ describe("JWT authentication", () => {
       makeContext("auth-3")
     );
     expect(response.statusCode).toBe(401);
-    expect(JSON.parse(response.body).errorKey).toBe("others.unauthorized");
+    expect(JSON.parse(response.body).errorKey).toBe("common.unauthorized");
   });
 
   test("rejects alg:none JWT → 401", async () => {
@@ -206,7 +206,7 @@ describe("JWT authentication", () => {
       makeContext("auth-4")
     );
     expect(response.statusCode).toBe(401);
-    expect(JSON.parse(response.body).errorKey).toBe("others.unauthorized");
+    expect(JSON.parse(response.body).errorKey).toBe("common.unauthorized");
   });
 
   test("error shape includes success:false, errorKey, and requestId", async () => {
@@ -217,7 +217,7 @@ describe("JWT authentication", () => {
     expect(response.statusCode).toBe(401);
     const body = JSON.parse(response.body);
     expect(body.success).toBe(false);
-    expect(body.errorKey).toBe("others.unauthorized");
+    expect(body.errorKey).toBe("common.unauthorized");
     expect(typeof body.error).toBe("string");
     expect(typeof body.requestId).toBe("string");
   });
@@ -232,7 +232,7 @@ describe("Guard validation", () => {
       makeContext("guard-1")
     );
     expect(response.statusCode).toBe(400);
-    expect(JSON.parse(response.body).errorKey).toBe("others.invalidJSON");
+    expect(JSON.parse(response.body).errorKey).toBe("common.invalidJSON");
   });
 
   test("rejects empty POST body → 400", async () => {
@@ -241,7 +241,7 @@ describe("Guard validation", () => {
       makeContext("guard-2")
     );
     expect(response.statusCode).toBe(400);
-    expect(JSON.parse(response.body).errorKey).toBe("others.missingParams");
+    expect(JSON.parse(response.body).errorKey).toBe("common.missingParams");
   });
 });
 
@@ -254,7 +254,7 @@ describe("Method enforcement", () => {
       makeContext("method-1")
     );
     expect(response.statusCode).toBe(405);
-    expect(JSON.parse(response.body).errorKey).toBe("others.methodNotAllowed");
+    expect(JSON.parse(response.body).errorKey).toBe("common.methodNotAllowed");
   });
 
   test("returns 405 for DELETE on create-pet-basic-info route", async () => {
@@ -263,7 +263,7 @@ describe("Method enforcement", () => {
       makeContext("method-2")
     );
     expect(response.statusCode).toBe(405);
-    expect(JSON.parse(response.body).errorKey).toBe("others.methodNotAllowed");
+    expect(JSON.parse(response.body).errorKey).toBe("common.methodNotAllowed");
   });
 });
 
@@ -279,7 +279,7 @@ describe("Schema validation — unknown field rejection", () => {
       makeContext("schema-1")
     );
     expect(response.statusCode).toBe(400);
-    expect(JSON.parse(response.body).errorKey).toBe("unknownField");
+    expect(JSON.parse(response.body).errorKey).toBe("createPetBasicInfo.errors.unknownField");
   });
 
   test("rejects body containing ngoId field → 400 unknownField", async () => {
@@ -291,7 +291,7 @@ describe("Schema validation — unknown field rejection", () => {
       makeContext("schema-2")
     );
     expect(response.statusCode).toBe(400);
-    expect(JSON.parse(response.body).errorKey).toBe("unknownField");
+    expect(JSON.parse(response.body).errorKey).toBe("createPetBasicInfo.errors.unknownField");
   });
 
   test("rejects NoSQL injection object in name field → 400", async () => {
@@ -382,7 +382,7 @@ describe("CreatePetBasicInfo DB-backed", () => {
     );
 
     expect(response.statusCode).toBe(400);
-    expect(JSON.parse(response.body).errorKey).toBe("unknownField");
+    expect(JSON.parse(response.body).errorKey).toBe("createPetBasicInfo.errors.unknownField");
 
     const created = await mongoose.connection.db.collection("pets").findOne({ tagId: `TAG-BLOCK-${suffix}` });
     expect(created).toBeNull();
@@ -398,7 +398,7 @@ describe("CreatePetBasicInfo DB-backed", () => {
     );
 
     expect(response.statusCode).toBe(400);
-    expect(JSON.parse(response.body).errorKey).toBe("others.invalidJSON");
+    expect(JSON.parse(response.body).errorKey).toBe("common.invalidJSON");
 
     const rl = await mongoose.connection.db.collection("rate_limits").findOne({
       action: "createPetBasicInfo",
@@ -435,6 +435,6 @@ describe("CreatePetBasicInfo DB-backed", () => {
       makeContext(`dup-tag-second-${suffix}`)
     );
     expect(second.statusCode).toBe(409);
-    expect(JSON.parse(second.body).errorKey).toBe("duplicatePetTagId");
+    expect(JSON.parse(second.body).errorKey).toBe("createPetBasicInfo.errors.duplicatePetTagId");
   });
 });

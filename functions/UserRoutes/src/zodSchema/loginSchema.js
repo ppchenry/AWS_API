@@ -4,8 +4,8 @@ const { z } = require('zod');
  * Schema for email login request body.
  */
 const emailLoginSchema = z.object({
-  email: z.string({ error: "emailLogin.invalidEmailFormat" }).email("emailLogin.invalidEmailFormat"),
-  password: z.string({ error: "emailLogin.paramsMissing" }).min(1, "emailLogin.paramsMissing"),
+  email: z.string({ error: "userRoutes.errors.emailLogin.invalidEmailFormat" }).email("userRoutes.errors.emailLogin.invalidEmailFormat"),
+  password: z.string({ error: "userRoutes.errors.emailLogin.paramsMissing" }).min(1, "userRoutes.errors.emailLogin.paramsMissing"),
 });
 
 /**
@@ -13,11 +13,11 @@ const emailLoginSchema = z.object({
  * Requires either email or phone.
  */
 const checkUserExistsSchema = z.object({
-  email: z.string().email("emailLogin.invalidEmailFormat").optional(),
+  email: z.string().email("userRoutes.errors.emailLogin.invalidEmailFormat").optional(),
   phone: z.string().optional(),
 }).refine(
   (data) => data.email || data.phone,
-  "emailLogin.paramsMissing"
+  "userRoutes.errors.emailLogin.paramsMissing"
 );
 
 module.exports = {

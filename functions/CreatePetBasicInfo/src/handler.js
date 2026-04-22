@@ -38,7 +38,7 @@ async function handleRequest(event, context) {
 
     const routeKey = `${event.httpMethod} ${event.resource}`;
     if (routeKey !== ROUTE_KEY) {
-      return createErrorResponse(405, "others.methodNotAllowed", event);
+      return createErrorResponse(405, "common.methodNotAllowed", event);
     }
 
     await getReadConnection();
@@ -52,14 +52,14 @@ async function handleRequest(event, context) {
     });
 
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     const parseResult = createPetSchema.safeParse(guardResult.body);
     if (!parseResult.success) {
       return createErrorResponse(
         400,
-        getFirstZodIssueMessage(parseResult.error, "others.invalidInput"),
+        getFirstZodIssueMessage(parseResult.error, "common.invalidInput"),
         event
       );
     }
@@ -77,7 +77,7 @@ async function handleRequest(event, context) {
       .lean();
 
     if (!user) {
-      return createErrorResponse(404, "userNotFound", event);
+      return createErrorResponse(404, "createPetBasicInfo.errors.userNotFound", event);
     }
 
     if (validated.tagId) {
@@ -89,7 +89,7 @@ async function handleRequest(event, context) {
         .lean();
 
       if (existingTag) {
-        return createErrorResponse(409, "duplicatePetTagId", event);
+        return createErrorResponse(409, "createPetBasicInfo.errors.duplicatePetTagId", event);
       }
     }
 
@@ -123,7 +123,7 @@ async function handleRequest(event, context) {
     const translations = loadTranslations(event.locale || "zh");
 
     return createSuccessResponse(201, event, {
-      message: getTranslation(translations, "success"),
+      message: getTranslation(translations, "createPetBasicInfo.success.created"),
       id: pet._id,
       result: sanitizePet(pet),
     });
@@ -133,7 +133,7 @@ async function handleRequest(event, context) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

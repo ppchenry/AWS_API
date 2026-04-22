@@ -256,13 +256,13 @@ describe("JWT authentication", () => {
   test("missing Authorization header -> 401", async () => {
     const r = await req("GET", detailPath(NONEXISTENT_PET_ID));
     expect(r.status).toBe(401);
-    expect(r.body.errorKey).toBe("others.unauthorized");
+    expect(r.body.errorKey).toBe("common.unauthorized");
   });
 
   test("expired token -> 401", async () => {
     const r = await req("GET", detailPath(NONEXISTENT_PET_ID), undefined, expiredAuth());
     expect(r.status).toBe(401);
-    expect(r.body.errorKey).toBe("others.unauthorized");
+    expect(r.body.errorKey).toBe("common.unauthorized");
   });
 
   test("garbage token -> 401", async () => {
@@ -270,7 +270,7 @@ describe("JWT authentication", () => {
       Authorization: "Bearer garbage.token.value",
     });
     expect(r.status).toBe(401);
-    expect(r.body.errorKey).toBe("others.unauthorized");
+    expect(r.body.errorKey).toBe("common.unauthorized");
   });
 
   test("wrong secret -> 401", async () => {
@@ -279,7 +279,7 @@ describe("JWT authentication", () => {
       Authorization: "Bearer " + badToken,
     });
     expect(r.status).toBe(401);
-    expect(r.body.errorKey).toBe("others.unauthorized");
+    expect(r.body.errorKey).toBe("common.unauthorized");
   });
 
   test("alg:none attack -> 401", async () => {
@@ -290,7 +290,7 @@ describe("JWT authentication", () => {
       Authorization: "Bearer " + fakeToken,
     });
     expect(r.status).toBe(401);
-    expect(r.body.errorKey).toBe("others.unauthorized");
+    expect(r.body.errorKey).toBe("common.unauthorized");
   });
 
   test("token without Bearer prefix -> 401", async () => {
@@ -298,7 +298,7 @@ describe("JWT authentication", () => {
       Authorization: ownerToken,
     });
     expect(r.status).toBe(401);
-    expect(r.body.errorKey).toBe("others.unauthorized");
+    expect(r.body.errorKey).toBe("common.unauthorized");
   });
 });
 
@@ -311,25 +311,25 @@ describe("Guard - path param validation", () => {
   test("invalid petID -> 400", async () => {
     const r = await req("GET", detailPath(INVALID_OBJECT_ID), undefined, ownerAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("invalidPetIdFormat");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.invalidPetIdFormat");
   });
 
   test("invalid transferId -> 400", async () => {
     const r = await req("PUT", transferIdPath(NONEXISTENT_PET_ID, INVALID_OBJECT_ID), { regPlace: "x" }, ownerAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("transferPath.invalidTransferIdFormat");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.transferPath.invalidIdFormat");
   });
 
   test("invalid sourceId -> 400", async () => {
     const r = await req("PUT", sourceIdPath(NONEXISTENT_PET_ID, INVALID_OBJECT_ID), { channel: "x" }, ownerAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("petSource.invalidSourceIdFormat");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.petSource.invalidSourceIdFormat");
   });
 
   test("invalid adoptionId -> 400", async () => {
     const r = await req("PUT", adoptionIdPath(NONEXISTENT_PET_ID, INVALID_OBJECT_ID), { postAdoptionName: "x" }, ownerAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("petAdoption.invalidAdoptionIdFormat");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.petAdoption.invalidAdoptionIdFormat");
   });
 });
 
@@ -348,25 +348,25 @@ describe("Guard - body validation", () => {
   test("empty body on POST -> 400", async () => {
     const r = await req("POST", detailPath(NONEXISTENT_PET_ID), {}, ownerAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("others.missingParams");
+    expect(r.body.errorKey).toBe("common.missingParams");
   });
 
   test("empty body on PUT transfer -> 400", async () => {
     const r = await req("PUT", transferIdPath(NONEXISTENT_PET_ID, NONEXISTENT_SUB_ID), {}, ownerAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("others.missingParams");
+    expect(r.body.errorKey).toBe("common.missingParams");
   });
 
   test("empty body on PUT source -> 400", async () => {
     const r = await req("PUT", sourceIdPath(NONEXISTENT_PET_ID, NONEXISTENT_SUB_ID), {}, ownerAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("others.missingParams");
+    expect(r.body.errorKey).toBe("common.missingParams");
   });
 
   test("empty body on PUT adoption -> 400", async () => {
     const r = await req("PUT", adoptionIdPath(NONEXISTENT_PET_ID, NONEXISTENT_SUB_ID), {}, ownerAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("others.missingParams");
+    expect(r.body.errorKey).toBe("common.missingParams");
   });
 });
 
@@ -379,31 +379,31 @@ describe("Ownership", () => {
   petTest("stranger cannot GET detail-info of another user's pet", async () => {
     const r = await req("GET", detailPath(TEST_PET_ID), undefined, strangerAuth());
     expect(r.status).toBe(403);
-    expect(r.body.errorKey).toBe("others.forbidden");
+    expect(r.body.errorKey).toBe("common.forbidden");
   });
 
   petTest("stranger cannot POST detail-info of another user's pet", async () => {
     const r = await req("POST", detailPath(TEST_PET_ID), { chipId: "HACK" }, strangerAuth());
     expect(r.status).toBe(403);
-    expect(r.body.errorKey).toBe("others.forbidden");
+    expect(r.body.errorKey).toBe("common.forbidden");
   });
 
   petTest("stranger cannot POST transfer on another user's pet", async () => {
     const r = await req("POST", transferPath(TEST_PET_ID), { regPlace: "x" }, strangerAuth());
     expect(r.status).toBe(403);
-    expect(r.body.errorKey).toBe("others.forbidden");
+    expect(r.body.errorKey).toBe("common.forbidden");
   });
 
   petTest("stranger cannot GET source of another user's pet", async () => {
     const r = await req("GET", sourcePath(TEST_PET_ID), undefined, strangerAuth());
     expect(r.status).toBe(403);
-    expect(r.body.errorKey).toBe("others.forbidden");
+    expect(r.body.errorKey).toBe("common.forbidden");
   });
 
   petTest("stranger cannot GET adoption of another user's pet", async () => {
     const r = await req("GET", adoptionPath(TEST_PET_ID), undefined, strangerAuth());
     expect(r.status).toBe(403);
-    expect(r.body.errorKey).toBe("others.forbidden");
+    expect(r.body.errorKey).toBe("common.forbidden");
   });
 });
 
@@ -437,7 +437,7 @@ describe("Detail info", () => {
   test("GET nonexistent pet -> 404 (ownership finds no pet)", async () => {
     const r = await req("GET", detailPath(NONEXISTENT_PET_ID), undefined, ownerAuth());
     expect(r.status).toBe(404);
-    expect(r.body.errorKey).toBe("petNotFound");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.petNotFound");
   });
 
   petTest("POST updates chipId successfully", async () => {
@@ -451,13 +451,13 @@ describe("Detail info", () => {
     const r = await req("POST", detailPath(TEST_PET_ID), { motherDOB: "not-a-date" }, ownerAuth());
     expect(r.status).toBe(400);
     expect(r.body.success).toBe(false);
-    expect(r.body.errorKey).toBe("petDetailInfo.invalidDateFormat");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.invalidDateFormat");
   });
 
   petTest("POST with invalid fatherDOB date -> 400", async () => {
     const r = await req("POST", detailPath(TEST_PET_ID), { fatherDOB: "2024-13-01" }, ownerAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("petDetailInfo.invalidDateFormat");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.invalidDateFormat");
   });
 
   petTest("POST with valid DD/MM/YYYY date -> 200", async () => {
@@ -473,13 +473,13 @@ describe("Detail info", () => {
   petTest("POST with ISO timestamp with junk suffix -> 400", async () => {
     const r = await req("POST", detailPath(TEST_PET_ID), { motherDOB: "2024-02-29Tjunk" }, ownerAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("petDetailInfo.invalidDateFormat");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.invalidDateFormat");
   });
 
   petTest("POST with ISO timestamp T99:99:99Z -> 400", async () => {
     const r = await req("POST", detailPath(TEST_PET_ID), { motherDOB: "2024-02-29T99:99:99Z" }, ownerAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("petDetailInfo.invalidDateFormat");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.invalidDateFormat");
   });
 
   petTest("POST motherParity as numeric string -> 200", async () => {
@@ -490,7 +490,7 @@ describe("Detail info", () => {
   petTest("POST motherParity as non-numeric string -> 400", async () => {
     const r = await req("POST", detailPath(TEST_PET_ID), { motherParity: "abc" }, ownerAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("petDetailInfo.invalidMotherParity");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.invalidMotherParity");
   });
 
   petTest("POST motherParity as number -> 200", async () => {
@@ -550,7 +550,7 @@ describe("Transfer lifecycle", () => {
       regPlace: "Bad Date",
     }, ownerAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("transferPath.invalidDateFormat");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.transferPath.invalidDateFormat");
   });
 
   petTest("PUT update transfer -> 200", async () => {
@@ -566,7 +566,7 @@ describe("Transfer lifecycle", () => {
       regDate: 12345,
     }, ownerAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("transferPath.invalidDateFormat");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.transferPath.invalidDateFormat");
   });
 
   petTest("PUT update nonexistent transfer -> 404", async () => {
@@ -574,7 +574,7 @@ describe("Transfer lifecycle", () => {
       regPlace: "Ghost",
     }, ownerAuth());
     expect(r.status).toBe(404);
-    expect(r.body.errorKey).toBe("transferPath.transferNotFound");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.transferPath.notFound");
   });
 
   petTest("DELETE transfer -> 200", async () => {
@@ -587,7 +587,7 @@ describe("Transfer lifecycle", () => {
   petTest("DELETE nonexistent transfer -> 404 (matchedCount check)", async () => {
     const r = await req("DELETE", transferIdPath(TEST_PET_ID, NONEXISTENT_SUB_ID), undefined, ownerAuth());
     expect(r.status).toBe(404);
-    expect(r.body.errorKey).toBe("transferPath.transferNotFound");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.transferPath.notFound");
   });
 });
 
@@ -603,7 +603,7 @@ describe("NGO Transfer", () => {
       UserContact: "+85291234567",
     }, ownerAuth());
     expect(r.status).toBe(403);
-    expect(r.body.errorKey).toBe("others.ngoOnly");
+    expect(r.body.errorKey).toBe("common.ngoOnly");
   });
 
   ngoTest("NGO token with invalid email format -> 400", async () => {
@@ -612,7 +612,7 @@ describe("NGO Transfer", () => {
       UserContact: "+85291234567",
     }, ngoAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("ngoTransfer.invalidEmailFormat");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.ngoTransfer.invalidEmailFormat");
   });
 
   ngoTest("NGO token with invalid phone format -> 400", async () => {
@@ -621,7 +621,7 @@ describe("NGO Transfer", () => {
       UserContact: "not-a-phone",
     }, ngoAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("ngoTransfer.invalidPhoneFormat");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.ngoTransfer.invalidPhoneFormat");
   });
 
   ngoTest("NGO transfer missing required fields -> 400", async () => {
@@ -629,7 +629,7 @@ describe("NGO Transfer", () => {
       regPlace: "somewhere",
     }, ngoAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("ngoTransfer.missingRequiredFields");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.ngoTransfer.missingRequiredFields");
   });
 });
 
@@ -674,7 +674,7 @@ describe("Source v2 lifecycle", () => {
       channel: "Duplicate",
     }, ownerAuth());
     expect(r.status).toBe(409);
-    expect(r.body.errorKey).toBe("petSource.duplicateRecord");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.petSource.duplicateRecord");
   });
 
   petTest("POST create source missing required fields -> 400 (Zod refine)", async () => {
@@ -707,7 +707,7 @@ describe("Source v2 lifecycle", () => {
       unknownField: "value",
     }, ownerAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("petSource.noFieldsToUpdate");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.petSource.noFieldsToUpdate");
   });
 
   petTest("PUT update nonexistent source -> 404", async () => {
@@ -715,7 +715,7 @@ describe("Source v2 lifecycle", () => {
       channel: "Ghost",
     }, ownerAuth());
     expect(r.status).toBe(404);
-    expect(r.body.errorKey).toBe("petSource.recordNotFound");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.petSource.recordNotFound");
   });
 
   petTest("GET source returns sourceId in response", async () => {
@@ -767,7 +767,7 @@ describe("Adoption v2 lifecycle", () => {
       postAdoptionName: "Duplicate",
     }, ownerAuth());
     expect(r.status).toBe(409);
-    expect(r.body.errorKey).toBe("petAdoption.duplicateRecord");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.petAdoption.duplicateRecord");
   });
 
   petTest("POST create adoption with invalid date -> 400 (delete + re-test)", async () => {
@@ -780,7 +780,7 @@ describe("Adoption v2 lifecycle", () => {
       NeuteredDate: "2024-13-40",
     }, ownerAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("petAdoption.invalidDateFormat");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.petAdoption.invalidDateFormat");
     // Re-create adoption for later tests
     const recreate = await req("POST", adoptionPath(TEST_PET_ID), {
       postAdoptionName: "Recreated After Bad Date Test",
@@ -812,7 +812,7 @@ describe("Adoption v2 lifecycle", () => {
       NeuteredDate: "2024-02-29Tjunk",
     }, ownerAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("petAdoption.invalidDateFormat");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.petAdoption.invalidDateFormat");
   });
 
   petTest("PUT update nonexistent adoption -> 404", async () => {
@@ -820,7 +820,7 @@ describe("Adoption v2 lifecycle", () => {
       postAdoptionName: "Ghost",
     }, ownerAuth());
     expect(r.status).toBe(404);
-    expect(r.body.errorKey).toBe("petAdoption.recordNotFound");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.petAdoption.recordNotFound");
   });
 
   petTest("GET adoption returns adoptionId in response", async () => {
@@ -841,7 +841,7 @@ describe("Adoption v2 lifecycle", () => {
   petTest("DELETE nonexistent adoption -> 404", async () => {
     const r = await req("DELETE", adoptionIdPath(TEST_PET_ID, NONEXISTENT_SUB_ID), undefined, ownerAuth());
     expect(r.status).toBe(404);
-    expect(r.body.errorKey).toBe("petAdoption.recordNotFound");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.petAdoption.recordNotFound");
   });
 });
 
@@ -875,7 +875,7 @@ describe("Response shape", () => {
     const r = await req("GET", detailPath(INVALID_OBJECT_ID), undefined, ownerAuth());
     expect(r.status).toBe(400);
     expect(r.body.success).toBe(false);
-    expect(r.body.errorKey).toBe("invalidPetIdFormat");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.invalidPetIdFormat");
     expect(typeof r.body.error).toBe("string");
   });
 
@@ -897,7 +897,7 @@ describe("NoSQL injection prevention", () => {
   test("petID with $gt operator -> 400 (invalid ObjectId)", async () => {
     const r = await req("GET", detailPath('{"$gt":""}'), undefined, ownerAuth());
     expect(r.status).toBe(400);
-    expect(r.body.errorKey).toBe("invalidPetIdFormat");
+    expect(r.body.errorKey).toBe("petDetailInfo.errors.invalidPetIdFormat");
   });
 
   petTest("body with $set operator in field value is treated as string", async () => {

@@ -115,7 +115,7 @@ async function getAdoptionList({ event, query }) {
       error,
       extra: { query },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -127,7 +127,7 @@ async function getAdoptionById({ event, query }) {
     const pet = await Adoption.findOne({ _id: query.id }).select(DETAIL_PROJECTION).lean();
 
     if (!pet) {
-      return createErrorResponse(404, "adoption.petNotFound", event);
+      return createErrorResponse(404, "getAdoption.errors.petNotFound", event);
     }
 
     return createSuccessResponse(200, event, {
@@ -140,7 +140,7 @@ async function getAdoptionById({ event, query }) {
       error,
       extra: { adoptionId: query.id },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

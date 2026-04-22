@@ -25,7 +25,7 @@ async function deletePet({ event, body }) {
       windowSec: 60,
     });
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     // Zod validation
@@ -33,7 +33,7 @@ async function deletePet({ event, body }) {
     if (!parseResult.success) {
       return createErrorResponse(
         400,
-        getFirstZodIssueMessage(parseResult.error, "deleteStatus.missingPetId"),
+        getFirstZodIssueMessage(parseResult.error, "getAllPets.errors.deleteStatus.missingPetId"),
         event
       );
     }
@@ -42,7 +42,7 @@ async function deletePet({ event, body }) {
 
     // Validate petId format
     if (!isValidObjectId(petId)) {
-      return createErrorResponse(400, "deleteStatus.invalidPetIdFormat", event);
+      return createErrorResponse(400, "getAllPets.errors.deleteStatus.invalidPetIdFormat", event);
     }
 
     const Pet = mongoose.model("Pet");
@@ -59,7 +59,7 @@ async function deletePet({ event, body }) {
       return createSuccessResponse(200, event, {
         message: getTranslation(
           loadTranslations(event.cookies?.language || "zh"),
-          "deleteStatus.success"
+          "getAllPets.success.deleteStatus.deleted"
         ),
         petId,
       });
@@ -69,20 +69,20 @@ async function deletePet({ event, body }) {
     const pet = await Pet.findOne({ _id: petId }).select("userId deleted").lean();
 
     if (!pet) {
-      return createErrorResponse(404, "deleteStatus.petNotFound", event);
+      return createErrorResponse(404, "getAllPets.errors.deleteStatus.petNotFound", event);
     }
     if (pet.deleted === true) {
-      return createErrorResponse(409, "deleteStatus.petAlreadyDeleted", event);
+      return createErrorResponse(409, "getAllPets.errors.deleteStatus.petAlreadyDeleted", event);
     }
     // Pet exists and is not deleted, so the caller doesn't own it.
-    return createErrorResponse(403, "others.unauthorized", event);
+    return createErrorResponse(403, "common.unauthorized", event);
   } catch (error) {
     logError("Failed to delete pet", {
       scope: "services.deletePet.deletePet",
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

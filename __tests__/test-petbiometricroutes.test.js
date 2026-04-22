@@ -516,13 +516,13 @@ describe("JWT authentication", () => {
   test("rejects request with no Authorization header -> 401", async () => {
     const res = await req("POST", path, body);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects expired JWT -> 401", async () => {
     const res = await req("POST", path, body, expiredAuth());
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects garbage Bearer token -> 401", async () => {
@@ -530,14 +530,14 @@ describe("JWT authentication", () => {
       Authorization: "Bearer this.is.garbage",
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects token without Bearer prefix -> 401", async () => {
     const token = makeToken({ userId: NONEXISTENT_OBJECT_ID });
     const res = await req("POST", path, body, { Authorization: token });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects tampered JWT signature -> 401", async () => {
@@ -548,7 +548,7 @@ describe("JWT authentication", () => {
       Authorization: `Bearer ${tampered}`,
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects alg:none token -> 401", async () => {
@@ -559,7 +559,7 @@ describe("JWT authentication", () => {
       Authorization: `Bearer ${noneToken}`,
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("error response shape includes success, errorKey, error, requestId", async () => {
@@ -593,7 +593,7 @@ describe("Dead routes return 405", () => {
     });
 
     expect(response.statusCode).toBe(405);
-    expect(JSON.parse(response.body).errorKey).toBe("others.methodNotAllowed");
+    expect(JSON.parse(response.body).errorKey).toBe("common.methodNotAllowed");
   });
 });
 
@@ -602,20 +602,20 @@ describe("Guard and validation", () => {
     const token = makeToken({ userId: NONEXISTENT_OBJECT_ID });
     const res = await req("GET", "/petBiometrics/not-a-valid-id", undefined, { Authorization: `Bearer ${token}` });
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("petBiometric.invalidPetId");
+    expect(res.body.errorKey).toBe("petBiometricRoutes.errors.invalidPetId");
   });
 
   test("register rejects malformed JSON -> 400", async () => {
     const token = makeToken({ userId: NONEXISTENT_OBJECT_ID });
     const res = await rawReq("POST", "/petBiometrics/register", '{"petId":"broken"', { Authorization: `Bearer ${token}` });
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidJSON");
+    expect(res.body.errorKey).toBe("common.invalidJSON");
   });
 
   dbTest("register rejects empty body -> 400", async () => {
     const res = await req("POST", "/petBiometrics/register", {}, ownerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   });
 
   dbTest("register rejects body userId mismatch -> 403", async () => {
@@ -626,7 +626,7 @@ describe("Guard and validation", () => {
       ownerAuth()
     );
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("petBiometric.forbidden");
+    expect(res.body.errorKey).toBe("petBiometricRoutes.errors.forbidden");
   });
 
   dbTest("register rejects invalid image URL -> 400", async () => {
@@ -637,13 +637,13 @@ describe("Guard and validation", () => {
       ownerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("petBiometric.invalidImageUrl");
+    expect(res.body.errorKey).toBe("petBiometricRoutes.errors.petBiometric.invalidImageUrl");
   });
 
   businessDbTest("verify rejects empty body -> 400", async () => {
     const res = await req("POST", "/petBiometrics/verifyPet", {}, ownerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   });
 
   businessDbTest("verify rejects body userId mismatch -> 403", async () => {
@@ -654,7 +654,7 @@ describe("Guard and validation", () => {
       ownerAuth()
     );
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("petBiometric.forbidden");
+    expect(res.body.errorKey).toBe("petBiometricRoutes.errors.forbidden");
   });
 
   businessDbTest("verify rejects invalid image URL -> 400", async () => {
@@ -665,7 +665,7 @@ describe("Guard and validation", () => {
       ownerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("petBiometric.invalidImageUrl");
+    expect(res.body.errorKey).toBe("petBiometricRoutes.errors.petBiometric.invalidImageUrl");
   });
 });
 
@@ -682,19 +682,19 @@ describe("GET /petBiometrics/{petId}", () => {
   dbTest("stranger gets exact 403 on owner pet -> forbidden", async () => {
     const res = await req("GET", `/petBiometrics/${state.registeredPetId}`, undefined, strangerAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("petBiometric.forbidden");
+    expect(res.body.errorKey).toBe("petBiometricRoutes.errors.forbidden");
   });
 
   dbTest("nonexistent pet returns 404 petNotFound", async () => {
     const res = await req("GET", `/petBiometrics/${NONEXISTENT_OBJECT_ID}`, undefined, ownerAuth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("petBiometric.petNotFound");
+    expect(res.body.errorKey).toBe("petBiometricRoutes.errors.petNotFound");
   });
 
   dbTest("unregistered pet returns 404 notRegistered", async () => {
     const res = await req("GET", `/petBiometrics/${state.unregisteredPetId}`, undefined, ownerAuth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("petBiometric.notRegistered");
+    expect(res.body.errorKey).toBe("petBiometricRoutes.errors.notRegistered");
   });
 });
 
@@ -730,13 +730,13 @@ describe("POST /petBiometrics/register", () => {
   dbTest("stranger gets exact 403 on register -> forbidden", async () => {
     const res = await req("POST", "/petBiometrics/register", registerPayload(state.registerPetId), strangerAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("petBiometric.forbidden");
+    expect(res.body.errorKey).toBe("petBiometricRoutes.errors.forbidden");
   });
 
   dbTest("deleted pet returns 404 petNotFound", async () => {
     const res = await req("POST", "/petBiometrics/register", registerPayload(state.deletedPetId), ownerAuth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("petBiometric.petNotFound");
+    expect(res.body.errorKey).toBe("petBiometricRoutes.errors.petNotFound");
   });
 
   dbTest("rate limits register flow -> 429", async () => {
@@ -758,7 +758,7 @@ describe("POST /petBiometrics/register", () => {
       }
     );
     expect(res.status).toBe(429);
-    expect(res.body.errorKey).toBe("others.rateLimited");
+    expect(res.body.errorKey).toBe("common.rateLimited");
   });
 });
 
@@ -766,19 +766,19 @@ describe("POST /petBiometrics/verifyPet", () => {
   dbTest("nonexistent pet returns 404 petNotFound", async () => {
     const res = await req("POST", "/petBiometrics/verifyPet", verifyPayload(NONEXISTENT_OBJECT_ID), ownerAuth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("petBiometric.petNotFound");
+    expect(res.body.errorKey).toBe("petBiometricRoutes.errors.petNotFound");
   });
 
   dbTest("stranger gets exact 403 on verify -> forbidden", async () => {
     const res = await req("POST", "/petBiometrics/verifyPet", verifyPayload(state.registeredPetId), strangerAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("petBiometric.forbidden");
+    expect(res.body.errorKey).toBe("petBiometricRoutes.errors.forbidden");
   });
 
   dbTest("unregistered pet returns 404 notRegistered", async () => {
     const res = await req("POST", "/petBiometrics/verifyPet", verifyPayload(state.unregisteredPetId), ownerAuth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("petBiometric.notRegistered");
+    expect(res.body.errorKey).toBe("petBiometricRoutes.errors.notRegistered");
   });
 
   businessDbTest("invalid business credentials return 400", async () => {
@@ -792,7 +792,7 @@ describe("POST /petBiometrics/verifyPet", () => {
       ownerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("petBiometric.invalidCredentials");
+    expect(res.body.errorKey).toBe("petBiometricRoutes.errors.invalidCredentials");
   });
 
   businessDbTest("missing image input returns 400", async () => {
@@ -801,7 +801,7 @@ describe("POST /petBiometrics/verifyPet", () => {
 
     const res = await req("POST", "/petBiometrics/verifyPet", body, ownerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("petBiometric.errors.imageRequired");
+    expect(res.body.errorKey).toBe("petBiometricRoutes.errors.imageRequired");
   });
 
   businessDbTest("unsupported inline file returns 400", async () => {
@@ -821,7 +821,7 @@ describe("POST /petBiometrics/verifyPet", () => {
       ownerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("petBiometric.unsupportedFormat");
+    expect(res.body.errorKey).toBe("petBiometricRoutes.errors.unsupportedFormat");
   });
 
   businessDbTest("zero-byte inline file returns 413", async () => {
@@ -841,7 +841,7 @@ describe("POST /petBiometrics/verifyPet", () => {
       ownerAuth()
     );
     expect(res.status).toBe(413);
-    expect(res.body.errorKey).toBe("petBiometric.fileTooSmall");
+    expect(res.body.errorKey).toBe("petBiometricRoutes.errors.fileTooSmall");
   });
 
   businessDbTest("rate limits verify flow -> 429", async () => {
@@ -863,6 +863,6 @@ describe("POST /petBiometrics/verifyPet", () => {
       }
     );
     expect(res.status).toBe(429);
-    expect(res.body.errorKey).toBe("others.rateLimited");
+    expect(res.body.errorKey).toBe("common.rateLimited");
   });
 });

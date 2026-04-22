@@ -135,7 +135,7 @@ describe("OPTIONS preflight", () => {
       { Origin: DISALLOWED_ORIGIN }
     );
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.originNotAllowed");
+    expect(res.body.errorKey).toBe("common.originNotAllowed");
   });
 
   test("returns 403 when Origin header is absent", async () => {
@@ -146,7 +146,7 @@ describe("OPTIONS preflight", () => {
       { Origin: undefined }
     );
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.originNotAllowed");
+    expect(res.body.errorKey).toBe("common.originNotAllowed");
   });
 });
 
@@ -156,7 +156,7 @@ describe("JWT authentication", () => {
   test("rejects request with no Authorization header → 401", async () => {
     const res = await req("GET", `/pets/${NONEXISTENT_PET_ID}/vaccine-record`);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects expired JWT → 401", async () => {
@@ -167,7 +167,7 @@ describe("JWT authentication", () => {
       expiredAuth()
     );
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects garbage Bearer token → 401", async () => {
@@ -178,7 +178,7 @@ describe("JWT authentication", () => {
       { Authorization: "Bearer this.is.garbage" }
     );
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects token without Bearer prefix → 401", async () => {
@@ -189,7 +189,7 @@ describe("JWT authentication", () => {
       { Authorization: makeToken({ userId: STRANGER_USER_ID }) }
     );
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects tampered JWT signature → 401", async () => {
@@ -200,7 +200,7 @@ describe("JWT authentication", () => {
       tamperedAuth()
     );
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects alg:none JWT → 401", async () => {
@@ -211,14 +211,14 @@ describe("JWT authentication", () => {
       noneAlgAuth()
     );
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("error shape includes success:false, errorKey, requestId, and CORS header", async () => {
     const res = await req("GET", `/pets/${NONEXISTENT_PET_ID}/vaccine-record`);
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
     expect(typeof res.body.error).toBe("string");
     expect(typeof res.body.requestId).toBe("string");
     expect(res.headers.get("access-control-allow-origin")).toBe(VALID_ORIGIN);
@@ -236,7 +236,7 @@ describe("Guard validation", () => {
       strangerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidJSON");
+    expect(res.body.errorKey).toBe("common.invalidJSON");
   });
 
   test("rejects empty POST body → 400", async () => {
@@ -247,7 +247,7 @@ describe("Guard validation", () => {
       strangerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   });
 
   test("rejects empty PUT body → 400", async () => {
@@ -258,13 +258,13 @@ describe("Guard validation", () => {
       strangerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   });
 
   test("rejects invalid petID format → 400", async () => {
     const res = await req("GET", "/pets/bad-id/vaccine-record", undefined, strangerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("invalidPetIdFormat");
+    expect(res.body.errorKey).toBe("petDetailInfo.errors.invalidPetIdFormat");
   });
 
   test("rejects invalid vaccineID format on PUT → 400", async () => {
@@ -275,7 +275,7 @@ describe("Guard validation", () => {
       strangerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("vaccineRecord.invalidVaccineIdFormat");
+    expect(res.body.errorKey).toBe("petVaccineRecords.errors.invalidVaccineIdFormat");
   });
 
   ownerTest("rejects NoSQL injection object in vaccineName field on POST → 400", async () => {
@@ -301,7 +301,7 @@ describe("Router", () => {
       strangerAuth()
     );
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("petNotFound");
+    expect(res.body.errorKey).toBe("petDetailInfo.errors.petNotFound");
   });
 
   test("returns 403 for PATCH — method not declared in API Gateway (never reaches Lambda)", async () => {
@@ -341,7 +341,7 @@ describe("Owner and NGO authorization", () => {
       strangerAuth()
     );
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.forbidden");
+    expect(res.body.errorKey).toBe("common.forbidden");
   }, FIXTURE_TIMEOUT);
 
   ngoTest("matching NGO can read vaccine records on fixture pet → 200", async () => {
@@ -364,7 +364,7 @@ describe("Owner and NGO authorization", () => {
       strangerAuth()
     );
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.forbidden");
+    expect(res.body.errorKey).toBe("common.forbidden");
   }, FIXTURE_TIMEOUT);
 
   ownerTest("stranger is denied PUT on fixture pet → 403", async () => {
@@ -375,7 +375,7 @@ describe("Owner and NGO authorization", () => {
       strangerAuth()
     );
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.forbidden");
+    expect(res.body.errorKey).toBe("common.forbidden");
   }, FIXTURE_TIMEOUT);
 
   ownerTest("stranger is denied DELETE on fixture pet → 403", async () => {
@@ -386,7 +386,7 @@ describe("Owner and NGO authorization", () => {
       strangerAuth()
     );
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.forbidden");
+    expect(res.body.errorKey).toBe("common.forbidden");
   }, FIXTURE_TIMEOUT);
 });
 
@@ -401,7 +401,7 @@ describe("Vaccine record CRUD lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("vaccineRecord.invalidDateFormat");
+    expect(res.body.errorKey).toBe("petVaccineRecords.errors.invalidDateFormat");
   }, FIXTURE_TIMEOUT);
 
   ownerTest("owner creates vaccine record → 200", async () => {
@@ -433,7 +433,7 @@ describe("Vaccine record CRUD lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   }, FIXTURE_TIMEOUT);
 
   ownerTest("rejects update with unknown field only → 400", async () => {
@@ -444,7 +444,7 @@ describe("Vaccine record CRUD lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("vaccineRecord.noFieldsToUpdate");
+    expect(res.body.errorKey).toBe("petVaccineRecords.errors.noFieldsToUpdate");
   }, FIXTURE_TIMEOUT);
 
   ownerTest("update returns 404 for nonexistent record with valid payload → 404", async () => {
@@ -455,7 +455,7 @@ describe("Vaccine record CRUD lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("vaccineRecord.vaccineRecordNotFound");
+    expect(res.body.errorKey).toBe("petVaccineRecords.errors.notFound");
   }, FIXTURE_TIMEOUT);
 
   ownerTest("owner updates vaccine record → 200 with updated fields", async () => {
@@ -480,7 +480,7 @@ describe("Vaccine record CRUD lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("vaccineRecord.vaccineRecordNotFound");
+    expect(res.body.errorKey).toBe("petVaccineRecords.errors.notFound");
   }, FIXTURE_TIMEOUT);
 
   ownerTest("cross-pet mutation: record addressed via wrong petId is rejected → 404", async () => {

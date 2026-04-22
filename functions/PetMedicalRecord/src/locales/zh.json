@@ -1,66 +1,68 @@
 {
-  "others": {
-    "unauthorized": "未授權",
-    "forbidden": "禁止存取",
-    "internalError": "內部伺服器錯誤",
-    "methodNotAllowed": "不允許的方法",
-    "invalidJSON": "無效的 JSON 格式",
-    "missingParams": "缺少必要參數"
-  },
   "common": {
-    "invalidJSON": "無效的 JSON 格式"
+    "invalidJSON": "無效的 JSON 格式",
+    "methodNotAllowed": "不允許的方法"
   },
-  "missingPetId": "需要寵物身分證",
-  "invalidPetIdFormat": "無效的寵物 ID 格式",
-  "petNotFound": "未找到寵物",
-  "petDeleted": "寵物已被刪除",
-  "methodNotAllowed": "不允許的方法",
-  "medicalRecord": {
-    "getNotFound": "未找到寵物醫療記錄",
-    "getSuccess": "寵物醫療記錄檢索成功",
-    "postSuccess": "寵物醫療記錄創建成功",
-    "putMissingMedicalId": "需要醫療 ID",
-    "invalidMedicalIdFormat": "無效的醫療 ID 格式",
-    "medicalRecordNotFound": "未找到醫療記錄",
-    "putSuccess": "寵物醫療記錄更新成功",
-    "deleteSuccess": "醫療記錄刪除成功",
-    "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式",
-    "noFieldsToUpdate": "未提供任何要更新的欄位"
-  },
-  "bloodTest": {
-    "getNotFound": "找不到寵物血檢紀錄",
-    "getSuccess": "成功取得寵物血檢紀錄",
-    "postSuccess": "血檢紀錄創建成功",
-    "putMissingBloodTestId": "血檢紀錄 ID 為必填",
-    "invalidBloodTestIdFormat": "血檢紀錄 ID 格式無效",
-    "bloodTestRecordNotFound": "找不到血檢紀錄",
-    "putSuccess": "血檢紀錄更新成功",
-    "deleteSuccess": "血檢紀錄已成功刪除",
-    "invalidDateFormat": "日期格式無效。預期格式為 YYYY-MM-DD 或 DD/MM/YYYY",
-    "noFieldsToUpdate": "未提供任何要更新的欄位"
-  },
-  "medicationRecord": {
-    "getNotFound": "未找到寵物用藥記錄",
-    "getSuccess": "寵物用藥記錄檢索成功",
-    "postSuccess": "寵物用藥記錄創建成功",
-    "putMissingMedicationId": "需要用藥 ID",
-    "invalidMedicationIdFormat": "無效的用藥 ID 格式",
-    "medicationRecordNotFound": "未找到用藥記錄",
-    "putSuccess": "寵物用藥記錄更新成功",
-    "deleteSuccess": "用藥記錄刪除成功",
-    "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式",
-    "noFieldsToUpdate": "未提供任何要更新的欄位"
-  },
-  "dewormRecord": {
-    "getNotFound": "未找到寵物驅蟲記錄",
-    "getSuccess": "寵物驅蟲記錄檢索成功",
-    "postSuccess": "寵物驅蟲記錄創建成功",
-    "putMissingDewormId": "需要驅蟲記錄 ID",
-    "invalidDewormIdFormat": "無效的驅蟲記錄 ID 格式",
-    "dewormRecordNotFound": "未找到驅蟲記錄",
-    "putSuccess": "寵物驅蟲記錄更新成功",
-    "deleteSuccess": "驅蟲記錄刪除成功",
-    "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式",
-    "noFieldsToUpdate": "未提供任何要更新的欄位"
+  "petMedicalRecord": {
+    "errors": {
+      "missingPetId": "需要寵物身分證",
+      "invalidPetIdFormat": "無效的寵物 ID 格式",
+      "petNotFound": "未找到寵物",
+      "petDeleted": "寵物已被刪除",
+      "medicalRecord": {
+        "notFound": "未找到醫療記錄",
+        "missingId": "需要醫療 ID",
+        "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式",
+        "noFieldsToUpdate": "未提供任何要更新的欄位",
+        "invalidMedicalIdFormat": "無效的醫療 ID 格式"
+      },
+      "bloodTest": {
+        "notFound": "找不到血檢紀錄",
+        "missingId": "血檢紀錄 ID 為必填",
+        "invalidDateFormat": "日期格式無效。預期格式為 YYYY-MM-DD 或 DD/MM/YYYY",
+        "noFieldsToUpdate": "未提供任何要更新的欄位",
+        "invalidBloodTestIdFormat": "血檢紀錄 ID 格式無效"
+      },
+      "medicationRecord": {
+        "notFound": "未找到用藥記錄",
+        "missingId": "需要用藥 ID",
+        "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式",
+        "noFieldsToUpdate": "未提供任何要更新的欄位",
+        "invalidMedicationIdFormat": "無效的用藥 ID 格式"
+      },
+      "dewormRecord": {
+        "notFound": "未找到驅蟲記錄",
+        "missingId": "需要驅蟲記錄 ID",
+        "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式",
+        "noFieldsToUpdate": "未提供任何要更新的欄位",
+        "invalidDewormIdFormat": "無效的驅蟲記錄 ID 格式"
+      }
+    },
+    "success": {
+      "medicalRecord": {
+        "created": "寵物醫療記錄創建成功",
+        "updated": "寵物醫療記錄更新成功",
+        "deleted": "醫療記錄刪除成功",
+        "getSuccess": "寵物醫療記錄檢索成功"
+      },
+      "bloodTest": {
+        "created": "血檢紀錄創建成功",
+        "updated": "血檢紀錄更新成功",
+        "deleted": "血檢紀錄已成功刪除",
+        "getSuccess": "成功取得寵物血檢紀錄"
+      },
+      "medicationRecord": {
+        "created": "寵物用藥記錄創建成功",
+        "updated": "寵物用藥記錄更新成功",
+        "deleted": "用藥記錄刪除成功",
+        "getSuccess": "寵物用藥記錄檢索成功"
+      },
+      "dewormRecord": {
+        "created": "寵物驅蟲記錄創建成功",
+        "updated": "寵物驅蟲記錄更新成功",
+        "deleted": "驅蟲記錄刪除成功",
+        "getSuccess": "寵物驅蟲記錄檢索成功"
+      }
+    }
   }
 }

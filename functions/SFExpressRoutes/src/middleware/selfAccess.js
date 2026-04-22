@@ -51,7 +51,7 @@ async function loadAuthorizedOrdersForMutation({ event, body, orderReadModel }) 
 
     return {
       isValid: false,
-      error: createErrorResponse(403, "others.unauthorized", event),
+      error: createErrorResponse(403, "common.unauthorized", event),
     };
   }
 
@@ -68,7 +68,7 @@ async function loadAuthorizedOrdersForMutation({ event, body, orderReadModel }) 
 
     return {
       isValid: false,
-      error: createErrorResponse(403, "others.unauthorized", event),
+      error: createErrorResponse(403, "common.unauthorized", event),
     };
   }
 

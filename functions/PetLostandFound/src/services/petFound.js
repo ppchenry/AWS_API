@@ -39,7 +39,7 @@ async function listPetFound({ event }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -57,7 +57,7 @@ async function createPetFound({ event }) {
       windowSec: 60,
     });
     if (!rl.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     const form = await parse(event);
@@ -134,7 +134,7 @@ async function createPetFound({ event }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -146,18 +146,18 @@ async function deletePetFound({ event }) {
     const petFoundID = event.pathParameters?.petFoundID;
 
     if (!petFoundID) {
-      return createErrorResponse(400, "petFound.errors.idRequired", event);
+      return createErrorResponse(400, "petLostAndFound.errors.petFound.idRequired", event);
     }
 
     const PetFound = mongoose.model("PetFound");
     const record = await PetFound.findById(petFoundID).select("userId").lean();
 
     if (!record) {
-      return createErrorResponse(404, "petFound.errors.notFound", event);
+      return createErrorResponse(404, "petLostAndFound.errors.petFound.notFound", event);
     }
 
     if (String(record.userId) !== String(event.userId)) {
-      return createErrorResponse(403, "others.selfAccessDenied", event);
+      return createErrorResponse(403, "common.selfAccessDenied", event);
     }
 
     await PetFound.deleteOne({ _id: petFoundID });
@@ -171,7 +171,7 @@ async function deletePetFound({ event }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

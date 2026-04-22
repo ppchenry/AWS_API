@@ -828,7 +828,7 @@ describe("Verification failures", () => {
     });
 
     expect(result.statusCode).toBe(400);
-    expect(result.body.errorKey).toBe("verificationFailed");
+    expect(result.body.errorKey).toBe("emailVerification.errors.verificationFailed");
   });
 
   test("sms verify — wrong code returns codeIncorrect", async () => {
@@ -840,7 +840,7 @@ describe("Verification failures", () => {
     });
 
     expect(result.statusCode).toBe(400);
-    expect(result.body.errorKey).toBe("verification.codeIncorrect");
+    expect(result.body.errorKey).toBe("userRoutes.errors.verification.codeIncorrect");
   });
 
   test("sms verify — expired code returns codeExpired", async () => {
@@ -852,7 +852,7 @@ describe("Verification failures", () => {
     });
 
     expect(result.statusCode).toBe(400);
-    expect(result.body.errorKey).toBe("verification.codeExpired");
+    expect(result.body.errorKey).toBe("userRoutes.errors.verification.codeExpired");
   });
 });
 
@@ -868,7 +868,7 @@ describe("Rate limiting", () => {
     });
 
     expect(result.statusCode).toBe(429);
-    expect(result.body.errorKey).toBe("others.rateLimited");
+    expect(result.body.errorKey).toBe("common.rateLimited");
   });
 
   test("sms verify returns 429 when rate limited", async () => {
@@ -880,7 +880,7 @@ describe("Rate limiting", () => {
     });
 
     expect(result.statusCode).toBe(429);
-    expect(result.body.errorKey).toBe("others.rateLimited");
+    expect(result.body.errorKey).toBe("common.rateLimited");
   });
 
   test("register returns 429 when rate limited", async () => {
@@ -892,7 +892,7 @@ describe("Rate limiting", () => {
     });
 
     expect(result.statusCode).toBe(429);
-    expect(result.body.errorKey).toBe("others.rateLimited");
+    expect(result.body.errorKey).toBe("common.rateLimited");
   });
 });
 

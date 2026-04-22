@@ -1,11 +1,11 @@
 const { z } = require("zod");
 
 const MSG = {
-  speciesRequired: "eyeUpload.speciesRequired",
-  urlRequired: "eyeUpload.urlRequired",
-  tooLong: "eyeUpload.fieldTooLong",
-  invalidUrl: "eyeUpload.invalidUrl",
-  unknownField: "eyeUpload.unknownField",
+  speciesRequired: "eyeUpload.errors.speciesRequired",
+  urlRequired: "eyeUpload.errors.urlRequired",
+  tooLong: "eyeUpload.errors.fieldTooLong",
+  invalidUrl: "eyeUpload.errors.invalidUrl",
+  unknownField: "eyeUpload.errors.unknownField",
 };
 
 const ALLOWED_FIELDS = ["species", "url"];

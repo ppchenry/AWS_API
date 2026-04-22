@@ -1,5 +1,5 @@
 {
-  "others": {
+  "common": {
     "internalError": "伺服器內部錯誤",
     "methodNotAllowed": "不支援的請求方法",
     "invalidJSON": "JSON 請求格式不正確",

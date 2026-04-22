@@ -51,7 +51,7 @@ describe("GetAdoption CORS", () => {
     expect(response.statusCode).toBe(403);
     expect(JSON.parse(response.body)).toMatchObject({
       success: false,
-      errorKey: "others.originNotAllowed",
+      errorKey: "common.originNotAllowed",
     });
   });
 
@@ -65,7 +65,7 @@ describe("GetAdoption CORS", () => {
     });
     expect(response.statusCode).toBe(403);
     const body = JSON.parse(response.body);
-    expect(body.errorKey).toBe("others.originNotAllowed");
+    expect(body.errorKey).toBe("common.originNotAllowed");
     expect(body.requestId).toBe("req-3");
   });
 
@@ -97,7 +97,7 @@ describe("GetAdoption guard", () => {
     expect(result.isValid).toBe(false);
     expect(JSON.parse(result.error.body)).toMatchObject({
       success: false,
-      errorKey: "adoption.invalidPetIdFormat",
+      errorKey: "getAdoption.errors.invalidPetIdFormat",
     });
   });
 
@@ -112,7 +112,7 @@ describe("GetAdoption guard", () => {
     expect(result.isValid).toBe(false);
     expect(JSON.parse(result.error.body)).toMatchObject({
       success: false,
-      errorKey: "adoption.invalidPage",
+      errorKey: "getAdoption.errors.invalidPage",
     });
   });
 
@@ -127,7 +127,7 @@ describe("GetAdoption guard", () => {
     expect(result.isValid).toBe(false);
     expect(JSON.parse(result.error.body)).toMatchObject({
       success: false,
-      errorKey: "adoption.invalidPage",
+      errorKey: "getAdoption.errors.invalidPage",
     });
   });
 
@@ -142,7 +142,7 @@ describe("GetAdoption guard", () => {
     expect(result.isValid).toBe(false);
     expect(JSON.parse(result.error.body)).toMatchObject({
       success: false,
-      errorKey: "adoption.invalidSearch",
+      errorKey: "getAdoption.errors.invalidSearch",
     });
   });
 
@@ -215,7 +215,7 @@ describe("GetAdoption router", () => {
     expect(response.statusCode).toBe(405);
     expect(JSON.parse(response.body)).toMatchObject({
       success: false,
-      errorKey: "others.methodNotAllowed",
+      errorKey: "common.methodNotAllowed",
     });
   });
 
@@ -230,7 +230,7 @@ describe("GetAdoption router", () => {
     expect(response.statusCode).toBe(405);
     expect(JSON.parse(response.body)).toMatchObject({
       success: false,
-      errorKey: "others.methodNotAllowed",
+      errorKey: "common.methodNotAllowed",
     });
   });
 });
@@ -280,7 +280,7 @@ describe("GetAdoption handler", () => {
   test("propagates guard error without calling routeRequest", async () => {
     const guardError = {
       statusCode: 400,
-      body: JSON.stringify({ success: false, errorKey: "adoption.invalidPetIdFormat" }),
+      body: JSON.stringify({ success: false, errorKey: "getAdoption.errors.invalidPetIdFormat" }),
     };
     const validateAdoptionRequest = jest.fn().mockResolvedValue({ isValid: false, error: guardError });
     const routeRequest = jest.fn();
@@ -298,7 +298,7 @@ describe("GetAdoption handler", () => {
     );
 
     expect(response.statusCode).toBe(400);
-    expect(JSON.parse(response.body).errorKey).toBe("adoption.invalidPetIdFormat");
+    expect(JSON.parse(response.body).errorKey).toBe("getAdoption.errors.invalidPetIdFormat");
     expect(routeRequest).not.toHaveBeenCalled();
   });
 });
@@ -427,7 +427,7 @@ describe("GetAdoption services", () => {
     expect(select).toHaveBeenCalledWith(DETAIL_PROJECTION);
     expect(JSON.parse(response.body)).toMatchObject({
       success: false,
-      errorKey: "adoption.petNotFound",
+      errorKey: "getAdoption.errors.petNotFound",
     });
   });
 

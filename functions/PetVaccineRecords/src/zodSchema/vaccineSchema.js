@@ -1,7 +1,7 @@
 const { z } = require("zod");
 
 const nullableStringField = z.union([
-  z.string().trim().min(1, "vaccineRecord.invalidInput"),
+  z.string().trim().min(1, "petVaccineRecords.errors.vaccineRecord.invalidInput"),
   z.null(),
 ]);
 

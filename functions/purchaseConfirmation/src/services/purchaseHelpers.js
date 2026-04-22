@@ -19,11 +19,11 @@ const NUMBERS = "23456789";
  * @returns {string|null}
  */
 function validateUploadFiles(files, maxCount = 1) {
-  if (files.length > maxCount) return "purchase.errors.tooManyFiles";
+  if (files.length > maxCount) return "purchaseConfirmation.errors.purchase.tooManyFiles";
   for (const f of files) {
-    if (f.content.length > MAX_UPLOAD_BYTES) return "purchase.errors.fileTooLarge";
+    if (f.content.length > MAX_UPLOAD_BYTES) return "purchaseConfirmation.errors.purchase.fileTooLarge";
     const detectedMime = detectMimeFromBuffer(f.content);
-    if (!detectedMime || !ALLOWED_UPLOAD_MIME.has(detectedMime)) return "purchase.errors.invalidFileType";
+    if (!detectedMime || !ALLOWED_UPLOAD_MIME.has(detectedMime)) return "purchaseConfirmation.errors.purchase.invalidFileType";
   }
   return null;
 }

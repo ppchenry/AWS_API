@@ -26,13 +26,13 @@ async function getMedicationRecords({ event }) {
       .lean();
 
     return createSuccessResponse(200, event, {
-      message: "medicationRecord.getSuccess",
+      message: "petMedicalRecord.success.medicationRecord.getSuccess",
       form: { medication: records.map(sanitizeRecord) },
       petId: petID,
     });
   } catch (error) {
     logError("Failed to get medication records", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -52,11 +52,11 @@ async function createMedicationRecord({ event, body }) {
     }
     const data = parseResult.data;
     if (Object.keys(data).length === 0) {
-      return createErrorResponse(400, "medicationRecord.noFieldsToUpdate", event);
+      return createErrorResponse(400, "petMedicalRecord.errors.medicationRecord.noFieldsToUpdate", event);
     }
 
     if (data.medicationDate && !isValidDateFormat(data.medicationDate)) {
-      return createErrorResponse(400, "medicationRecord.invalidDateFormat", event);
+      return createErrorResponse(400, "petMedicalRecord.errors.medicationRecord.invalidDateFormat", event);
     }
 
     const MedicationRecords = mongoose.model("Medication_Records");
@@ -77,14 +77,14 @@ async function createMedicationRecord({ event, body }) {
     });
 
     return createSuccessResponse(200, event, {
-      message: "medicationRecord.postSuccess",
+      message: "petMedicalRecord.success.medicationRecord.created",
       form: sanitizeRecord(newRecord),
       petId: petID,
       medicationRecordId: newRecord._id,
     });
   } catch (error) {
     logError("Failed to create medication record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -106,7 +106,7 @@ async function updateMedicationRecord({ event, body }) {
     const data = parseResult.data;
 
     if (data.medicationDate && !isValidDateFormat(data.medicationDate)) {
-      return createErrorResponse(400, "medicationRecord.invalidDateFormat", event);
+      return createErrorResponse(400, "petMedicalRecord.errors.medicationRecord.invalidDateFormat", event);
     }
 
     const MedicationRecords = mongoose.model("Medication_Records");
@@ -120,7 +120,7 @@ async function updateMedicationRecord({ event, body }) {
     if (data.allergy !== undefined) updateFields.allergy = data.allergy;
 
     if (Object.keys(updateFields).length === 0) {
-      return createErrorResponse(400, "medicationRecord.noFieldsToUpdate", event);
+      return createErrorResponse(400, "petMedicalRecord.errors.medicationRecord.noFieldsToUpdate", event);
     }
 
     const updated = await MedicationRecords.findOneAndUpdate(
@@ -130,18 +130,18 @@ async function updateMedicationRecord({ event, body }) {
     ).lean();
 
     if (!updated) {
-      return createErrorResponse(404, "medicationRecord.medicationRecordNotFound", event);
+      return createErrorResponse(404, "petMedicalRecord.errors.medicationRecord.notFound", event);
     }
 
     return createSuccessResponse(200, event, {
-      message: "medicationRecord.putSuccess",
+      message: "petMedicalRecord.success.medicationRecord.updated",
       petId: petID,
       medicationRecordId: medicationID,
       form: sanitizeRecord(updated),
     });
   } catch (error) {
     logError("Failed to update medication record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -162,19 +162,19 @@ async function deleteMedicationRecord({ event }) {
     const deleted = await MedicationRecords.deleteOne({ _id: medicationID, petId: petID });
 
     if (deleted.deletedCount === 0) {
-      return createErrorResponse(404, "medicationRecord.medicationRecordNotFound", event);
+      return createErrorResponse(404, "petMedicalRecord.errors.medicationRecord.notFound", event);
     }
 
     const count = await MedicationRecords.countDocuments({ petId: petID });
     await Pets.findByIdAndUpdate(petID, { medicationRecordsCount: count });
 
     return createSuccessResponse(200, event, {
-      message: "medicationRecord.deleteSuccess",
+      message: "petMedicalRecord.success.medicationRecord.deleted",
       id: petID,
     });
   } catch (error) {
     logError("Failed to delete medication record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

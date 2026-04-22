@@ -30,7 +30,7 @@ async function getSource({ event }) {
     });
   } catch (error) {
     logError("Failed to get source info", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -50,10 +50,10 @@ async function createSource({ event, body }) {
     // Check for duplicate — only one source record per pet
     const dup = await checkDuplicates(
       { pet_sources: SourceModel },
-      [{ model: "pet_sources", path: "petId", value: petID, label: "petSource.duplicateRecord" }],
+      [{ model: "pet_sources", path: "petId", value: petID, label: "petDetailInfo.errors.petSource.duplicateRecord" }],
     );
     if (!dup.ok) {
-      return createErrorResponse(409, "petSource.duplicateRecord", event);
+      return createErrorResponse(409, "petDetailInfo.errors.petSource.duplicateRecord", event);
     }
 
     const newRecord = await SourceModel.create({
@@ -71,7 +71,7 @@ async function createSource({ event, body }) {
     });
   } catch (error) {
     logError("Failed to create source record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -92,7 +92,7 @@ async function updateSource({ event, body }) {
     // Verify source record exists and belongs to this pet
     const existing = await SourceModel.findOne({ _id: sourceId, petId: petID }).select("_id").lean();
     if (!existing) {
-      return createErrorResponse(404, "petSource.recordNotFound", event);
+      return createErrorResponse(404, "petDetailInfo.errors.petSource.recordNotFound", event);
     }
 
     const updateFields = {};
@@ -102,12 +102,12 @@ async function updateSource({ event, body }) {
     if (data.causeOfInjury !== undefined) updateFields.causeOfInjury = data.causeOfInjury;
 
     if (Object.keys(updateFields).length === 0) {
-      return createErrorResponse(400, "petSource.noFieldsToUpdate", event);
+      return createErrorResponse(400, "petDetailInfo.errors.petSource.noFieldsToUpdate", event);
     }
 
     const result = await SourceModel.updateOne({ _id: sourceId, petId: petID }, { $set: updateFields });
     if (result.matchedCount === 0) {
-      return createErrorResponse(404, "petSource.recordNotFound", event);
+      return createErrorResponse(404, "petDetailInfo.errors.petSource.recordNotFound", event);
     }
 
     return createSuccessResponse(200, event, {
@@ -116,7 +116,7 @@ async function updateSource({ event, body }) {
     });
   } catch (error) {
     logError("Failed to update source record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

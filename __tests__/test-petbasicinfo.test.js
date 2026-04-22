@@ -130,13 +130,13 @@ describe("JWT authentication", () => {
   test("rejects request with no Authorization header → 401", async () => {
     const res = await req("GET", `/pets/${NONEXISTENT_PET_ID}/basic-info`);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects expired JWT → 401", async () => {
     const res = await req("GET", `/pets/${NONEXISTENT_PET_ID}/basic-info`, undefined, expiredAuth());
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects garbage Bearer token → 401", async () => {
@@ -144,7 +144,7 @@ describe("JWT authentication", () => {
       Authorization: "Bearer this.is.garbage",
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects token without Bearer prefix → 401", async () => {
@@ -153,7 +153,7 @@ describe("JWT authentication", () => {
       Authorization: token,
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects tampered JWT signature → 401", async () => {
@@ -164,7 +164,7 @@ describe("JWT authentication", () => {
       Authorization: `Bearer ${tampered}`,
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects alg:none token → 401", async () => {
@@ -175,7 +175,7 @@ describe("JWT authentication", () => {
       Authorization: `Bearer ${noneToken}`,
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("error responses include success:false, errorKey, error string, and requestId", async () => {
@@ -211,13 +211,13 @@ describe("Ownership access control", () => {
   petTest("GET returns 403 for a stranger JWT on another user's pet", async () => {
     const res = await req("GET", `/pets/${TEST_PET_ID}/basic-info`, undefined, strangerAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   petTest("PUT returns 403 for a stranger JWT on another user's pet", async () => {
     const res = await req("PUT", `/pets/${TEST_PET_ID}/basic-info`, { name: "Hijacked" }, strangerAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 });
 
@@ -326,7 +326,7 @@ describe("GET /pets/{petID}/eyeLog", () => {
   test("rejects no auth → 401", async () => {
     const res = await req("GET", `/pets/${NONEXISTENT_PET_ID}/eyeLog`);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   petTest("returns 200 with result as an array scoped to the requested petID", async () => {
@@ -357,7 +357,7 @@ describe("DELETE /pets/{petID}", () => {
   test("rejects no auth → 401", async () => {
     const res = await req("DELETE", `/pets/${NONEXISTENT_PET_ID}`);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects invalid petID format → 400", async () => {
@@ -380,7 +380,7 @@ describe("DELETE /pets/{petID}", () => {
     for (let i = 0; i < 12; i++) {
       const res = await req("DELETE", `/pets/${NONEXISTENT_PET_ID}`, undefined, rlAuth);
       if (res.status === 429) {
-        expect(res.body.errorKey).toBe("others.rateLimited");
+        expect(res.body.errorKey).toBe("common.rateLimited");
         got429 = true;
         break;
       }
@@ -393,7 +393,7 @@ describe("DELETE /pets/{petID}", () => {
   petTest("returns 403 for a stranger JWT on another user's pet", async () => {
     const res = await req("DELETE", `/pets/${TEST_PET_ID}`, undefined, strangerAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   disposableTest("owner can soft-delete own pet → 200; subsequent GET returns 404", async () => {

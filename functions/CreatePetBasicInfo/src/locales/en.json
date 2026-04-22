@@ -1,29 +1,34 @@
 {
-    "invalidJSON": "Invalid JSON format",
-    "missingUserId": "User ID required",
-    "missingName": "Name is required",
-    "missingBirthday": "Birthday is required",
-    "missingSex": "Sex is required",
-    "missingAnimal": "Animal is required",
-    "invalidUserIdFormat": "Invalid user ID format",
-    "userNotFound": "User not found",
-    "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
-    "invalidWeightFormat": "Invalid weight format. Expected a number",
-    "invalidBooleanFormat": "Invalid boolean format",
-    "invalidBreedimageFormat": "Invalid breedimage format. Expected an array",
-    "invalidImageUrlFormat": "Invalid image URL format in breedimage",
-    "duplicatePetNgoId": "Duplicate pet with ngoPetId",
-    "duplicatePetTagId": "Duplicate pets with tagId",
-    "unknownField": "Unknown field is not allowed",
-    "success": "Pet added successfully",
-    "others": {
-        "invalidJSON": "Invalid JSON format",
-        "unauthorized": "Unauthorized",
-        "internalError": "Internal Server Error",
-        "missingParams": "Missing required request body",
-        "methodNotAllowed": "Method not allowed",
-        "rateLimited": "Too many requests",
-        "invalidInput": "Invalid input",
-        "originNotAllowed": "Origin not allowed"
+  "createPetBasicInfo": {
+    "errors": {
+      "missingUserId": "User ID required",
+      "missingName": "Name is required",
+      "missingBirthday": "Birthday is required",
+      "missingSex": "Sex is required",
+      "missingAnimal": "Animal is required",
+      "invalidUserIdFormat": "Invalid user ID format",
+      "userNotFound": "User not found",
+      "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
+      "invalidWeightFormat": "Invalid weight format. Expected a number",
+      "invalidBooleanFormat": "Invalid boolean format",
+      "invalidBreedimageFormat": "Invalid breedimage format. Expected an array",
+      "invalidImageUrlFormat": "Invalid image URL format in breedimage",
+      "duplicatePetNgoId": "Duplicate pet with ngoPetId",
+      "duplicatePetTagId": "Duplicate pets with tagId",
+      "unknownField": "Unknown field is not allowed"
+    },
+    "success": {
+      "created": "Pet added successfully"
     }
+  },
+  "common": {
+    "invalidJSON": "Invalid JSON format",
+    "unauthorized": "Unauthorized",
+    "internalError": "Internal Server Error",
+    "missingParams": "Missing required request body",
+    "methodNotAllowed": "Method not allowed",
+    "rateLimited": "Too many requests",
+    "invalidInput": "Invalid input",
+    "originNotAllowed": "Origin not allowed"
+  }
 }

@@ -17,11 +17,11 @@ async function routeRequest(routeContext) {
   const routeAction = routes[routeKey];
 
   if (routeAction === null) {
-    return createErrorResponse(405, "others.methodNotAllowed", event);
+    return createErrorResponse(405, "common.methodNotAllowed", event);
   }
 
   if (!routeAction) {
-    return createErrorResponse(405, "others.methodNotAllowed", event);
+    return createErrorResponse(405, "common.methodNotAllowed", event);
   }
 
   return await routeAction(routeContext);

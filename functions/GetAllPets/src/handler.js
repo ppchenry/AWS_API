@@ -49,7 +49,7 @@ async function handleRequest(event, context) {
       error,
       extra: { awsRequestId: context.awsRequestId },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

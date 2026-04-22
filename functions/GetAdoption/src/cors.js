@@ -35,7 +35,7 @@ function handleOptions(event) {
 
   const headers = corsHeaders(event);
   if (Object.keys(headers).length === 0) {
-    return createErrorResponse(403, "others.originNotAllowed", event);
+    return createErrorResponse(403, "common.originNotAllowed", event);
   }
 
   return {

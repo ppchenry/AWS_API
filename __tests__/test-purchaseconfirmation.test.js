@@ -272,7 +272,7 @@ describe("OPTIONS preflight", () => {
     expect(res.status).toBe(403);
     const body = await res.json();
     expect(body.success).toBe(false);
-    expect(body.errorKey).toBe("others.originNotAllowed");
+    expect(body.errorKey).toBe("common.originNotAllowed");
   });
 
   test("returns 403 when Origin header is absent", async () => {
@@ -282,7 +282,7 @@ describe("OPTIONS preflight", () => {
     expect(res.status).toBe(403);
     const body = await res.json();
     expect(body.success).toBe(false);
-    expect(body.errorKey).toBe("others.originNotAllowed");
+    expect(body.errorKey).toBe("common.originNotAllowed");
   });
 
   test.each(routes)("OPTIONS %s → 204 for allowed origin", async (route) => {
@@ -304,13 +304,13 @@ describe("JWT authentication", () => {
   test("rejects request with no Authorization header → 401", async () => {
     const res = await req("GET", authPath);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects expired JWT → 401", async () => {
     const res = await req("GET", authPath, undefined, expiredAuth());
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects garbage Bearer token → 401", async () => {
@@ -318,14 +318,14 @@ describe("JWT authentication", () => {
       Authorization: "Bearer this.is.garbage",
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects token without Bearer prefix → 401", async () => {
     const token = makeToken({ userId: "any-user" });
     const res = await req("GET", authPath, undefined, { Authorization: token });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects tampered JWT signature → 401", async () => {
@@ -336,7 +336,7 @@ describe("JWT authentication", () => {
       Authorization: `Bearer ${tampered}`,
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects alg:none token → 401", async () => {
@@ -347,7 +347,7 @@ describe("JWT authentication", () => {
       Authorization: `Bearer ${noneToken}`,
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("error response shape: success, errorKey, error, requestId", async () => {
@@ -393,7 +393,7 @@ describe("Public routes — no JWT required", () => {
     const res = await multipartReq("POST", "/purchase/confirmation");
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
-    expect(res.body.errorKey).toBe("purchase.errors.missingRequiredFields");
+    expect(res.body.errorKey).toBe("purchaseConfirmation.errors.purchase.missingRequiredFields");
   });
 });
 
@@ -411,13 +411,13 @@ describe("RBAC — admin-only routes reject regular users", () => {
   test.each(adminRoutes)("%s %s → 403 for regular user", async (method, path) => {
     const res = await req(method, path, method === "POST" ? {} : undefined, userAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("DELETE /purchase/order-verification/{id} → 403 for regular user", async () => {
     const res = await req("DELETE", `/purchase/order-verification/${NONEXISTENT_OV_ID}`, undefined, userAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("GET /purchase/orders → succeeds (not 401/403) for admin", async () => {
@@ -451,13 +451,13 @@ describe("Guard — JSON parse and empty body", () => {
   test("rejects malformed JSON on POST /purchase/send-ptag-detection-email → 400", async () => {
     const res = await rawReq("POST", "/purchase/send-ptag-detection-email", '{"broken"', adminAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidJSON");
+    expect(res.body.errorKey).toBe("common.invalidJSON");
   });
 
   test("rejects empty body on POST /purchase/send-ptag-detection-email → 400", async () => {
     const res = await req("POST", "/purchase/send-ptag-detection-email", {}, adminAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   });
 });
 
@@ -469,13 +469,13 @@ describe("Guard — ObjectId path parameter validation", () => {
   test("rejects invalid ObjectId format → 400", async () => {
     const res = await req("DELETE", "/purchase/order-verification/not-a-valid-id", undefined, adminAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidObjectId");
+    expect(res.body.errorKey).toBe("common.invalidObjectId");
   });
 
   test("returns 404 for valid ObjectId that does not exist", async () => {
     const res = await req("DELETE", `/purchase/order-verification/${NONEXISTENT_OV_ID}`, undefined, adminAuth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("purchase.errors.orderVerificationNotFound");
+    expect(res.body.errorKey).toBe("purchaseConfirmation.errors.purchase.orderVerificationNotFound");
   });
 });
 
@@ -501,7 +501,7 @@ describe("Dead routes return 405", () => {
       },
     });
     expect(response.statusCode).toBe(405);
-    expect(JSON.parse(response.body).errorKey).toBe("others.methodNotAllowed");
+    expect(JSON.parse(response.body).errorKey).toBe("common.methodNotAllowed");
   });
 });
 
@@ -515,7 +515,7 @@ describe("Zod — send-ptag-detection-email validation", () => {
   test("rejects missing required fields → 400", async () => {
     const res = await req("POST", emailPath, { name: "Test" }, adminAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("email.errors.missingFields");
+    expect(res.body.errorKey).toBe("purchaseConfirmation.errors.email.missingFields");
   });
 
   test("rejects invalid email → 400", async () => {
@@ -527,7 +527,7 @@ describe("Zod — send-ptag-detection-email validation", () => {
       email: "not-an-email",
     }, adminAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("email.errors.invalidEmail");
+    expect(res.body.errorKey).toBe("purchaseConfirmation.errors.email.invalidEmail");
   });
 
   test("rejects non-HTTPS locationURL → 400", async () => {
@@ -539,7 +539,7 @@ describe("Zod — send-ptag-detection-email validation", () => {
       email: "test@example.com",
     }, adminAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("email.errors.invalidLocationURL");
+    expect(res.body.errorKey).toBe("purchaseConfirmation.errors.email.invalidLocationURL");
   });
 
   test("rejects non-URL locationURL → 400", async () => {
@@ -551,7 +551,7 @@ describe("Zod — send-ptag-detection-email validation", () => {
       email: "test@example.com",
     }, adminAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("email.errors.invalidLocationURL");
+    expect(res.body.errorKey).toBe("purchaseConfirmation.errors.email.invalidLocationURL");
   });
 });
 
@@ -574,37 +574,37 @@ describe("Zod — purchase confirmation validation", () => {
     const res = await multipartReq("POST", purchasePath, { lastName: "Test" });
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
-    expect(res.body.errorKey).toBe("purchase.errors.missingRequiredFields");
+    expect(res.body.errorKey).toBe("purchaseConfirmation.errors.purchase.missingRequiredFields");
   });
 
   test("rejects invalid email format → 400", async () => {
     const res = await multipartReq("POST", purchasePath, validPurchaseFields({ email: "not-email" }));
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("purchase.errors.invalidEmail");
+    expect(res.body.errorKey).toBe("purchaseConfirmation.errors.purchase.invalidEmail");
   });
 
   test("rejects invalid phone number → 400", async () => {
     const res = await multipartReq("POST", purchasePath, validPurchaseFields({ phoneNumber: "abc" }));
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("purchase.errors.invalidPhone");
+    expect(res.body.errorKey).toBe("purchaseConfirmation.errors.purchase.invalidPhone");
   });
 
   test("rejects phone number too short → 400", async () => {
     const res = await multipartReq("POST", purchasePath, validPurchaseFields({ phoneNumber: "123" }));
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("purchase.errors.invalidPhone");
+    expect(res.body.errorKey).toBe("purchaseConfirmation.errors.purchase.invalidPhone");
   });
 
   test("rejects option with special characters → 400", async () => {
     const res = await multipartReq("POST", purchasePath, validPurchaseFields({ option: "<script>" }));
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("purchase.errors.invalidOption");
+    expect(res.body.errorKey).toBe("purchaseConfirmation.errors.purchase.invalidOption");
   });
 
   test("rejects tempId with special characters → 400", async () => {
     const res = await multipartReq("POST", purchasePath, validPurchaseFields({ tempId: "'; DROP TABLE--" }));
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("purchase.errors.invalidTempId");
+    expect(res.body.errorKey).toBe("purchaseConfirmation.errors.purchase.invalidTempId");
   });
 
   test("rejects missing shopCode → 400", async () => {
@@ -612,7 +612,7 @@ describe("Zod — purchase confirmation validation", () => {
     delete fields.shopCode;
     const res = await multipartReq("POST", purchasePath, fields);
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("purchase.errors.invalidShopCode");
+    expect(res.body.errorKey).toBe("purchaseConfirmation.errors.purchase.invalidShopCode");
   });
 });
 
@@ -634,7 +634,7 @@ describe("NoSQL injection resistance", () => {
       email: '{"$gt":""}',
     }));
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("purchase.errors.invalidEmail");
+    expect(res.body.errorKey).toBe("purchaseConfirmation.errors.purchase.invalidEmail");
   });
 
   test("$ne operator in option is rejected by regex", async () => {
@@ -642,7 +642,7 @@ describe("NoSQL injection resistance", () => {
       option: '{"$ne":null}',
     }));
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("purchase.errors.invalidOption");
+    expect(res.body.errorKey).toBe("purchaseConfirmation.errors.purchase.invalidOption");
   });
 });
 
@@ -753,13 +753,13 @@ describe("DELETE /purchase/order-verification/{id} — soft cancel", () => {
     if (!dbReady || !state.disposableOVId) return;
     const res = await req("DELETE", `/purchase/order-verification/${state.disposableOVId}`, undefined, adminAuth());
     expect(res.status).toBe(409);
-    expect(res.body.errorKey).toBe("purchase.errors.alreadyCancelled");
+    expect(res.body.errorKey).toBe("purchaseConfirmation.errors.purchase.alreadyCancelled");
   });
 
   test("returns 404 for non-existent OrderVerification", async () => {
     const res = await req("DELETE", `/purchase/order-verification/${NONEXISTENT_OV_ID}`, undefined, adminAuth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("purchase.errors.orderVerificationNotFound");
+    expect(res.body.errorKey).toBe("purchaseConfirmation.errors.purchase.orderVerificationNotFound");
   });
 });
 
@@ -814,7 +814,7 @@ describe("POST /purchase/confirmation — full flow", () => {
       }
       const res2 = await multipartReq("POST", "/purchase/confirmation", fields);
       expect(res2.status).toBe(409);
-      expect(res2.body.errorKey).toBe("purchase.errors.duplicateOrder");
+      expect(res2.body.errorKey).toBe("purchaseConfirmation.errors.purchase.duplicateOrder");
     }
   }, 60000);
 
@@ -823,7 +823,7 @@ describe("POST /purchase/confirmation — full flow", () => {
       shopCode: "NONEXISTENT_SHOP_99999",
     }));
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("purchase.errors.invalidShopCode");
+    expect(res.body.errorKey).toBe("purchaseConfirmation.errors.purchase.invalidShopCode");
   });
 
   test("server ignores client-supplied price (server-authoritative)", async () => {
@@ -868,7 +868,7 @@ describe("Rate limiting — POST /purchase/confirmation", () => {
     });
     const res = await multipartReq("POST", "/purchase/confirmation", validPurchaseFields());
     expect(res.status).toBe(429);
-    expect(res.body.errorKey).toBe("others.rateLimited");
+    expect(res.body.errorKey).toBe("common.rateLimited");
   });
 });
 
