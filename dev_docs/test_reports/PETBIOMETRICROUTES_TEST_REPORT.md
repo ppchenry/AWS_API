@@ -58,13 +58,13 @@ Current status:
 
 #### Business-logic errors — 4xx responses
 
-- Nonexistent pet → `404 petBiometric.petNotFound`
-- Existing pet with no biometric data → `404 petBiometric.notRegistered`
-- Deleted pet on registration → `404 petBiometric.petNotFound`
-- Invalid business credentials → `400 petBiometric.invalidCredentials`
-- Zero-byte inline file → `413 petBiometric.fileTooSmall`
-- Register abuse throttling → `429 others.rateLimited`
-- Verify abuse throttling → `429 others.rateLimited`
+- Nonexistent pet → `404 petBiometricRoutes.errors.petNotFound`
+- Existing pet with no biometric data → `404 petBiometricRoutes.errors.notRegistered`
+- Deleted pet on registration → `404 petBiometricRoutes.errors.petNotFound`
+- Invalid business credentials → `400 petBiometricRoutes.errors.invalidCredentials`
+- Zero-byte inline file → `413 petBiometricRoutes.errors.fileTooSmall`
+- Register abuse throttling → `429 common.rateLimited`
+- Verify abuse throttling → `429 common.rateLimited`
 - 8 business-DB-dependent cases were environment-gated in the latest run: 3 under guard/validation and 5 under verify-path business credential or file-handling coverage
 
 #### Authentication & authorisation
@@ -80,7 +80,7 @@ Current status:
 
 #### Security hardening
 
-- **Strict route freezing** — unsupported methods return `405 others.methodNotAllowed` via exact router matching
+- **Strict route freezing** — unsupported methods return `405 common.methodNotAllowed` via exact router matching
 - **Ownership enforcement** — DB-backed pet ownership checks reject stranger access with `403`
 - **Write-path verification** — registration create and update flows are verified against persisted MongoDB state
 - **Request-shape enforcement** — malformed JSON and invalid payload fields are rejected before business logic
@@ -96,7 +96,7 @@ Every error response from PetBiometricRoutes follows a fixed shape:
 ```json
 {
   "success": false,
-  "errorKey": "petBiometric.invalidPetId",
+  "errorKey": "petBiometricRoutes.errors.invalidPetId",
   "error": "Invalid pet ID.",
   "requestId": "3b1c2d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e"
 }
@@ -126,9 +126,9 @@ if (!data.success) {
   showToast(data.error);
   console.error("[PetBiometricRoutes API]", data.errorKey, "requestId:", data.requestId);
 
-  if (data.errorKey === "petBiometric.forbidden") {
+  if (data.errorKey === "petBiometricRoutes.errors.forbidden") {
     redirectToPetList();
-  } else if (data.errorKey === "petBiometric.invalidCredentials") {
+  } else if (data.errorKey === "petBiometricRoutes.errors.invalidCredentials") {
     promptBusinessCredentialRetry();
   }
 }
@@ -147,20 +147,20 @@ The current PetBiometricRoutes locale bundle defines the following stable keys c
 
 | errorKey | Default message (en) |
 | --- | --- |
-| `others.unauthorized` | Authentication required. Please log in. |
-| `others.invalidJSON` | Invalid JSON format. |
-| `others.missingParams` | Missing parameters. |
-| `others.methodNotAllowed` | Method not allowed for this path. |
-| `others.rateLimited` | Too many requests. Please try again later. |
-| `petBiometric.forbidden` | You do not have permission to access this pet biometric resource. |
-| `petBiometric.invalidPetId` | Invalid pet ID. |
-| `petBiometric.petNotFound` | Pet not found. |
-| `petBiometric.notRegistered` | Pet biometric data has not been registered. |
-| `petBiometric.invalidCredentials` | Cannot find user with the corresponding access key and secret key. |
-| `petBiometric.invalidImageUrl` | Invalid image URL format. |
-| `petBiometric.unsupportedFormat` | Unsupported image format. |
-| `petBiometric.fileTooSmall` | Image file is empty. |
-| `petBiometric.errors.imageRequired` | Either image_url or files[0] is required. |
+| `common.unauthorized` | Authentication required. Please log in. |
+| `common.invalidJSON` | Invalid JSON format. |
+| `common.missingParams` | Missing parameters. |
+| `common.methodNotAllowed` | Method not allowed for this path. |
+| `common.rateLimited` | Too many requests. Please try again later. |
+| `petBiometricRoutes.errors.forbidden` | You do not have permission to access this pet biometric resource. |
+| `petBiometricRoutes.errors.invalidPetId` | Invalid pet ID. |
+| `petBiometricRoutes.errors.petNotFound` | Pet not found. |
+| `petBiometricRoutes.errors.notRegistered` | Pet biometric data has not been registered. |
+| `petBiometricRoutes.errors.invalidCredentials` | Cannot find user with the corresponding access key and secret key. |
+| `petBiometricRoutes.errors.petBiometric.invalidImageUrl` | Invalid image URL format. |
+| `petBiometricRoutes.errors.unsupportedFormat` | Unsupported image format. |
+| `petBiometricRoutes.errors.fileTooSmall` | Image file is empty. |
+| `petBiometricRoutes.errors.imageRequired` | Either image_url or files[0] is required. |
 
 ### Suite Hardening Applied
 
@@ -177,14 +177,14 @@ The current PetBiometricRoutes locale bundle defines the following stable keys c
 | Disallowed browser origin | CORS allowlist rejects preflight with `403` | Yes |
 | Missing / expired / tampered JWT | `jsonwebtoken.verify()` rejects and returns `401` | Yes |
 | `alg:none` JWT bypass | JWT verification rejects unsigned token | Yes |
-| Unsupported route method use | Exact router mapping returns `405 others.methodNotAllowed` | Yes |
+| Unsupported route method use | Exact router mapping returns `405 common.methodNotAllowed` | Yes |
 | Cross-user pet access | DB-backed ownership checks reject stranger callers with `403` | Yes |
 | Body/JWT identity mismatch | Guard rejects mismatched `userId` before service execution | Yes |
-| Malformed JSON | Guard rejects request with `400 others.invalidJSON` | Yes |
-| Invalid path ObjectId | Guard rejects bad `petId` with `400 petBiometric.invalidPetId` | Yes |
+| Malformed JSON | Guard rejects request with `400 common.invalidJSON` | Yes |
+| Invalid path ObjectId | Guard rejects bad `petId` with `400 petBiometricRoutes.errors.invalidPetId` | Yes |
 | Invalid image URL submission | Zod validation rejects invalid image URL fields with `400` | Yes |
 | Duplicate or partial-write blind spot on registration | Integration tests verify persisted pet and biometric state after create/update flows | Yes |
-| Registration abuse | Rate limiter returns `429 others.rateLimited` | Yes |
+| Registration abuse | Rate limiter returns `429 common.rateLimited` | Yes |
 | Verification abuse | Rate limiter path is covered in the suite; latest run was environment-gated on business DB seed availability as one of 8 gated business-DB-dependent tests | Partial |
 
 ---

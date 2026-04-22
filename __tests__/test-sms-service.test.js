@@ -47,6 +47,7 @@ function loadSmsService({
   const enforceRateLimit = jest.fn().mockResolvedValue({ allowed: rateLimitAllowed });
   const normalizePhone = jest.fn((value) => value);
   const logError = jest.fn();
+  const logInfo = jest.fn();
 
   const findOneLean = jest.fn().mockResolvedValue(existingUser);
   const UserModel = {
@@ -71,6 +72,7 @@ function loadSmsService({
   }));
   jest.doMock("../functions/UserRoutes/src/utils/logger", () => ({
     logError,
+    logInfo,
   }));
   jest.doMock("../functions/UserRoutes/src/utils/validators", () => ({
     normalizePhone,
@@ -193,10 +195,17 @@ describe("UserRoutes SMS service", () => {
     expect(result.body.userId).toBe("user-2");
     expect(result.body.role).toBe("user");
     expect(result.body.isVerified).toBe(true);
-    expect(mocks.UserModel.findOneAndUpdate).not.toHaveBeenCalled();
+    // Service upserts an SmsVerificationCode record on every successful verify,
+    // and the test mock aliases all mongoose.model() lookups to UserModel, so
+    // findOneAndUpdate gets called once for the verification record even when
+    // the user is already verified. Ensure it is NOT called to flip verified.
+    const verifiedFlipCalls = mocks.UserModel.findOneAndUpdate.mock.calls.filter(
+      ([, update]) => update && update.$set && update.$set.verified === true
+    );
+    expect(verifiedFlipCalls).toHaveLength(0);
   });
 
-  test("verifySmsCode rejects verified phones that do not belong to a registered account", async () => {
+  test("verifySmsCode returns isNewUser=true when no account exists for the phone", async () => {
     const { verifySmsCode } = loadSmsService({ existingUser: null });
 
     const result = await verifySmsCode({
@@ -204,8 +213,9 @@ describe("UserRoutes SMS service", () => {
       body: { phoneNumber: USER_PHONE, code: "123456" },
     });
 
-    expect(result.statusCode).toBe(400);
-    expect(result.body.errorKey).toBe("userRoutes.errors.verification.codeIncorrect");
+    expect(result.statusCode).toBe(200);
+    expect(result.body.verified).toBe(true);
+    expect(result.body.isNewUser).toBe(true);
   });
 
   test("verifySmsCode maps expired Twilio status to codeExpired", async () => {

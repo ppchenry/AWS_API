@@ -55,7 +55,7 @@ Current status:
 
 #### NGO search behavior
 
-- `search=ZZZZNOEXIST99` returns `404 ngoPath.noPetsFound`
+- `search=ZZZZNOEXIST99` returns `404 getAllPets.errors.ngoPath.noPetsFound`
 - `search=dog` returns only pets where at least one searchable field contains `dog`
 - Searchable fields verified by tests: `name`, `animal`, `breed`, `ngoPetId`, `locationName`, `owner`
 - A dedicated fixture-driven test confirms search by `locationName`
@@ -70,21 +70,21 @@ Current status:
 #### Pagination behavior
 
 - NGO page 1 and page 2 have the same `total` and disjoint pet id sets
-- NGO page beyond the last page returns `404 ngoPath.noPetsFound`
+- NGO page beyond the last page returns `404 getAllPets.errors.ngoPath.noPetsFound`
 - User pet list page beyond the last page returns `200` with empty `form`
 
 #### Validation behavior
 
-- Malformed JSON body returns `400 others.invalidJSON`
-- Empty POST and PUT bodies return `400 others.missingParams`
-- Invalid `ngoId` returns `400 ngoPath.invalidNgoIdFormat`
-- Invalid `userId` returns `400 getPetsByUser.invalidUserIdFormat`
+- Malformed JSON body returns `400 common.invalidJSON`
+- Empty POST and PUT bodies return `400 common.missingParams`
+- Invalid `ngoId` returns `400 getAllPets.errors.ngoPath.invalidNgoIdFormat`
+- Invalid `userId` returns `400 getAllPets.errors.getPetsByUser.invalidUserIdFormat`
 - Invalid or missing mutation fields return the documented `400` error keys
 - Extra body fields on mutation routes are rejected by Zod `.strict()`
 
 #### Authentication and authorization
 
-- Missing JWT returns `401 others.unauthorized`
+- Missing JWT returns `401 common.unauthorized`
 - Expired, tampered, malformed, and `alg:none` tokens return `401`
 - NGO pet list remains public
 - User pet list enforces self-access
@@ -92,8 +92,8 @@ Current status:
 
 #### Rate limiting
 
-- `POST /pets/deletePet` returns `429 others.rateLimited` on the 11th request in the same 60-second window
-- `PUT /pets/updatePetEye` returns `429 others.rateLimited` on the 11th request in the same 60-second window
+- `POST /pets/deletePet` returns `429 common.rateLimited` on the 11th request in the same 60-second window
+- `PUT /pets/updatePetEye` returns `429 common.rateLimited` on the 11th request in the same 60-second window
 
 #### Sanitization
 
@@ -109,7 +109,7 @@ Current status:
 
 | Path | Reason |
 | --- | --- |
-| Router `405 others.methodNotAllowed` | API Gateway intercepts wrong-method requests before Lambda route dispatch in the integration setup |
+| Router `405 common.methodNotAllowed` | API Gateway intercepts wrong-method requests before Lambda route dispatch in the integration setup |
 | Delete lifecycle happy path | Requires a disposable production-safe fixture id |
 
 ---
@@ -121,7 +121,7 @@ Current status:
 ```json
 {
   "success": false,
-  "errorKey": "deleteStatus.missingPetId",
+  "errorKey": "getAllPets.errors.deleteStatus.missingPetId",
   "error": "Need pet id",
   "requestId": "3b1c2d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e"
 }
@@ -139,26 +139,26 @@ Current status:
 
 | errorKey | Meaning |
 | --- | --- |
-| `others.unauthorized` | Missing or invalid auth |
-| `others.internalError` | Unhandled server error |
-| `others.methodNotAllowed` | Route exists in code but wrong method reached router |
-| `others.missingParams` | Empty required body |
-| `others.invalidJSON` | Malformed JSON body |
-| `others.rateLimited` | Fixed-window rate limit hit |
-| `ngoPath.missingNgoId` | Missing NGO id |
-| `ngoPath.invalidNgoIdFormat` | Invalid NGO id |
-| `ngoPath.noPetsFound` | No NGO pets found for the request |
-| `deleteStatus.missingPetId` | Missing pet id |
-| `deleteStatus.invalidPetIdFormat` | Invalid pet id |
-| `deleteStatus.petNotFound` | Pet not found |
-| `deleteStatus.petAlreadyDeleted` | Pet already deleted |
-| `updatePetEye.missingRequiredFields` | Missing eye update fields |
-| `updatePetEye.invalidPetIdFormat` | Invalid pet id |
-| `updatePetEye.invalidDateFormat` | Invalid date |
-| `updatePetEye.invalidImageUrlFormat` | Invalid image URL |
-| `updatePetEye.petNotFound` | Pet not found |
-| `updatePetEye.petDeleted` | Pet already deleted |
-| `getPetsByUser.invalidUserIdFormat` | Invalid user id |
+| `common.unauthorized` | Missing or invalid auth |
+| `common.internalError` | Unhandled server error |
+| `common.methodNotAllowed` | Route exists in code but wrong method reached router |
+| `common.missingParams` | Empty required body |
+| `common.invalidJSON` | Malformed JSON body |
+| `common.rateLimited` | Fixed-window rate limit hit |
+| `getAllPets.errors.ngoPath.missingNgoId` | Missing NGO id |
+| `getAllPets.errors.ngoPath.invalidNgoIdFormat` | Invalid NGO id |
+| `getAllPets.errors.ngoPath.noPetsFound` | No NGO pets found for the request |
+| `getAllPets.errors.deleteStatus.missingPetId` | Missing pet id |
+| `getAllPets.errors.deleteStatus.invalidPetIdFormat` | Invalid pet id |
+| `getAllPets.errors.deleteStatus.petNotFound` | Pet not found |
+| `getAllPets.errors.deleteStatus.petAlreadyDeleted` | Pet already deleted |
+| `getAllPets.errors.updatePetEye.missingRequiredFields` | Missing eye update fields |
+| `getAllPets.errors.updatePetEye.invalidPetIdFormat` | Invalid pet id |
+| `getAllPets.errors.updatePetEye.invalidDateFormat` | Invalid date |
+| `getAllPets.errors.updatePetEye.invalidImageUrlFormat` | Invalid image URL |
+| `getAllPets.errors.updatePetEye.petNotFound` | Pet not found |
+| `getAllPets.errors.updatePetEye.petDeleted` | Pet already deleted |
+| `getAllPets.errors.getPetsByUser.invalidUserIdFormat` | Invalid user id |
 
 ---
 

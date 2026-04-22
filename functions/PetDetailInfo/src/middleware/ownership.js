@@ -23,7 +23,7 @@ async function authorizeOwnership({ event }) {
   }
 
   const isOwner = pet.userId && String(pet.userId) === String(event.userId);
-  const isNgo = callerNgoId && pet.ngoId && String(pet.ngoId) === String(event.ngoId);
+  const isNgo = event.ngoId && pet.ngoId && String(pet.ngoId) === String(event.ngoId);
 
   if (!isOwner && !isNgo) {
     return createErrorResponse(403, "common.forbidden", event);

@@ -37,7 +37,7 @@ Creates an NGO admin user, the NGO profile, an NGO access record, and an NGO cou
 | `password` | string | Yes | Min 8 chars |
 | `confirmPassword` | string | Yes | Must match `password` |
 | `ngoName` | string | Yes | Min 1 |
-| `ngoPrefix` | string | Yes | 1–5 chars (used for pet ID prefixes) |
+| `ngoPrefix` | string | Yes | 1â€“5 chars (used for pet ID prefixes) |
 | `businessRegistrationNumber` | string | Yes | Unique across NGOs |
 | `address` | string | Yes | Min 1 |
 | `description` | string | No | Nullable |
@@ -67,22 +67,22 @@ Also sets `Set-Cookie: refreshToken=<token>` (HttpOnly, Secure, SameSite=Strict)
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `registerNgo.errors.firstNameRequired` | Missing firstName |
-| 400 | `registerNgo.errors.lastNameRequired` | Missing lastName |
-| 400 | `emailRegister.invalidEmailFormat` | Bad email |
-| 400 | `emailRegister.invalidPhoneFormat` | Bad phone |
-| 400 | `registerNgo.errors.passwordRequired` | Missing / too short password |
-| 400 | `registerNgo.errors.confirmPasswordRequired` | Missing confirmPassword |
-| 400 | `registerNgo.errors.passwordMismatch` | password ≠ confirmPassword |
-| 400 | `registerNgo.errors.ngoNameRequired` | Missing ngoName |
-| 400 | `registerNgo.errors.ngoPrefixTooLong` | ngoPrefix > 5 chars |
-| 400 | `registerNgo.errors.businessRegRequired` | Missing BR number |
-| 400 | `registerNgo.errors.addressRequired` | Missing address |
-| 409 | `phoneRegister.userExist` | Email already registered |
-| 409 | `emailRegister.existWithPhone` | Phone already registered |
-| 409 | `registerNgo.duplicateBusinessReg` | BR number already used |
-| 429 | `others.rateLimited` | 8 / 10min limit exceeded |
-| 500 | `others.internalError` | Server error |
+| 400 | `userRoutes.errors.registerNgo.errors.firstNameRequired` | Missing firstName |
+| 400 | `userRoutes.errors.registerNgo.errors.lastNameRequired` | Missing lastName |
+| 400 | `userRoutes.errors.emailRegister.invalidEmailFormat` | Bad email |
+| 400 | `userRoutes.errors.emailRegister.invalidPhoneFormat` | Bad phone |
+| 400 | `userRoutes.errors.registerNgo.errors.passwordRequired` | Missing / too short password |
+| 400 | `userRoutes.errors.registerNgo.errors.confirmPasswordRequired` | Missing confirmPassword |
+| 400 | `userRoutes.errors.registerNgo.errors.passwordMismatch` | password â‰  confirmPassword |
+| 400 | `userRoutes.errors.registerNgo.errors.ngoNameRequired` | Missing ngoName |
+| 400 | `userRoutes.errors.registerNgo.errors.ngoPrefixTooLong` | ngoPrefix > 5 chars |
+| 400 | `userRoutes.errors.registerNgo.errors.businessRegRequired` | Missing BR number |
+| 400 | `userRoutes.errors.registerNgo.errors.addressRequired` | Missing address |
+| 409 | `userRoutes.errors.phoneRegister.userExist` | Email already registered |
+| 409 | `userRoutes.errors.emailRegister.existWithPhone` | Phone already registered |
+| 409 | `userRoutes.errors.registerNgo.duplicateBusinessReg` | BR number already used |
+| 429 | `common.rateLimited` | 8 / 10min limit exceeded |
+| 500 | `common.internalError` | Server error |
 
 ---
 
@@ -130,9 +130,9 @@ Page size: **50** users per page.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `others.unauthorized` | Role is not `ngo` |
-| 500 | `others.internalError` | |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `common.unauthorized` | Role is not `ngo` |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -197,11 +197,11 @@ Per-section `errors` string is set when a sub-lookup fails but the root NGO reco
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `ngo.invalidId` | `ngoId` invalid ObjectId |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `others.unauthorized` | Role ≠ `ngo` |
-| 404 | `ngo.notFound` | NGO not found |
-| 500 | `others.internalError` | |
+| 400 | `userRoutes.errors.ngo.invalidId` | `ngoId` invalid ObjectId |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `common.unauthorized` | Role â‰  `ngo` |
+| 404 | `userRoutes.errors.ngo.notFound` | NGO not found |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -214,7 +214,7 @@ Update any combination of the NGO's admin user, NGO profile, access record, and 
 
 **Path params:** `ngoId` (ObjectId)
 
-**Body** (all sections optional; only allowlisted fields below are applied — other fields are silently ignored):
+**Body** (all sections optional; only allowlisted fields below are applied â€” other fields are silently ignored):
 
 ```json
 {
@@ -275,16 +275,16 @@ On any sub-update failure, the entire transaction is rolled back and a `500` is 
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `ngo.missingId` | ngoId missing |
-| 400 | `ngo.invalidId` | ngoId invalid ObjectId |
-| 400 | `ngo.invalidBody` | Body failed Zod / Mongoose validation |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `others.unauthorized` | Role ≠ `ngo` |
-| 404 | `ngo.notFound` | NGO not found |
-| 409 | `others.emailExists` | Email used elsewhere |
-| 409 | `others.phoneExists` | Phone used elsewhere |
-| 409 | `others.registrationNumberExists` | BR number used by another NGO |
-| 500 | `others.internalError` | Transaction rolled back |
+| 400 | `userRoutes.errors.ngo.missingId` | ngoId missing |
+| 400 | `userRoutes.errors.ngo.invalidId` | ngoId invalid ObjectId |
+| 400 | `userRoutes.errors.ngo.invalidBody` | Body failed Zod / Mongoose validation |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `common.unauthorized` | Role â‰  `ngo` |
+| 404 | `userRoutes.errors.ngo.notFound` | NGO not found |
+| 409 | `userRoutes.errors.emailExists` | Email used elsewhere |
+| 409 | `userRoutes.errors.phoneExists` | Phone used elsewhere |
+| 409 | `userRoutes.errors.registrationNumberExists` | BR number used by another NGO |
+| 500 | `common.internalError` | Transaction rolled back |
 
 ---
 
@@ -311,9 +311,9 @@ Return the list of configured pet placement options for the NGO (used by adoptio
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `ngo.missingId` | ngoId missing |
-| 400 | `ngo.invalidId` | ngoId invalid |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `others.unauthorized` | Role ≠ `ngo` |
-| 404 | `ngo.notFound` | NGO not found |
-| 500 | `others.internalError` | |
+| 400 | `userRoutes.errors.ngo.missingId` | ngoId missing |
+| 400 | `userRoutes.errors.ngo.invalidId` | ngoId invalid |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `common.unauthorized` | Role â‰  `ngo` |
+| 404 | `userRoutes.errors.ngo.notFound` | NGO not found |
+| 500 | `common.internalError` | |

@@ -11,22 +11,22 @@ Clinical records for a pet: medical visits, medications, deworming, vaccines, an
 All resource endpoints share:
 
 - **Auth**: Bearer JWT
-- **Pet ownership guard** → 403 `others.forbidden` on mismatch; 404 `petNotFound` when pet is soft-deleted / missing
+- **Pet ownership guard** → 403 `common.forbidden` on mismatch; 404 `<lambdaDomain>.errors.petNotFound` when pet is soft-deleted / missing (where `<lambdaDomain>` is `petMedicalRecord` or `petVaccineRecords` depending on the route)
 - **Date format**: all user-supplied date strings are **`DD/MM/YYYY`**, stored as ISO Date
 - **Content-Type**: `application/json` (POST / PUT)
-- **Soft delete (vaccine only)** — see below
+- **Soft delete (vaccine only)** â€” see below
 
 ### Common Errors (all endpoints)
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `others.invalidJSON` | Malformed JSON body |
-| 400 | `others.missingParams` | Empty body on POST / PUT |
-| 400 | `missingPetId` / `invalidPetIdFormat` | Path `petID` invalid |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `others.forbidden` | Caller not owner / NGO |
-| 404 | `petNotFound` | Pet missing or deleted |
-| 500 | `others.internalError` | |
+| 400 | `common.invalidJSON` | Malformed JSON body |
+| 400 | `common.missingParams` | Empty body on POST / PUT |
+| 400 | `<lambdaDomain>.errors.missingPetId` / `<lambdaDomain>.errors.invalidPetIdFormat` | Path `petID` invalid (`petMedicalRecord` or `petVaccineRecords` prefix) |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `common.forbidden` | Caller not owner / NGO |
+| 404 | `<lambdaDomain>.errors.petNotFound` | Pet missing or deleted |
+| 500 | `common.internalError` | |
 
 ### Success Envelope
 
@@ -72,9 +72,9 @@ Lambda: **PetMedicalRecord**. Base path: `/pets/{petID}/medical-record`.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `medicalRecord.invalidDateFormat` | |
-| 400 | `medicalRecord.putMissingMedicalId` | PUT missing `medicalID` |
-| 404 | `medicalRecord.medicalRecordNotFound` | |
+| 400 | `petMedicalRecord.errors.medicalRecord.invalidDateFormat` | |
+| 400 | `petMedicalRecord.errors.medicalRecord.missingId` | PUT missing `medicalID` |
+| 404 | `petMedicalRecord.errors.medicalRecord.notFound` | |
 
 ---
 
@@ -106,8 +106,8 @@ Base path: `/pets/{petID}/medication-record`.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `medicationRecord.invalidDateFormat` | |
-| 404 | `medicationRecord.medicationRecordNotFound` | |
+| 400 | `petMedicalRecord.errors.medicationRecord.invalidDateFormat` | |
+| 404 | `petMedicalRecord.errors.medicationRecord.notFound` | |
 
 ---
 
@@ -141,8 +141,8 @@ Base path: `/pets/{petID}/deworm-record`.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `dewormRecord.invalidDateFormat` | `date` or `nextDewormDate` |
-| 404 | `dewormRecord.dewormRecordNotFound` | |
+| 400 | `petMedicalRecord.errors.dewormRecord.invalidDateFormat` | `date` or `nextDewormDate` |
+| 404 | `petMedicalRecord.errors.dewormRecord.notFound` | |
 
 ---
 
@@ -170,14 +170,14 @@ Base path: `/v2/pets/{petID}/blood-test-record`.
 
 **Pet sync**:
 - **POST**: increments `Pet.bloodTestRecordsCount`, updates `latestBloodTestDate` to max
-- **PUT / DELETE**: **full recalculation** — queries all remaining blood-test dates to recompute `bloodTestRecordsCount` and `latestBloodTestDate`
+- **PUT / DELETE**: **full recalculation** â€” queries all remaining blood-test dates to recompute `bloodTestRecordsCount` and `latestBloodTestDate`
 
 **Domain errors:**
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `bloodTest.invalidDateFormat` | |
-| 404 | `bloodTest.bloodTestRecordNotFound` | |
+| 400 | `petMedicalRecord.errors.bloodTest.invalidDateFormat` | |
+| 404 | `petMedicalRecord.errors.bloodTest.notFound` | |
 
 ---
 
@@ -210,6 +210,6 @@ Lambda: **PetVaccineRecords**. Base path: `/pets/{petID}/vaccine-record`.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `vaccineRecord.invalidInput` | Empty-string field (e.g., `vaccineName: ""`) |
-| 400 | `vaccineRecord.invalidDateFormat` | |
-| 404 | `vaccineRecord.vaccineRecordNotFound` | |
+| 400 | `petVaccineRecords.errors.vaccineRecord.invalidInput` | Empty-string field (e.g., `vaccineName: ""`) |
+| 400 | `petVaccineRecords.errors.invalidDateFormat` | |
+| 404 | `petVaccineRecords.errors.notFound` | |

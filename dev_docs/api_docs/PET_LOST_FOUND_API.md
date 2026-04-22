@@ -10,13 +10,13 @@ Lost / found pet posts and per-user notifications. All endpoints require Bearer 
 
 | Method | Path | Content-Type | Purpose |
 | --- | --- | --- | --- |
-| GET | `/pets/pet-lost` | — | List all lost posts |
+| GET | `/pets/pet-lost` | â€” | List all lost posts |
 | POST | `/pets/pet-lost` | `multipart/form-data` | Create lost post |
-| DELETE | `/pets/pet-lost/{petLostID}` | — | Delete own lost post |
-| GET | `/pets/pet-found` | — | List all found posts |
+| DELETE | `/pets/pet-lost/{petLostID}` | â€” | Delete own lost post |
+| GET | `/pets/pet-found` | â€” | List all found posts |
 | POST | `/pets/pet-found` | `multipart/form-data` | Create found post |
-| DELETE | `/pets/pet-found/{petFoundID}` | — | Delete own found post |
-| GET | `/v2/account/{userId}/notifications` | — | List own notifications |
+| DELETE | `/pets/pet-found/{petFoundID}` | â€” | Delete own found post |
+| GET | `/v2/account/{userId}/notifications` | â€” | List own notifications |
 | POST | `/v2/account/{userId}/notifications` | `application/json` | Create own notification |
 | PUT | `/v2/account/{userId}/notifications/{notificationId}` | `application/json` | Archive notification |
 
@@ -89,12 +89,12 @@ No query params / filters. Returns all records sorted by most recent.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `petLost.errors.nameRequired` / `sexRequired` / `animalRequired` / `lostDateRequired` / `lostLocationRequired` / `lostDistrictRequired` | Required field missing |
+| 400 | `petLostAndFound.errors.petLost.nameRequired` / `petLostAndFound.errors.petLost.sexRequired` / `petLostAndFound.errors.petLost.animalRequired` / `petLostAndFound.errors.petLost.lostDateRequired` / `petLostAndFound.errors.petLost.lostLocationRequired` / `petLostAndFound.errors.petLost.lostDistrictRequired` | Required field missing |
 | 400 | (first Zod issue) | Bad format / invalid ObjectId |
-| 403 | `others.selfAccessDenied` | `petId` provided but caller does not own it |
-| 404 | `petLost.errors.petNotFound` | `petId` provided but doesn't exist |
-| 429 | `others.rateLimited` | 5 / 60 s limit |
-| 500 | `others.internalError` | |
+| 403 | `common.selfAccessDenied` | `petId` provided but caller does not own it |
+| 404 | `petLostAndFound.errors.petLost.petNotFound` | `petId` provided but doesn't exist |
+| 429 | `common.rateLimited` | 5 / 60 s limit |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -108,10 +108,10 @@ Only the creator can delete.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `petLost.errors.idRequired` | Path missing |
-| 403 | `others.selfAccessDenied` | Not creator |
-| 404 | `petLost.errors.notFound` | |
-| 500 | `others.internalError` | |
+| 400 | `petLostAndFound.errors.petLost.idRequired` | Path missing |
+| 403 | `common.selfAccessDenied` | Not creator |
+| 404 | `petLostAndFound.errors.petLost.notFound` | |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -156,10 +156,10 @@ Only the creator can delete.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `petFound.errors.animalRequired` / `foundDateRequired` / `foundLocationRequired` / `foundDistrictRequired` | Required field missing |
+| 400 | `petLostAndFound.errors.petFound.animalRequired` / `petLostAndFound.errors.petFound.foundDateRequired` / `petLostAndFound.errors.petFound.foundLocationRequired` / `petLostAndFound.errors.petFound.foundDistrictRequired` | Required field missing |
 | 400 | (first Zod issue) | |
-| 429 | `others.rateLimited` | |
-| 500 | `others.internalError` | |
+| 429 | `common.rateLimited` | |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -171,10 +171,10 @@ Only the creator can delete.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `petFound.errors.idRequired` | |
-| 403 | `others.selfAccessDenied` | Not creator |
-| 404 | `petFound.errors.notFound` | |
-| 500 | `others.internalError` | |
+| 400 | `petLostAndFound.errors.petFound.idRequired` | |
+| 403 | `common.selfAccessDenied` | Not creator |
+| 404 | `petLostAndFound.errors.petFound.notFound` | |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -197,9 +197,9 @@ Only the creator can delete.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `others.invalidPathParam` | `userId` not ObjectId |
-| 403 | `others.selfAccessDenied` | Path ≠ JWT `userId` |
-| 500 | `others.internalError` | |
+| 400 | `common.invalidPathParam` | `userId` not ObjectId |
+| 403 | `common.selfAccessDenied` | Path â‰  JWT `userId` |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -234,19 +234,19 @@ Only the creator can delete.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `others.invalidJSON` | |
-| 400 | `others.missingParams` | Empty body |
-| 400 | `notifications.errors.typeRequired` | `type` missing |
-| 400 | `notifications.errors.invalidPetId` | `petId` provided but not valid ObjectId |
-| 400 | `others.invalidPathParam` | |
-| 403 | `others.selfAccessDenied` | |
-| 500 | `others.internalError` | |
+| 400 | `common.invalidJSON` | |
+| 400 | `common.missingParams` | Empty body |
+| 400 | `petLostAndFound.errors.notifications.typeRequired` | `type` missing |
+| 400 | `petLostAndFound.errors.notifications.invalidPetId` | `petId` provided but not valid ObjectId |
+| 400 | `common.invalidPathParam` | |
+| 403 | `common.selfAccessDenied` | |
+| 500 | `common.internalError` | |
 
 ---
 
 ### PUT /v2/account/{userId}/notifications/{notificationId}
 
-Archives (soft-closes) the notification — the body is ignored, the service always sets `isArchived: true`.
+Archives (soft-closes) the notification â€” the body is ignored, the service always sets `isArchived: true`.
 
 **Path params:** `userId` (must match JWT), `notificationId` (ObjectId).
 
@@ -264,8 +264,8 @@ Archives (soft-closes) the notification — the body is ignored, the service alw
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `notifications.errors.notificationIdRequired` | |
-| 400 | `others.invalidPathParam` | |
-| 403 | `others.selfAccessDenied` | |
-| 404 | `notifications.errors.notFound` | |
-| 500 | `others.internalError` | |
+| 400 | `petLostAndFound.errors.notifications.notificationIdRequired` | |
+| 400 | `common.invalidPathParam` | |
+| 403 | `common.selfAccessDenied` | |
+| 404 | `petLostAndFound.errors.notifications.notFound` | |
+| 500 | `common.internalError` | |

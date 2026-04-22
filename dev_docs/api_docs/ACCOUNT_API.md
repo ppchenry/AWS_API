@@ -1,4 +1,4 @@
-# Account API
+﻿# Account API
 
 **Base URL (Dev):** `https://udnh87tari.execute-api.ap-southeast-1.amazonaws.com/Dev`
 
@@ -16,7 +16,7 @@ User profile CRUD and self-service account actions. For login / register / refre
 | POST | `/account/delete-user-with-email` | Bearer JWT (self) | Soft-delete own account by email |
 | POST | `/account/update-image` | Bearer JWT (self) | Update profile image |
 
-All endpoints enforce **self-access**: the target `userId` / `email` must match the caller's JWT claims. Mismatches return `403 others.unauthorized`.
+All endpoints enforce **self-access**: the target `userId` / `email` must match the caller's JWT claims. Mismatches return `403 common.unauthorized`.
 
 ---
 
@@ -84,16 +84,16 @@ Update the authenticated user's profile. Email / phone uniqueness is validated a
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `others.invalidPUT` | `userId` is not a valid ObjectId |
-| 400 | `others.invalidDateFormat` | `birthday` invalid |
-| 400 | `others.invalidEmailFormat` | `email` invalid |
-| 400 | `others.invalidPhoneFormat` | `phoneNumber` invalid |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `others.unauthorized` | body `userId` ≠ JWT `userId` |
-| 404 | `others.putUserNotFound` | User not found or deleted |
-| 409 | `others.emailExists` | Email used by another active user |
-| 409 | `others.phoneExists` | Phone used by another active user |
-| 500 | `others.internalError` | Server error |
+| 400 | `userRoutes.errors.invalidPUT` | `userId` is not a valid ObjectId |
+| 400 | `common.invalidDateFormat` | `birthday` invalid |
+| 400 | `common.invalidEmailFormat` | `email` invalid |
+| 400 | `common.invalidPhoneFormat` | `phoneNumber` invalid |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `common.unauthorized` | body `userId` â‰  JWT `userId` |
+| 404 | `userRoutes.errors.putUserNotFound` | User not found or deleted |
+| 409 | `userRoutes.errors.emailExists` | Email used by another active user |
+| 409 | `userRoutes.errors.phoneExists` | Phone used by another active user |
+| 500 | `common.internalError` | Server error |
 
 ---
 
@@ -112,11 +112,11 @@ Return the authenticated user's sanitized profile.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `others.invalidGET` | `userId` invalid ObjectId |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `others.unauthorized` | Path `userId` ≠ JWT `userId` |
-| 404 | `others.getUserNotFound` | User not found or deleted |
-| 500 | `others.internalError` | |
+| 400 | `userRoutes.errors.invalidGET` | `userId` invalid ObjectId |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `common.unauthorized` | Path `userId` â‰  JWT `userId` |
+| 404 | `userRoutes.errors.getUserNotFound` | User not found or deleted |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -148,11 +148,11 @@ Soft-delete the authenticated user and revoke all refresh tokens.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `others.invalidGET` | `userId` invalid |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `others.unauthorized` | path mismatch |
-| 404 | `others.getUserNotFound` | User not found or already deleted |
-| 500 | `others.internalError` | |
+| 400 | `userRoutes.errors.invalidGET` | `userId` invalid |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `common.unauthorized` | path mismatch |
+| 404 | `userRoutes.errors.getUserNotFound` | User not found or already deleted |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -184,12 +184,12 @@ Soft-delete the authenticated user by email (the email must match the JWT). Usef
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `deleteAccount.invalidEmailFormat` | Email invalid |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `others.unauthorized` | `email` ≠ JWT `userEmail` |
-| 404 | `deleteAccount.userNotFound` | No user with email |
-| 409 | `deleteAccount.userAlreadyDeleted` | Already deleted |
-| 500 | `others.internalError` | |
+| 400 | `userRoutes.errors.deleteAccount.invalidEmailFormat` | Email invalid |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `common.unauthorized` | `email` â‰  JWT `userEmail` |
+| 404 | `userRoutes.errors.deleteAccount.userNotFound` | No user with email |
+| 409 | `userRoutes.errors.deleteAccount.userAlreadyDeleted` | Already deleted |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -222,9 +222,9 @@ Update the authenticated user's profile image URL.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `updateImage.invalidUserId` | `userId` invalid |
-| 400 | `updateImage.invalidImageUrl` | Bad image URL |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `others.unauthorized` | body `userId` ≠ JWT `userId` |
-| 404 | `updateImage.userNotFound` | User not found or deleted |
-| 500 | `others.internalError` | |
+| 400 | `userRoutes.errors.updateImage.invalidUserId` | `userId` invalid |
+| 400 | `userRoutes.errors.updateImage.invalidImageUrl` | Bad image URL |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `common.unauthorized` | body `userId` â‰  JWT `userId` |
+| 404 | `userRoutes.errors.updateImage.userNotFound` | User not found or deleted |
+| 500 | `common.internalError` | |

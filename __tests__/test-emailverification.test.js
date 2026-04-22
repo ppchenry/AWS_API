@@ -335,7 +335,7 @@ describe("response shape", () => {
       email: "shape-test@example.com",
       resetCode: "000000",
     });
-    expect(res.body).toHaveProperty("createPetBasicInfo.success.created", false);
+    expect(res.body).toHaveProperty("success", false);
     expect(res.body).toHaveProperty("errorKey");
     expect(res.body).toHaveProperty("error");
   });

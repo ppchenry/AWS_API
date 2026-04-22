@@ -57,12 +57,12 @@ Return stored biometric URLs for the pet.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `petBiometric.invalidPetId` | petId not valid ObjectId |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `petBiometric.forbidden` | Not owner / NGO / admin |
-| 404 | `petBiometric.petNotFound` | Pet missing or deleted |
-| 404 | `petBiometric.notRegistered` | Pet has no `PetFacialImage` record yet |
-| 500 | `others.internalError` | |
+| 400 | `petBiometricRoutes.errors.invalidPetId` | petId not valid ObjectId |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `petBiometricRoutes.errors.forbidden` | Not owner / NGO / admin |
+| 404 | `petBiometricRoutes.errors.petNotFound` | Pet missing or deleted |
+| 404 | `petBiometricRoutes.errors.notRegistered` | Pet has no `PetFacialImage` record yet |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -109,15 +109,15 @@ Create or update biometric reference image URLs for a pet. Upserts `PetFacialIma
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `others.invalidJSON` / `others.missingParams` | |
-| 400 | `petBiometric.errors.petIdRequired` / `invalidPetId` | |
-| 400 | `petBiometric.errors.imageArrayRequired` | A required face/nose array missing or empty |
-| 400 | `petBiometric.invalidImageUrl` | URL not valid HTTPS |
-| 401 | `others.unauthorized` | |
-| 403 | `petBiometric.forbidden` | Body `userId` ≠ JWT or ownership mismatch |
-| 404 | `petBiometric.petNotFound` | |
-| 429 | `others.rateLimited` | |
-| 500 | `others.internalError` | |
+| 400 | `common.invalidJSON` / `common.missingParams` | |
+| 400 | `petBiometricRoutes.errors.petBiometric.errors.petIdRequired` / `petBiometricRoutes.errors.invalidPetId` | |
+| 400 | `petBiometricRoutes.errors.petBiometric.errors.imageArrayRequired` | A required face/nose array missing or empty |
+| 400 | `petBiometricRoutes.errors.petBiometric.invalidImageUrl` | URL not valid HTTPS |
+| 401 | `common.unauthorized` | |
+| 403 | `petBiometricRoutes.errors.forbidden` | Body `userId` Ã¢â€°Â  JWT or ownership mismatch |
+| 404 | `petBiometricRoutes.errors.petNotFound` | |
+| 429 | `common.rateLimited` | |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -132,7 +132,7 @@ Verify a candidate image against the pet's registered references. Requires both 
 | `petId` | string (ObjectId) | Yes | |
 | `access_secret` | string | Yes | Business access key |
 | `secret_key` | string | Yes | Business secret key |
-| `animalType` | string | No | e.g., `"dog"` — sent to FaceID as `species` |
+| `animalType` | string | No | e.g., `"dog"` Ã¢â‚¬â€ sent to FaceID as `species` |
 | `image_url` | string | Conditional | Valid HTTPS URL |
 | `userId` | string (ObjectId) | No | Must match JWT if provided |
 | `files` | object[] | Conditional | Inline file upload |
@@ -140,7 +140,7 @@ Verify a candidate image against the pet's registered references. Requires both 
 | `files[].contentType` | string | Yes | Must match detected MIME |
 | `files[].content` | string (base64) \| binary | Yes | |
 
-Allowed file MIMEs: `image/jpeg`, `image/jpg`, `image/png`, `image/gif`, `image/tiff`. Size: `> 0 B`, `≤ 10 MB`.
+Allowed file MIMEs: `image/jpeg`, `image/jpg`, `image/png`, `image/gif`, `image/tiff`. Size: `> 0 B`, `Ã¢â€°Â¤ 10 MB`.
 
 **Success (200):**
 
@@ -164,21 +164,22 @@ Allowed file MIMEs: `image/jpeg`, `image/jpg`, `image/png`, `image/gif`, `image/
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `others.invalidJSON` / `others.missingParams` | |
-| 400 | `petBiometric.errors.imageRequired` | Neither `image_url` nor `files` |
-| 400 | `petBiometric.errors.petIdRequired` / `invalidPetId` | |
-| 400 | `petBiometric.errors.accessKeyRequired` | |
-| 400 | `petBiometric.errors.secretKeyRequired` | |
-| 400 | `petBiometric.invalidImageUrl` | |
-| 400 | `petBiometric.unsupportedFormat` | MIME not allowed / detected MIME mismatch |
-| 400 | `petBiometric.invalidCredentials` | `access_secret` + `secret_key` don't match exactly one `UserBusiness` |
-| 401 | `others.unauthorized` | |
-| 403 | `petBiometric.forbidden` | |
-| 404 | `petBiometric.petNotFound` | |
-| 404 | `petBiometric.notRegistered` | Pet has no registered face images |
-| 413 | `petBiometric.fileTooSmall` | 0 B |
-| 413 | `petBiometric.fileTooLarge` | > 10 MB |
-| 429 | `others.rateLimited` | |
-| 503 | `petBiometric.uploadFailed` | S3 upload returned null URL |
-| 503 | `others.serviceUnavailable` | FaceID provider error / unrecognized payload |
-| 500 | `others.internalError` | |
+| 400 | `common.invalidJSON` / `common.missingParams` | |
+| 400 | `petBiometricRoutes.errors.imageRequired` | Neither `image_url` nor `files` |
+| 400 | `petBiometricRoutes.errors.petBiometric.errors.petIdRequired` / `petBiometricRoutes.errors.invalidPetId` | |
+| 400 | `petBiometricRoutes.errors.petBiometric.errors.accessKeyRequired` | |
+| 400 | `petBiometricRoutes.errors.petBiometric.errors.secretKeyRequired` | |
+| 400 | `petBiometricRoutes.errors.petBiometric.invalidImageUrl` | |
+| 400 | `petBiometricRoutes.errors.unsupportedFormat` | MIME not allowed / detected MIME mismatch |
+| 400 | `petBiometricRoutes.errors.invalidCredentials` | `access_secret` + `secret_key` don't match exactly one `UserBusiness` |
+| 401 | `common.unauthorized` | |
+| 403 | `petBiometricRoutes.errors.forbidden` | |
+| 404 | `petBiometricRoutes.errors.petNotFound` | |
+| 404 | `petBiometricRoutes.errors.notRegistered` | Pet has no registered face images |
+| 413 | `petBiometricRoutes.errors.fileTooSmall` | 0 B |
+| 413 | `petBiometricRoutes.errors.fileTooLarge` | > 10 MB |
+| 429 | `common.rateLimited` | |
+| 503 | `petBiometricRoutes.errors.uploadFailed` | S3 upload returned null URL |
+| 503 | `common.serviceUnavailable` | FaceID provider error / unrecognized payload |
+| 500 | `common.internalError` | |
+

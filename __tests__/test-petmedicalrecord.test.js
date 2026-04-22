@@ -331,7 +331,7 @@ describe("Guard validation", () => {
       strangerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("petDetailInfo.errors.invalidPetIdFormat");
+    expect(res.body.errorKey).toBe("petMedicalRecord.errors.invalidPetIdFormat");
   });
 
   test("rejects invalid record ID format with record-specific key", async () => {
@@ -346,10 +346,10 @@ describe("Guard validation", () => {
   });
 
   test.each([
-    ["/pets/not-an-id/medical-record", "petDetailInfo.errors.invalidPetIdFormat"],
-    ["/pets/not-an-id/medication-record", "petDetailInfo.errors.invalidPetIdFormat"],
-    ["/pets/not-an-id/deworm-record", "petDetailInfo.errors.invalidPetIdFormat"],
-    ["/v2/pets/not-an-id/blood-test-record", "petDetailInfo.errors.invalidPetIdFormat"],
+    ["/pets/not-an-id/medical-record", "petMedicalRecord.errors.invalidPetIdFormat"],
+    ["/pets/not-an-id/medication-record", "petMedicalRecord.errors.invalidPetIdFormat"],
+    ["/pets/not-an-id/deworm-record", "petMedicalRecord.errors.invalidPetIdFormat"],
+    ["/v2/pets/not-an-id/blood-test-record", "petMedicalRecord.errors.invalidPetIdFormat"],
   ])("GET %s rejects invalid pet id", async (path, errorKey) => {
     const res = await req("GET", path, undefined, strangerAuth());
     expect(res.status).toBe(400);
@@ -377,7 +377,7 @@ describe("Router and nonexistent resource behavior", () => {
       strangerAuth()
     );
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("petDetailInfo.errors.petNotFound");
+    expect(res.body.errorKey).toBe("petMedicalRecord.errors.petNotFound");
   });
 
   test("returns 403/404 at API layer for unsupported method", async () => {
@@ -928,3 +928,4 @@ describe("Coverage gate", () => {
     expect(true).toBe(true);
   });
 });
+

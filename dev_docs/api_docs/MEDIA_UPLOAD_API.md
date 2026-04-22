@@ -49,11 +49,11 @@ Upload a single JPEG or PNG image. Returns its public S3 URL.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `eyeUpload.noFilesUploaded` | No file |
-| 400 | `eyeUpload.tooManyFiles` | > 1 file |
-| 400 | `eyeUpload.invalidImageFormat` | MIME not JPEG / PNG |
-| 429 | `eyeUpload.rateLimited` | |
-| 500 | `others.internalError` | S3 / parsing error |
+| 400 | `eyeUpload.errors.noFilesUploaded` | No file |
+| 400 | `eyeUpload.errors.tooManyFiles` | > 1 file |
+| 400 | `eyeUpload.errors.invalidImageFormat` | MIME not JPEG / PNG |
+| 429 | `common.rateLimited` | |
+| 500 | `common.internalError` | S3 / parsing error |
 
 ---
 
@@ -84,17 +84,17 @@ Upload an image to a specific S3 folder. Folder must be in the allowlist to prev
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `eyeUpload.noFilesUploaded` | |
-| 400 | `eyeUpload.invalidImageFormat` | |
-| 400 | `eyeUpload.invalidFolder` | Folder missing or not allowlisted |
-| 429 | `eyeUpload.rateLimited` | |
-| 500 | `others.internalError` | |
+| 400 | `eyeUpload.errors.noFilesUploaded` | |
+| 400 | `eyeUpload.errors.invalidImageFormat` | |
+| 400 | `eyeUpload.errors.invalidFolder` | Folder missing or not allowlisted |
+| 429 | `common.rateLimited` | |
+| 500 | `common.internalError` | |
 
 ---
 
 ### POST /pets/create-pet-basic-info-with-image
 
-Create a pet from multipart form data (with zero or more images). Ownership is always set from the caller's JWT — `userId` cannot be set from the body. NGO callers may set `ngoId` (must match their JWT claim).
+Create a pet from multipart form data (with zero or more images). Ownership is always set from the caller's JWT â€” `userId` cannot be set from the body. NGO callers may set `ngoId` (must match their JWT claim).
 
 **Rate limit:** 20 / 5 min per `userId`.
 
@@ -121,8 +121,8 @@ Create a pet from multipart form data (with zero or more images). Ownership is a
 | `contact1Show`, `contact2Show` | string | No | 10 | |
 | `receivedDate` | string | No | 20 | `DD/MM/YYYY` |
 | `location`, `position` | string | No | 500 | |
-| `breedimage` | string | No | — | Alternative: provide image URL instead of files |
-| _(files)_ | binary[] | No | — | JPEG / PNG, stored at `user-uploads/pets/{tempId}` |
+| `breedimage` | string | No | â€” | Alternative: provide image URL instead of files |
+| _(files)_ | binary[] | No | â€” | JPEG / PNG, stored at `user-uploads/pets/{tempId}` |
 
 **Success (201):**
 
@@ -138,17 +138,17 @@ Create a pet from multipart form data (with zero or more images). Ownership is a
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `eyeUpload.nameRequired` / `animalRequired` / `sexRequired` | Required missing |
-| 400 | `eyeUpload.fieldTooLong` | Any field over max |
-| 400 | `eyeUpload.invalidUrl` | `breedimage` not valid URL |
-| 400 | `eyeUpload.unknownField` | Unknown form field |
-| 403 | `eyeUpload.ngoRoleRequired` | `ngoId` set but role ≠ `ngo` |
-| 403 | `eyeUpload.ngoIdClaimRequired` | `ngoId` set but JWT has no `ngoId` claim |
-| 403 | `eyeUpload.forbidden` | JWT `ngoId` ≠ form `ngoId` |
-| 404 | `eyeUpload.userNotFound` | Caller user deleted |
-| 409 | `eyeUpload.duplicateNgoPetId` | Auto-generated `ngoPetId` collides |
-| 429 | `eyeUpload.rateLimited` | |
-| 500 | `others.internalError` | |
+| 400 | `eyeUpload.errors.nameRequired` / `eyeUpload.errors.animalRequired` / `eyeUpload.errors.sexRequired` | Required missing |
+| 400 | `eyeUpload.errors.fieldTooLong` | Any field over max |
+| 400 | `eyeUpload.errors.invalidUrl` | `breedimage` not valid URL |
+| 400 | `eyeUpload.errors.unknownField` | Unknown form field |
+| 403 | `eyeUpload.errors.ngoRoleRequired` | `ngoId` set but role â‰  `ngo` |
+| 403 | `eyeUpload.errors.ngoIdClaimRequired` | `ngoId` set but JWT has no `ngoId` claim |
+| 403 | `eyeUpload.errors.forbidden` | JWT `ngoId` â‰  form `ngoId` |
+| 404 | `eyeUpload.errors.userNotFound` | Caller user deleted |
+| 409 | `eyeUpload.errors.duplicateNgoPetId` | Auto-generated `ngoPetId` collides |
+| 429 | `common.rateLimited` | |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -162,8 +162,8 @@ Update scalar pet fields and manage pet images (add + remove) in one call.
 
 | Field | Type | Required | Max | Notes |
 | --- | --- | --- | --- | --- |
-| `petId` | string (ObjectId) | **Yes** | — | |
-| `removedIndices` | string | No | — | JSON array of integer indices into existing `breedimage` to remove, e.g. `"[0,2]"` |
+| `petId` | string (ObjectId) | **Yes** | â€” | |
+| `removedIndices` | string | No | â€” | JSON array of integer indices into existing `breedimage` to remove, e.g. `"[0,2]"` |
 | `name`, `animal`, `breed`, `bloodType`, `features`, `info`, `status`, `owner`, `tagId` | string | No | (see above) | |
 | `birthday`, `sterilizationDate`, `receivedDate` | string | No | 20 | `DD/MM/YYYY` |
 | `weight`, `sex`, `sterilization` | string | No | 20 | |
@@ -171,7 +171,7 @@ Update scalar pet fields and manage pet images (add + remove) in one call.
 | `ownerContact1`, `ownerContact2` | string | No | 200 | |
 | `contact1Show`, `contact2Show` | string | No | 10 | |
 | `ngoId`, `ngoPetId` | string | No | 100 | NGO owners only; must match JWT `ngoId` |
-| _(files)_ | binary[] | No | — | JPEG / PNG, appended to `breedimage` |
+| _(files)_ | binary[] | No | â€” | JPEG / PNG, appended to `breedimage` |
 
 **Success (200):**
 
@@ -187,16 +187,16 @@ Update scalar pet fields and manage pet images (add + remove) in one call.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `eyeUpload.petIdRequired` | |
-| 400 | `eyeUpload.invalidObjectId` | |
-| 400 | `eyeUpload.fieldTooLong` | |
-| 400 | `eyeUpload.invalidRemovedIndices` | Not valid JSON array of ints |
-| 400 | `eyeUpload.unknownField` | |
-| 403 | `eyeUpload.forbidden` | Not owner / NGO; or `ngoId` mismatch |
-| 404 | `eyeUpload.petNotFound` | |
-| 409 | `eyeUpload.duplicateNgoPetId` | |
-| 429 | `eyeUpload.rateLimited` | |
-| 500 | `others.internalError` | |
+| 400 | `eyeUpload.errors.petIdRequired` | |
+| 400 | `eyeUpload.errors.invalidObjectId` | |
+| 400 | `eyeUpload.errors.fieldTooLong` | |
+| 400 | `eyeUpload.errors.invalidRemovedIndices` | Not valid JSON array of ints |
+| 400 | `eyeUpload.errors.unknownField` | |
+| 403 | `eyeUpload.errors.forbidden` | Not owner / NGO; or `ngoId` mismatch |
+| 404 | `eyeUpload.errors.petNotFound` | |
+| 409 | `eyeUpload.errors.duplicateNgoPetId` | |
+| 429 | `common.rateLimited` | |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -213,7 +213,7 @@ Upload an eye image (file or URL) and forward it to the external eye-analysis + 
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
 | `image_url` | string | Conditional | External HTTPS URL; required if no file |
-| _(file)_ | binary | Conditional | MIME: `image/jpeg`, `image/jpg`, `image/png`, `image/gif`, `image/tiff`; size 1 B – 30 MB |
+| _(file)_ | binary | Conditional | MIME: `image/jpeg`, `image/jpg`, `image/png`, `image/gif`, `image/tiff`; size 1 B â€“ 30 MB |
 
 **Success (200):**
 
@@ -232,17 +232,17 @@ Upload an eye image (file or URL) and forward it to the external eye-analysis + 
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `eyeUpload.missingPetId` / `invalidObjectId` | Path param invalid |
-| 400 | `eyeUpload.missingArguments` | Neither `image_url` nor file |
-| 400 | `eyeUpload.unsupportedFormat` | File MIME not allowed |
-| 400 | `eyeUpload.analysisError` | External service returned validation error |
-| 403 | `eyeUpload.forbidden` | Not pet owner |
-| 404 | `eyeUpload.userNotFound` / `petNotFound` | |
-| 413 | `eyeUpload.fileTooLarge` | > 30 MB |
-| 413 | `eyeUpload.fileTooSmall` | 0 bytes |
-| 429 | `eyeUpload.rateLimited` | |
-| 500 | `eyeUpload.analysisError` | External service call failed |
-| 500 | `others.internalError` | |
+| 400 | `eyeUpload.errors.missingPetId` / `eyeUpload.errors.invalidObjectId` | Path param invalid |
+| 400 | `eyeUpload.errors.missingArguments` | Neither `image_url` nor file |
+| 400 | `eyeUpload.errors.unsupportedFormat` | File MIME not allowed |
+| 400 | `eyeUpload.errors.analysisError` | External service returned validation error |
+| 403 | `eyeUpload.errors.forbidden` | Not pet owner |
+| 404 | `eyeUpload.errors.userNotFound` / `eyeUpload.errors.petNotFound` | |
+| 413 | `eyeUpload.errors.fileTooLarge` | > 30 MB |
+| 413 | `eyeUpload.errors.fileTooSmall` | 0 bytes |
+| 429 | `common.rateLimited` | |
+| 500 | `eyeUpload.errors.analysisError` | External service call failed |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -256,7 +256,7 @@ Send species + image URL to the external breed classifier.
 
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
-| `species` | string | Yes | 1–100 chars |
+| `species` | string | Yes | 1â€“100 chars |
 | `url` | string | Yes | Valid URL |
 
 **Success (200):**
@@ -273,10 +273,10 @@ Send species + image URL to the external breed classifier.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `others.invalidJSON` / `others.missingParams` | |
-| 400 | `eyeUpload.speciesRequired` | |
-| 400 | `eyeUpload.urlRequired` | |
-| 400 | `eyeUpload.invalidUrl` | |
-| 400 | `eyeUpload.unknownField` | |
-| 429 | `eyeUpload.rateLimited` | |
-| 500 | `others.internalError` | External service error |
+| 400 | `common.invalidJSON` / `common.missingParams` | |
+| 400 | `eyeUpload.errors.speciesRequired` | |
+| 400 | `eyeUpload.errors.urlRequired` | |
+| 400 | `eyeUpload.errors.invalidUrl` | |
+| 400 | `eyeUpload.errors.unknownField` | |
+| 429 | `common.rateLimited` | |
+| 500 | `common.internalError` | External service error |

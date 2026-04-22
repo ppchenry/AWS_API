@@ -4,8 +4,8 @@
 
 Two sets of endpoints:
 
-- **Owner-side adoption placement records** — attached to a specific pet, managed by the pet's owner / NGO.
-- **Public adoption browsing** — browse / view adoption listings sourced from partner shelters.
+- **Owner-side adoption placement records** â€” attached to a specific pet, managed by the pet's owner / NGO.
+- **Public adoption browsing** â€” browse / view adoption listings sourced from partner shelters.
 
 > Conventions: [README.md](./README.md).
 
@@ -24,18 +24,18 @@ Two sets of endpoints:
 
 ## Owner-Side Adoption Records
 
-Lambda: **PetDetailInfo**. Pet ownership enforced for all four endpoints (403 `others.forbidden` on mismatch).
+Lambda: **PetDetailInfo**. Pet ownership enforced for all four endpoints (403 `common.forbidden` on mismatch).
 
 Common error rows:
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `missingPetId` / `invalidPetIdFormat` | Path `petID` invalid |
-| 400 | `petAdoption.invalidAdoptionIdFormat` | `adoptionId` invalid ObjectId |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `others.forbidden` | Not pet owner |
-| 404 | `petNotFound` | Pet missing or deleted |
-| 500 | `others.internalError` | |
+| 400 | `getAdoption.errors.missingPetId` / `getAdoption.errors.invalidPetIdFormat` | Path `petID` invalid |
+| 400 | `petDetailInfo.errors.petAdoption.invalidAdoptionIdFormat` | `adoptionId` invalid ObjectId |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `common.forbidden` | Not pet owner |
+| 404 | `getAdoption.errors.petNotFound` | Pet missing or deleted |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -99,9 +99,9 @@ Returns the adoption record attached to the pet (or `form: null` if none).
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `petAdoption.invalidDateFormat` | Any date field fails |
-| 400 | `common.invalidJSON` / `others.missingParams` | |
-| 409 | `petAdoption.duplicateRecord` | Adoption record already exists |
+| 400 | `petDetailInfo.errors.petAdoption.invalidDateFormat` | Any date field fails |
+| 400 | `common.invalidJSON` / `common.missingParams` | |
+| 409 | `petDetailInfo.errors.petAdoption.duplicateRecord` | Adoption record already exists |
 
 ---
 
@@ -117,9 +117,9 @@ Update fields on an existing adoption record.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `petAdoption.invalidDateFormat` | |
-| 400 | `petAdoption.noFieldsToUpdate` | No valid fields in body |
-| 404 | `petAdoption.recordNotFound` | |
+| 400 | `petDetailInfo.errors.petAdoption.invalidDateFormat` | |
+| 400 | `petDetailInfo.errors.petAdoption.noFieldsToUpdate` | No valid fields in body |
+| 404 | `petDetailInfo.errors.petAdoption.recordNotFound` | |
 
 ---
 
@@ -131,7 +131,7 @@ Update fields on an existing adoption record.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 404 | `petAdoption.recordNotFound` | |
+| 404 | `petDetailInfo.errors.petAdoption.recordNotFound` | |
 
 ---
 
@@ -150,11 +150,11 @@ Paginated browsing list with filters.
 | Param | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `page` | number | `1` | Positive integer |
-| `search` | string | — | ≤ 100 chars; regex on `Breed` / `Animal_Type` / `Remark` |
-| `animal_type` | string | — | Comma-separated |
-| `location` | string | — | Comma-separated; matches `AdoptionSite` |
-| `sex` | string | — | Comma-separated |
-| `age` | string | — | Comma-separated; valid values: `幼年` (<12mo), `青年` (12–36mo), `成年` (48–72mo), `老年` (>84mo) |
+| `search` | string | â€” | â‰¤ 100 chars; regex on `Breed` / `Animal_Type` / `Remark` |
+| `animal_type` | string | â€” | Comma-separated |
+| `location` | string | â€” | Comma-separated; matches `AdoptionSite` |
+| `sex` | string | â€” | Comma-separated |
+| `age` | string | â€” | Comma-separated; valid values: `å¹¼å¹´` (<12mo), `é’å¹´` (12â€“36mo), `æˆå¹´` (48â€“72mo), `è€å¹´` (>84mo) |
 | `lang` | string | `zh` | |
 
 **Success (200):**
@@ -181,9 +181,9 @@ Paginated browsing list with filters.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `adoption.invalidPage` | page not positive integer |
-| 400 | `adoption.invalidSearch` | search > 100 chars |
-| 500 | `others.internalError` | |
+| 400 | `getAdoption.errors.invalidPage` | page not positive integer |
+| 400 | `getAdoption.errors.invalidSearch` | search > 100 chars |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -218,6 +218,6 @@ Detail view.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `adoption.invalidPetIdFormat` | id invalid ObjectId |
-| 404 | `adoption.petNotFound` | No record |
-| 500 | `others.internalError` | |
+| 400 | `getAdoption.errors.invalidPetIdFormat` | id invalid ObjectId |
+| 404 | `getAdoption.errors.petNotFound` | No record |
+| 500 | `common.internalError` | |

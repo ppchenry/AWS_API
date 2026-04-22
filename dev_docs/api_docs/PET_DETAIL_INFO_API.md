@@ -26,14 +26,14 @@ Adoption placement records (`/v2/pets/{petID}/pet-adoption`) live in [PET_ADOPTI
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `missingPetId` | Path `petID` missing |
-| 400 | `invalidPetIdFormat` | Path `petID` not valid ObjectId |
+| 400 | `petDetailInfo.errors.missingPetId` | Path `petID` missing |
+| 400 | `petDetailInfo.errors.invalidPetIdFormat` | Path `petID` not valid ObjectId |
 | 400 | `common.invalidJSON` | Malformed JSON body |
-| 400 | `others.missingParams` | Empty body on POST/PUT |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `others.forbidden` | Not owner / NGO |
-| 404 | `petNotFound` | Pet missing or soft-deleted |
-| 500 | `others.internalError` | |
+| 400 | `common.missingParams` | Empty body on POST/PUT |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `common.forbidden` | Not owner / NGO |
+| 404 | `petDetailInfo.errors.petNotFound` | Pet missing or soft-deleted |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -83,9 +83,9 @@ Adoption placement records (`/v2/pets/{petID}/pet-adoption`) live in [PET_ADOPTI
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `petDetailInfo.invalidDateFormat` | motherDOB / fatherDOB wrong format |
-| 400 | `petDetailInfo.invalidMotherParity` | motherParity not numeric |
-| 400 | `others.noFieldsToUpdate` | No valid fields in body |
+| 400 | `petDetailInfo.errors.invalidDateFormat` | motherDOB / fatherDOB wrong format |
+| 400 | `petDetailInfo.errors.invalidMotherParity` | motherParity not numeric |
+| 400 | `common.noFieldsToUpdate` | No valid fields in body |
 
 ---
 
@@ -125,8 +125,8 @@ Add a new ownership-transfer entry to the pet's `transfer[]` array.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `transferPath.invalidDateFormat` | regDate wrong format |
-| 400 | `transferPath.invalidTransferIdFormat` | Sub-resource ID invalid |
+| 400 | `petDetailInfo.errors.transferPath.invalidDateFormat` | regDate wrong format |
+| 400 | `petDetailInfo.errors.transferPath.invalidIdFormat` | Sub-resource ID invalid |
 
 ---
 
@@ -140,10 +140,10 @@ Update an existing transfer record. Same body shape as POST.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `transferPath.invalidDateFormat` | Bad date |
-| 400 | `transferPath.invalidTransferIdFormat` | transferId invalid |
-| 400 | `others.noFieldsToUpdate` | Empty valid fields |
-| 404 | `transferPath.transferNotFound` | Transfer record not found |
+| 400 | `petDetailInfo.errors.transferPath.invalidDateFormat` | Bad date |
+| 400 | `petDetailInfo.errors.transferPath.invalidIdFormat` | transferId invalid |
+| 400 | `common.noFieldsToUpdate` | Empty valid fields |
+| 404 | `petDetailInfo.errors.transferPath.notFound` | Transfer record not found |
 
 ---
 
@@ -157,14 +157,14 @@ Remove a transfer record. No body.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `transferPath.invalidTransferIdFormat` | |
-| 404 | `transferPath.transferNotFound` | |
+| 400 | `petDetailInfo.errors.transferPath.invalidIdFormat` | |
+| 404 | `petDetailInfo.errors.transferPath.notFound` | |
 
 ---
 
 ### PUT /pets/{petID}/detail-info/NGOtransfer
 
-Transfer NGO-held pet to a target user. Caller's role must be `ngo`. The target user is validated by both email **and** phone — both must resolve to the same user record. On success, `pet.userId` is reassigned and `pet.ngoId` cleared.
+Transfer NGO-held pet to a target user. Caller's role must be `ngo`. The target user is validated by both email **and** phone â€” both must resolve to the same user record. On success, `pet.userId` is reassigned and `pet.ngoId` cleared.
 
 **Body:**
 
@@ -185,13 +185,13 @@ Transfer NGO-held pet to a target user. Caller's role must be `ngo`. The target 
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `ngoTransfer.missingRequiredFields` | UserEmail / UserContact missing |
-| 400 | `ngoTransfer.invalidEmailFormat` | Bad email |
-| 400 | `ngoTransfer.invalidPhoneFormat` | Bad phone |
-| 400 | `ngoTransfer.invalidDateFormat` | Bad regDate |
-| 400 | `ngoTransfer.userIdentityMismatch` | Email and phone resolve to different users |
-| 403 | `others.ngoOnly` | Caller role ≠ `ngo` |
-| 404 | `ngoTransfer.targetUserNotFound` | Target user missing (generic — anti-enumeration) |
+| 400 | `petDetailInfo.errors.ngoTransfer.missingRequiredFields` | UserEmail / UserContact missing |
+| 400 | `petDetailInfo.errors.ngoTransfer.invalidEmailFormat` | Bad email |
+| 400 | `petDetailInfo.errors.ngoTransfer.invalidPhoneFormat` | Bad phone |
+| 400 | `petDetailInfo.errors.ngoTransfer.invalidDateFormat` | Bad regDate |
+| 400 | `petDetailInfo.errors.ngoTransfer.userIdentityMismatch` | Email and phone resolve to different users |
+| 403 | `common.forbidden` | Caller role â‰  `ngo` |
+| 404 | `petDetailInfo.errors.ngoTransfer.targetUserNotFound` | Target user missing (generic â€” anti-enumeration) |
 
 ---
 
@@ -239,9 +239,9 @@ Create the pet's source record. Only one source per pet (409 on duplicate). At l
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `petSource.missingRequiredFields` | Neither `placeofOrigin` nor `channel` |
-| 400 | `petSource.invalidSourceIdFormat` | |
-| 409 | `petSource.duplicateRecord` | Source record already exists |
+| 400 | `petDetailInfo.errors.petSource.missingRequiredFields` | Neither `placeofOrigin` nor `channel` |
+| 400 | `petDetailInfo.errors.petSource.invalidSourceIdFormat` | |
+| 409 | `petDetailInfo.errors.petSource.duplicateRecord` | Source record already exists |
 
 ---
 
@@ -257,6 +257,6 @@ Update the pet's source record.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `petSource.invalidSourceIdFormat` | sourceId invalid |
-| 400 | `petSource.noFieldsToUpdate` | No valid fields |
-| 404 | `petSource.recordNotFound` | Source record not found |
+| 400 | `petDetailInfo.errors.petSource.invalidSourceIdFormat` | sourceId invalid |
+| 400 | `petDetailInfo.errors.petSource.noFieldsToUpdate` | No valid fields |
+| 404 | `petDetailInfo.errors.petSource.recordNotFound` | Source record not found |

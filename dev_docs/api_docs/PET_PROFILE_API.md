@@ -89,16 +89,16 @@ Create a pet owned by the authenticated user. Rejects duplicate `tagId`.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `missingName` / `missingBirthday` / `missingSex` / `missingAnimal` | Required field empty |
-| 400 | `invalidDateFormat` | `birthday` or `receivedDate` not `DD/MM/YYYY` |
-| 400 | `invalidImageUrlFormat` | `breedimage` element invalid |
-| 400 | `unknownField` | Unknown field in body |
-| 400 | `others.invalidJSON` | Malformed JSON |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 404 | `userNotFound` | Caller's user record missing / deleted |
-| 409 | `duplicatePetTagId` | `tagId` already exists |
-| 429 | `others.rateLimited` | 20 / 300s exceeded |
-| 500 | `others.internalError` | |
+| 400 | `createPetBasicInfo.errors.missingName` / `createPetBasicInfo.errors.missingBirthday` / `createPetBasicInfo.errors.missingSex` / `createPetBasicInfo.errors.missingAnimal` | Required field empty |
+| 400 | `createPetBasicInfo.errors.invalidDateFormat` | `birthday` or `receivedDate` not `DD/MM/YYYY` |
+| 400 | `createPetBasicInfo.errors.invalidImageUrlFormat` | `breedimage` element invalid |
+| 400 | `createPetBasicInfo.errors.unknownField` | Unknown field in body |
+| 400 | `common.invalidJSON` | Malformed JSON |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 404 | `createPetBasicInfo.errors.userNotFound` | Caller's user record missing / deleted |
+| 409 | `createPetBasicInfo.errors.duplicatePetTagId` | `tagId` already exists |
+| 429 | `common.rateLimited` | 20 / 300s exceeded |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -146,10 +146,10 @@ Create a pet owned by the authenticated user. Rejects duplicate `tagId`.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `others.unauthorized` | Not owner / NGO |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `common.unauthorized` | Not owner / NGO |
 | 404 | `petBasicInfo.errors.petNotFound` | Pet not found / deleted |
-| 500 | `others.internalError` | |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -189,10 +189,10 @@ Update any subset of editable basic-info fields. At least one field is required.
 | 400 | `petBasicInfo.errors.noValidFieldsToUpdate` | No allowlisted fields in body |
 | 400 | `petBasicInfo.errors.emptyUpdateBody` | Empty body |
 | 400 | `petBasicInfo.errors.invalidUpdateField` | Unknown field |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `others.unauthorized` | Not owner / NGO |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `common.unauthorized` | Not owner / NGO |
 | 404 | `petBasicInfo.errors.petNotFound` | Pet missing |
-| 500 | `others.internalError` | |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -285,11 +285,11 @@ Sort: `updatedAt: -1`.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `getPetsByUser.missingUserId` | Path missing |
-| 400 | `getPetsByUser.invalidUserIdFormat` | userId invalid |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `others.unauthorized` | Path `userId` ≠ JWT `userId` |
-| 500 | `others.internalError` | |
+| 400 | `getAllPets.errors.getPetsByUser.missingUserId` | Path missing |
+| 400 | `getAllPets.errors.getPetsByUser.invalidUserIdFormat` | userId invalid |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `common.unauthorized` | Path `userId` â‰  JWT `userId` |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -306,7 +306,7 @@ Public list of an NGO's pets, with full search / sort / pagination.
 | Param | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `page` | number | `1` | 1-indexed |
-| `search` | string | — | Regex over `name`, `animal`, `breed`, `ngoPetId`, `locationName`, `owner` |
+| `search` | string | â€” | Regex over `name`, `animal`, `breed`, `ngoPetId`, `locationName`, `owner` |
 | `sortBy` | string | `updatedAt` | Allowlist: `updatedAt`, `createdAt`, `name`, `animal`, `breed`, `birthday`, `receivedDate`, `ngoPetId` |
 | `sortOrder` | string | `desc` | `asc` or `desc` |
 
@@ -327,10 +327,10 @@ Public list of an NGO's pets, with full search / sort / pagination.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `ngoPath.missingNgoId` | ngoId path missing |
-| 400 | `ngoPath.invalidNgoIdFormat` | ngoId invalid |
-| 404 | `ngoPath.noPetsFound` | No pets for NGO |
-| 500 | `others.internalError` | |
+| 400 | `getAllPets.errors.ngoPath.missingNgoId` | ngoId path missing |
+| 400 | `getAllPets.errors.ngoPath.invalidNgoIdFormat` | ngoId invalid |
+| 404 | `getAllPets.errors.ngoPath.noPetsFound` | No pets for NGO |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -339,7 +339,7 @@ Public list of an NGO's pets, with full search / sort / pagination.
 Legacy-style soft-delete (by body `petId`). Preferred: `DELETE /pets/{petID}`.
 
 **Lambda:** GetAllPets  
-**Auth:** Bearer JWT (atomic ownership filter — only the owner can delete)  
+**Auth:** Bearer JWT (atomic ownership filter â€” only the owner can delete)  
 **Rate limit:** 10 / 60 s per `userId`
 
 **Body:**
@@ -358,14 +358,14 @@ Legacy-style soft-delete (by body `petId`). Preferred: `DELETE /pets/{petID}`.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `deleteStatus.missingPetId` | Missing petId |
-| 400 | `deleteStatus.invalidPetIdFormat` | Invalid ObjectId |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `others.unauthorized` | Caller does not own pet |
-| 404 | `deleteStatus.petNotFound` | Not found |
-| 409 | `deleteStatus.petAlreadyDeleted` | Already soft-deleted |
-| 429 | `others.rateLimited` | |
-| 500 | `others.internalError` | |
+| 400 | `getAllPets.errors.deleteStatus.missingPetId` | Missing petId |
+| 400 | `getAllPets.errors.deleteStatus.invalidPetIdFormat` | Invalid ObjectId |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `common.unauthorized` | Caller does not own pet |
+| 404 | `getAllPets.errors.deleteStatus.petNotFound` | Not found |
+| 409 | `getAllPets.errors.deleteStatus.petAlreadyDeleted` | Already soft-deleted |
+| 429 | `common.rateLimited` | |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -392,27 +392,27 @@ Append a left + right eye image pair (with date) to a pet's `eyeimages[]` array.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `updatePetEye.missingRequiredFields` | Any required field missing |
-| 400 | `updatePetEye.invalidPetIdFormat` | Bad ObjectId |
-| 400 | `updatePetEye.invalidDateFormat` | Not `DD/MM/YYYY` |
-| 400 | `updatePetEye.invalidImageUrlFormat` | Bad URL |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `others.unauthorized` | Not owner |
-| 404 | `updatePetEye.petNotFound` | |
-| 410 | `updatePetEye.petDeleted` | Pet soft-deleted |
-| 429 | `others.rateLimited` | |
-| 500 | `others.internalError` | |
+| 400 | `getAllPets.errors.updatePetEye.missingRequiredFields` | Any required field missing |
+| 400 | `getAllPets.errors.updatePetEye.invalidPetIdFormat` | Bad ObjectId |
+| 400 | `getAllPets.errors.updatePetEye.invalidDateFormat` | Not `DD/MM/YYYY` |
+| 400 | `getAllPets.errors.updatePetEye.invalidImageUrlFormat` | Bad URL |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `common.unauthorized` | Not owner |
+| 404 | `getAllPets.errors.updatePetEye.petNotFound` | |
+| 410 | `getAllPets.errors.updatePetEye.petDeleted` | Pet soft-deleted |
+| 429 | `common.rateLimited` | |
+| 500 | `common.internalError` | |
 
 ---
 
 ### GET /pets/getPetInfobyTagId/{tagId}
 
-Public tag ID lookup. Returns a **privacy-minimised projection** — internal IDs (`_id`, `userId`, `ngoId`, `ngoPetId`) are stripped. Contact fields are respected via `contact1Show` / `contact2Show` flags.
+Public tag ID lookup. Returns a **privacy-minimised projection** â€” internal IDs (`_id`, `userId`, `ngoId`, `ngoPetId`) are stripped. Contact fields are respected via `contact1Show` / `contact2Show` flags.
 
 **Lambda:** PetInfoByPetNumber  
 **Auth:** Public
 
-**Path params:** `tagId` (string, 1–120 chars)
+**Path params:** `tagId` (string, 1â€“120 chars)
 
 **Success (200):**
 
@@ -442,7 +442,7 @@ Public tag ID lookup. Returns a **privacy-minimised projection** — internal ID
 | Status | errorKey | Cause |
 | --- | --- | --- |
 | 400 | `petInfoByPetNumber.errors.tagIdRequired` | Missing tagId |
-| 400 | `others.invalidPathParam` | tagId > 120 chars |
-| 400 | `others.invalidJSON` | Malformed JSON (if body sent) |
-| 404 | — | Pet not found for tagId |
-| 500 | `others.internalError` | |
+| 400 | `common.invalidPathParam` | tagId > 120 chars |
+| 400 | `common.invalidJSON` | Malformed JSON (if body sent) |
+| 404 | â€” | Pet not found for tagId |
+| 500 | `common.internalError` | |

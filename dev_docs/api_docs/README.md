@@ -62,7 +62,7 @@ Missing / invalid key → API Gateway returns `403 Forbidden` **before** the Lam
 | Type | Mechanism |
 | --- | --- |
 | **Public** | No `Authorization` needed. If a valid JWT is present, `event.userId` is populated (used for optional linking/ownership flows). |
-| **Protected** | `Authorization: Bearer <access-token>` required. Missing/invalid token → `401` with `errorKey: "others.unauthorized"`. |
+| **Protected** | `Authorization: Bearer <access-token>` required. Missing/invalid token → `401` with `errorKey: "common.unauthorized"`. |
 | **Refresh** | Authenticates via `Cookie: refreshToken=...` only. |
 
 Access tokens use HS256, 15-minute expiry. JWT payload attaches `userId`, `userEmail`, `userRole`, optionally `ngoId` onto the Lambda event.
@@ -88,7 +88,7 @@ All 4xx / 5xx responses share this shape:
 ```json
 {
   "success": false,
-  "errorKey": "domain.specificError",
+  "errorKey": "<domain>.errors.<specificError>",
   "error": "Localized message (zh by default)",
   "requestId": "aws-lambda-request-id"
 }
@@ -101,19 +101,35 @@ All 4xx / 5xx responses share this shape:
 | `error` | Localized message (zh default, en via `?lang=en`) |
 | `requestId` | `context.awsRequestId` — use for CloudWatch lookup |
 
+#### errorKey naming convention
+
+All errorKeys follow the namespaced dot-notation scheme introduced in the locale standardization refactor:
+
+| Scope | Shape | Example |
+| --- | --- | --- |
+| Cross-cutting | `common.<leaf>` | `common.unauthorized`, `common.invalidJSON` |
+| Endpoint-specific error | `<lambdaDomainCamel>.errors.<leaf>` | `emailVerification.errors.codeExpired`, `petDetailInfo.errors.petNotFound` |
+| Endpoint-specific success | `<lambdaDomainCamel>.success.<leaf>` | `petBasicInfo.success.retrievedSuccessfully`, `petVaccineRecords.success.created` |
+
+`<lambdaDomainCamel>` is the camelCase form of the Lambda's name (e.g., `PetDetailInfo` → `petDetailInfo`, `SFExpressRoutes` → `sfExpressRoutes`, `purchaseConfirmation` stays `purchaseConfirmation`). UserRoutes groups its verification-related keys under `userRoutes.errors.verification.*` and `userRoutes.errors.phoneRegister.*` for nested concerns.
+
 ### Common Error Keys (cross-cutting)
 
 | `errorKey` | Typical Status | Meaning |
 | --- | --- | --- |
-| `others.unauthorized` | 401 / 403 | Missing / invalid JWT, or self-access / role check failed |
-| `others.forbidden` | 403 | Non-owner access to a protected resource |
-| `others.invalidJSON` | 400 | Request body is not valid JSON |
-| `others.missingParams` | 400 | Required body or required fields missing |
-| `others.invalidPathParam` | 400 | Path parameter failed format / length validation |
-| `others.methodNotAllowed` | 405 | Route not configured for this method (disabled endpoint) |
-| `others.rateLimited` | 429 | Rate limit exceeded for this action / user / IP |
-| `others.internalError` | 500 | Unhandled server error — inspect CloudWatch by `requestId` |
-| `others.serviceUnavailable` | 503 | Upstream third-party service (SMS, FaceID, etc.) failed |
+| `common.unauthorized` | 401 / 403 | Missing / invalid JWT, or self-access / role check failed |
+| `common.forbidden` | 403 | Non-owner access to a protected resource |
+| `common.invalidJSON` | 400 | Request body is not valid JSON |
+| `common.missingParams` | 400 | Required body or required fields missing |
+| `common.invalidInput` | 400 | Body failed Zod / schema validation |
+| `common.invalidPathParam` | 400 | Path parameter failed format / length validation |
+| `common.invalidObjectId` | 400 | Path parameter is not a valid Mongo ObjectId / UUID |
+| `common.methodNotAllowed` | 405 | Route not configured for this method (disabled endpoint) |
+| `common.rateLimited` | 429 | Rate limit exceeded for this action / user / IP |
+| `common.originNotAllowed` | 403 | Request Origin is not in the CORS allowlist |
+| `common.notFound` | 404 | Generic not-found (non-domain-specific) |
+| `common.internalError` | 500 | Unhandled server error — inspect CloudWatch by `requestId` |
+| `common.serviceUnavailable` | 503 | Upstream third-party service (SMS, FaceID, email, etc.) failed |
 
 ### Localization
 

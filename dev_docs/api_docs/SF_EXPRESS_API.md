@@ -19,7 +19,7 @@ Wrappers over the SF Express waybill and address APIs for our admin / NGO / staf
 
 **Lambda:** SFExpressRoutes
 
-**Auth:** Bearer JWT (HS256). Privileged roles that bypass SF order email-ownership checks: `admin`, `ngo`, `staff`, `developer`. Request bodies are JSON with schema `.strict()` — unknown fields rejected.
+**Auth:** Bearer JWT (HS256). Privileged roles that bypass SF order email-ownership checks: `admin`, `ngo`, `staff`, `developer`. Request bodies are JSON with schema `.strict()` â€” unknown fields rejected.
 
 ---
 
@@ -59,14 +59,14 @@ Create a shipment in SF's system and persist the returned waybill number onto an
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `others.invalidJSON` / `others.missingParams` | |
-| 400 | `sfExpress.validation.lastNameRequired` / `phoneNumberRequired` / `addressRequired` | Required field missing |
-| 401 | `others.unauthorized` | Missing / invalid JWT |
-| 403 | `others.unauthorized` | Non-privileged caller doesn't own linked order |
-| 429 | `others.rateLimited` | |
-| 500 | `others.internalError` | Missing `SF_CUSTOMER_CODE` / `SF_PRODUCTION_CHECK_CODE` env or unhandled error |
-| 500 | `sfExpress.errors.sfApiError` | SF API returned non-`A1000` or HTTP error |
-| 500 | `sfExpress.errors.missingWaybill` | SF response missing waybill number |
+| 400 | `common.invalidJSON` / `common.missingParams` | |
+| 400 | `sfExpressRoutes.errors.validation.lastNameRequired` / `sfExpressRoutes.errors.validation.phoneNumberRequired` / `sfExpressRoutes.errors.validation.addressRequired` | Required field missing |
+| 401 | `common.unauthorized` | Missing / invalid JWT |
+| 403 | `common.unauthorized` | Non-privileged caller doesn't own linked order |
+| 429 | `common.rateLimited` | |
+| 500 | `common.internalError` | Missing `SF_CUSTOMER_CODE` / `SF_PRODUCTION_CHECK_CODE` env or unhandled error |
+| 500 | `sfExpressRoutes.errors.sfApiError` | SF API returned non-`A1000` or HTTP error |
+| 500 | `sfExpressRoutes.errors.missingWaybill` | SF response missing waybill number |
 
 ---
 
@@ -88,10 +88,10 @@ Fetch an address-API bearer token used by the other address endpoints below.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `others.missingParams` / `others.invalidJSON` | |
-| 401 | `others.unauthorized` | |
-| 429 | `others.rateLimited` | |
-| 500 | `others.internalError` | Missing `SF_ADDRESS_API_KEY` or upstream failure |
+| 400 | `common.missingParams` / `common.invalidJSON` | |
+| 401 | `common.unauthorized` | |
+| 429 | `common.rateLimited` | |
+| 500 | `common.internalError` | Missing `SF_ADDRESS_API_KEY` or upstream failure |
 
 ---
 
@@ -117,11 +117,11 @@ Fetch an address-API bearer token used by the other address endpoints below.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `sfExpress.validation.tokenRequired` | |
-| 400 | `others.invalidJSON` / `others.missingParams` | |
-| 401 | `others.unauthorized` | |
-| 429 | `others.rateLimited` | |
-| 500 | `others.internalError` | Upstream error |
+| 400 | `sfExpressRoutes.errors.validation.tokenRequired` | |
+| 400 | `common.invalidJSON` / `common.missingParams` | |
+| 401 | `common.unauthorized` | |
+| 429 | `common.rateLimited` | |
+| 500 | `common.internalError` | Upstream error |
 
 ---
 
@@ -147,11 +147,11 @@ Fetch an address-API bearer token used by the other address endpoints below.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `sfExpress.validation.tokenRequired` / `typeIdRequired` / `areaIdRequired` | |
-| 400 | `others.invalidJSON` / `others.missingParams` | |
-| 401 | `others.unauthorized` | |
-| 429 | `others.rateLimited` | |
-| 500 | `others.internalError` | |
+| 400 | `sfExpressRoutes.errors.validation.tokenRequired` / `sfExpressRoutes.errors.validation.typeIdRequired` / `sfExpressRoutes.errors.validation.areaIdRequired` | |
+| 400 | `common.invalidJSON` / `common.missingParams` | |
+| 401 | `common.unauthorized` | |
+| 429 | `common.rateLimited` | |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -187,12 +187,12 @@ Fetches pickup addresses for each net code in parallel.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `sfExpress.validation.tokenRequired` | |
-| 400 | `sfExpress.validation.netCodeListRequired` | Missing / empty / invalid elements |
-| 400 | `others.invalidJSON` / `others.missingParams` | |
-| 401 | `others.unauthorized` | |
-| 429 | `others.rateLimited` | |
-| 500 | `others.internalError` | |
+| 400 | `sfExpressRoutes.errors.validation.tokenRequired` | |
+| 400 | `sfExpressRoutes.errors.validation.netCodeListRequired` | Missing / empty / invalid elements |
+| 400 | `common.invalidJSON` / `common.missingParams` | |
+| 401 | `common.unauthorized` | |
+| 429 | `common.rateLimited` | |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -218,11 +218,11 @@ Requests SF's cloud-print PDF for a waybill, then emails the PDF to `notificatio
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `sfExpress.validation.waybillNoRequired` | |
-| 400 | `others.invalidJSON` / `others.missingParams` | |
-| 401 | `others.unauthorized` | |
-| 429 | `others.rateLimited` | |
-| 500 | `others.internalError` | Missing SF / SMTP env vars |
-| 500 | `sfExpress.errors.sfApiError` | SF returned error |
-| 500 | `sfExpress.errors.missingPrintFile` | No files in SF response |
-| 500 | `sfExpress.errors.emailFailed` | SMTP send failure |
+| 400 | `sfExpressRoutes.errors.validation.waybillNoRequired` | |
+| 400 | `common.invalidJSON` / `common.missingParams` | |
+| 401 | `common.unauthorized` | |
+| 429 | `common.rateLimited` | |
+| 500 | `common.internalError` | Missing SF / SMTP env vars |
+| 500 | `sfExpressRoutes.errors.sfApiError` | SF returned error |
+| 500 | `sfExpressRoutes.errors.missingPrintFile` | No files in SF response |
+| 500 | `sfExpressRoutes.errors.emailFailed` | SMTP send failure |

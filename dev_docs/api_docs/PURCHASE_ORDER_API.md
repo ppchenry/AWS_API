@@ -10,7 +10,7 @@ PTag purchase checkout, shop metadata, admin order list, and supplier / owner or
 
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
-| POST | `/purchase/confirmation` | Public | Guest checkout → create order |
+| POST | `/purchase/confirmation` | Public | Guest checkout â†’ create order |
 | GET | `/purchase/shop-info` | Public | Shop info (bank details stripped) |
 | GET | `/purchase/orders` | Admin | Paginated order list |
 | GET | `/purchase/order-verification` | Admin | Paginated verification list |
@@ -46,8 +46,8 @@ Public checkout. `multipart/form-data`. Creates an `Order`, generates a unique `
 | `lastName` | string | Yes | |
 | `email` | string | Yes | Valid email |
 | `address` | string | Yes | |
-| `option` | string | Yes | 1–64 chars, `^[a-zA-Z0-9_-]+$` |
-| `tempId` | string | Yes | 1–64 chars, `^[a-zA-Z0-9_-]+$` |
+| `option` | string | Yes | 1â€“64 chars, `^[a-zA-Z0-9_-]+$` |
+| `tempId` | string | Yes | 1â€“64 chars, `^[a-zA-Z0-9_-]+$` |
 | `paymentWay` | string | Yes | Max 128 |
 | `delivery` | string | Yes | Max 128 |
 | `petName` | string | Yes | |
@@ -79,16 +79,16 @@ Public checkout. `multipart/form-data`. Creates an `Order`, generates a unique `
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `others.invalidJSON` | |
-| 400 | `purchase.errors.missingRequiredFields` | Required field missing |
-| 400 | `purchase.errors.invalidEmail` | |
-| 400 | `purchase.errors.invalidPhone` | |
-| 400 | `purchase.errors.invalidOption` / `invalidTempId` | Regex failed |
-| 400 | `purchase.errors.invalidShopCode` | shopCode not found |
-| 400 | `purchase.errors.invalidFileType` / `fileTooLarge` | File rejection |
-| 409 | `purchase.errors.duplicateOrder` | tempId already used |
-| 429 | `others.rateLimited` | |
-| 500 | `others.internalError` | |
+| 400 | `common.invalidJSON` | |
+| 400 | `purchaseConfirmation.errors.purchase.missingRequiredFields` | Required field missing |
+| 400 | `purchaseConfirmation.errors.purchase.invalidEmail` | |
+| 400 | `purchaseConfirmation.errors.purchase.invalidPhone` | |
+| 400 | `purchaseConfirmation.errors.purchase.invalidOption` / `purchaseConfirmation.errors.purchase.invalidTempId` | Regex failed |
+| 400 | `purchaseConfirmation.errors.purchase.invalidShopCode` | shopCode not found |
+| 400 | `purchaseConfirmation.errors.purchase.invalidFileType` / `purchaseConfirmation.errors.purchase.fileTooLarge` | File rejection |
+| 409 | `purchaseConfirmation.errors.purchase.duplicateOrder` | tempId already used |
+| 429 | `common.rateLimited` | |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -128,8 +128,8 @@ Bank details are stripped (sanitized) before returning.
 
 | Param | Type | Default | Limits |
 | --- | --- | --- | --- |
-| `page` | number | `1` | ≥ 1 |
-| `limit` | number | `100` | 1–500 |
+| `page` | number | `1` | â‰¥ 1 |
+| `limit` | number | `100` | 1â€“500 |
 
 **Success (200):**
 
@@ -229,11 +229,11 @@ Soft-cancel (`cancelled: true`). Idempotency check returns 409 if already cancel
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `others.invalidObjectId` | |
-| 401 / 403 | `others.unauthorized` | |
-| 404 | `purchase.errors.orderVerificationNotFound` | |
-| 409 | `purchase.errors.alreadyCancelled` | |
-| 500 | `others.internalError` | |
+| 400 | `common.invalidObjectId` | |
+| 401 / 403 | `common.unauthorized` | |
+| 404 | `purchaseConfirmation.errors.purchase.orderVerificationNotFound` | |
+| 409 | `purchaseConfirmation.errors.purchase.alreadyCancelled` | |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -259,12 +259,12 @@ Admin-triggered email alert. `application/json`.
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `others.invalidJSON` | |
-| 400 | `email.errors.missingFields` | |
-| 400 | `email.errors.invalidEmail` | |
-| 400 | `email.errors.invalidLocationURL` | Not HTTPS or invalid URL |
-| 401 / 403 | `others.unauthorized` | |
-| 500 | `others.internalError` | SMTP failure |
+| 400 | `common.invalidJSON` | |
+| 400 | `purchaseConfirmation.errors.email.missingFields` | |
+| 400 | `purchaseConfirmation.errors.email.invalidEmail` | |
+| 400 | `purchaseConfirmation.errors.email.invalidLocationURL` | Not HTTPS or invalid URL |
+| 401 / 403 | `common.unauthorized` | |
+| 500 | `common.internalError` | SMTP failure |
 
 ---
 
@@ -272,7 +272,7 @@ Admin-triggered email alert. `application/json`.
 
 ### GET /v2/orderVerification/supplier/{orderId}
 
-Supplier lookup. Looks up `OrderVerification` by `orderId` → `contact` → `tagId` (cascading). Ownership: caller email must match `masterEmail` or linked `Order.email`; privileged roles bypass.
+Supplier lookup. Looks up `OrderVerification` by `orderId` â†’ `contact` â†’ `tagId` (cascading). Ownership: caller email must match `masterEmail` or linked `Order.email`; privileged roles bypass.
 
 **Path params:** `orderId` (string, not necessarily ObjectId)
 
@@ -312,16 +312,16 @@ Supplier lookup. Looks up `OrderVerification` by `orderId` → `contact` → `ta
 | Status | errorKey | Cause |
 | --- | --- | --- |
 | 400 | `orderVerification.errors.missingOrderId` | |
-| 401 | `others.unauthorized` | |
-| 403 | `others.unauthorized` | Email mismatch |
+| 401 | `common.unauthorized` | |
+| 403 | `common.unauthorized` | Email mismatch |
 | 404 | `orderVerification.errors.notFound` | |
-| 500 | `others.internalError` | |
+| 500 | `common.internalError` | |
 
 ---
 
 ### PUT /v2/orderVerification/supplier/{orderId}
 
-Supplier update. Accepts `multipart/form-data` or `application/json`. Schema `.strict()` — no extra fields.
+Supplier update. Accepts `multipart/form-data` or `application/json`. Schema `.strict()` â€” no extra fields.
 
 **Body** (all optional; at least one required):
 
@@ -357,12 +357,12 @@ Supplier update. Accepts `multipart/form-data` or `application/json`. Schema `.s
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `others.invalidJSON` / `others.missingParams` | |
+| 400 | `common.invalidJSON` / `common.missingParams` | |
 | 400 | `orderVerification.errors.missingOrderId` | |
 | 400 | `orderVerification.errors.invalidField` | |
-| 401 / 403 | `others.unauthorized` | |
+| 401 / 403 | `common.unauthorized` | |
 | 404 | `orderVerification.errors.notFound` | |
-| 500 | `others.internalError` | |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -387,10 +387,10 @@ For WhatsApp deep-link UX. Admin OR owner (email match to linked `Order` or `mas
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `orderVerification.errors.missingVerificationId` / `invalidVerificationId` | |
-| 401 / 403 | `others.unauthorized` | |
+| 400 | `orderVerification.errors.missingVerificationId` / `orderVerification.errors.invalidVerificationId` | |
+| 401 / 403 | `common.unauthorized` | |
 | 404 | `orderVerification.errors.notFound` | |
-| 500 | `others.internalError` | |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -398,7 +398,7 @@ For WhatsApp deep-link UX. Admin OR owner (email match to linked `Order` or `mas
 
 Minimal linked-order contact info. Owner-only (email match on linked `Order`).
 
-**Path params:** `tempId` (string — matches `Order.tempId`)
+**Path params:** `tempId` (string â€” matches `Order.tempId`)
 
 **Success (200):**
 
@@ -416,9 +416,9 @@ Minimal linked-order contact info. Owner-only (email match on linked `Order`).
 | Status | errorKey | Cause |
 | --- | --- | --- |
 | 400 | `orderVerification.errors.missingTempId` | |
-| 401 / 403 | `others.unauthorized` | |
+| 401 / 403 | `common.unauthorized` | |
 | 404 | `orderVerification.errors.orderNotFound` | |
-| 500 | `others.internalError` | |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -440,9 +440,9 @@ Admin-only full dump (no pagination). Filters to docs where `cancelled` field ex
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 401 / 403 | `others.unauthorized` | |
+| 401 / 403 | `common.unauthorized` | |
 | 404 | `orderVerification.errors.noOrders` | |
-| 500 | `others.internalError` | |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -473,9 +473,9 @@ Tag-bound verification details + linked `Order.sfWayBillNumber`.
 | Status | errorKey | Cause |
 | --- | --- | --- |
 | 400 | `orderVerification.errors.missingTagId` | |
-| 401 | `others.unauthorized` | |
+| 401 | `common.unauthorized` | |
 | 404 | `orderVerification.errors.notFound` | |
-| 500 | `others.internalError` | |
+| 500 | `common.internalError` | |
 
 ---
 
@@ -511,18 +511,18 @@ Update verification fields and optionally fire a WhatsApp tracking notification 
 }
 ```
 
-`notificationDispatched` is `false` when WhatsApp prerequisites are missing (no bearer token, no SF waybill, no contact) or the provider errored — the update itself still succeeds.
+`notificationDispatched` is `false` when WhatsApp prerequisites are missing (no bearer token, no SF waybill, no contact) or the provider errored â€” the update itself still succeeds.
 
 **Errors:**
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `others.invalidJSON` / `others.missingParams` | |
+| 400 | `common.invalidJSON` / `common.missingParams` | |
 | 400 | `orderVerification.errors.missingTagId` | |
 | 400 | `orderVerification.errors.invalidField` | |
 | 400 | `orderVerification.errors.invalidDate` | `verifyDate` not `DD/MM/YYYY` |
 | 400 | `orderVerification.errors.invalidPendingStatus` | |
-| 401 | `others.unauthorized` | |
+| 401 | `common.unauthorized` | |
 | 404 | `orderVerification.errors.notFound` | |
 | 409 | `orderVerification.errors.duplicateOrderId` | New `orderId` collides |
-| 500 | `others.internalError` | |
+| 500 | `common.internalError` | |
