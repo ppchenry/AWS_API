@@ -1,21 +1,11 @@
 const { corsHeaders } = require("../cors");
-
-const ERROR_MESSAGES = {
-  "others.internalError": "Internal Server Error",
-  "others.invalidJSON": "Invalid JSON format",
-  "others.invalidPathParam": "Invalid path parameter",
-  "others.methodNotAllowed": "Method not allowed",
-  "others.originNotAllowed": "Origin not allowed",
-  "others.unauthorized": "Unauthorized",
-  "petInfoByPetNumber.errors.notFound": "Pet not found",
-  "petInfoByPetNumber.errors.tagIdRequired": "Tag ID is required",
-};
-
-function resolveErrorMessage(errorKey) {
-  return ERROR_MESSAGES[errorKey] || errorKey;
-}
+const { getTranslation, loadTranslations } = require("./i18n");
 
 const createErrorResponse = (statusCode, error, event) => {
+  const translations = loadTranslations(
+    event.cookies?.language || event.queryStringParameters?.lang || "en"
+  );
+
   return {
     statusCode,
     headers: {
@@ -25,7 +15,7 @@ const createErrorResponse = (statusCode, error, event) => {
     body: JSON.stringify({
       success: false,
       errorKey: error,
-      error: resolveErrorMessage(error),
+      error: getTranslation(translations, error),
       ...(event.awsRequestId ? { requestId: event.awsRequestId } : {}),
     }),
   };

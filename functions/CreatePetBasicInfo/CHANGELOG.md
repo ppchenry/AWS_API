@@ -52,17 +52,16 @@ Key structural changes:
 
 - `POST /pets/create-pet-basic-info` now requires a valid JWT.
 - Pet ownership is now derived from `event.userId` from the JWT, not from a trusted body field.
-- A legacy body `userId` is only accepted as a compatibility field and must match the JWT caller.
-- NGO ownership fields are now restricted to NGO callers with a matching `ngoId` claim.
-- Duplicate `ngoPetId` and `tagId` checks now return structured `409` conflict responses.
+- Client-supplied `userId` is now rejected at validation time and never influences create ownership.
+- Duplicate `tagId` checks now return structured `409` conflict responses.
 - Success responses now return a standardized shape with `success: true`, a translated message, the new pet id, and a sanitized result object.
 
 ## Validation And Error Handling Improvements
 
-- malformed JSON now returns `400 invalidJSON`
+- malformed JSON now returns `400 others.invalidJSON`
 - empty request bodies now return `400 others.missingParams`
 - missing required fields now return `400 missingName`, `missingBirthday`, `missingSex`, or `missingAnimal`
-- invalid dates, booleans, weight, and image URLs now fail before business logic reaches MongoDB
+- invalid dates, booleans, weight, tag identifiers, and image URLs now fail before business logic reaches MongoDB
 - all major failures now use `createErrorResponse()` and include `success`, `errorKey`, `error`, and `requestId`
 - all catch blocks log structured JSON and return `500 others.internalError`
 
@@ -71,7 +70,7 @@ Key structural changes:
 - Added JWT auth before service execution.
 - Pinned JWT verification to `HS256`.
 - Closed horizontal privilege escalation by removing body-trusted ownership.
-- Restricted NGO-linked fields to matching NGO JWT claims.
+- Removed permissive `z.any()` validation for persisted/queryable fields such as `tagId`.
 - Added rate limiting to the create flow.
 - Added exact route dispatch instead of a monolithic entrypoint path.
 - Added sanitized success payloads and removed permissive raw response building.
@@ -85,7 +84,7 @@ Key structural changes:
 
 ## Constraints And Deferred Work
 
-- `infra-owned`: duplicate-prevention race windows still require MongoDB unique indexes to be fully eliminated
+- `infra-owned`: duplicate-prevention race windows still require a MongoDB unique index on `tagId` to be fully eliminated
 - `code-owned`: route-level integration tests still need to be added for this lambda specifically
 - `code-owned`: if clients still depend on the unauthenticated legacy behavior, they must be updated to send JWTs
 
@@ -99,17 +98,17 @@ CreatePetBasicInfo now matches the monorepo’s hardened request lifecycle for t
 | --- | --- | --- |
 | C1 | FIXED | Route now requires `authJWT` before service execution. |
 | C2 | FIXED | Success payload returns `sanitizePet(pet)`. |
-| C3 | FIXED | Body `userId` no longer controls ownership; JWT caller identity does. |
+| C3 | FIXED | Body `userId` is rejected and JWT caller identity is the only ownership source. |
 | C4 | NOT APPLICABLE | This lambda has no delete route. |
 | C5 | NOT APPLICABLE | This lambda does not manage auth sessions or deletion flows. |
 | C6 | NOT APPLICABLE | No upsert-based record creation flow exists here. |
 | C7 | NOT APPLICABLE | No public lookup flow exists here. |
 | C8 | NOT APPLICABLE | No verification or code-dispatch endpoint exists here. |
-| H9 | FIXED | Client cannot set privileged ownership fields unless authenticated as matching NGO. |
+| H9 | NOT APPLICABLE | The current create surface no longer accepts client-controlled privilege fields. |
 | H10 | FIXED | Service reads ownership from JWT, not request body. |
 | H11 | FIXED | Internal lifecycle fields are not accepted in the allowlist schema. |
 | H12 | FIXED | Sanitizer strips internal fields before returning the created pet. |
-| H13 | FIXED | NGO-only field usage is blocked unless JWT role and claim match. |
+| H13 | NOT APPLICABLE | The current route has no role-restricted sub-surface beyond authenticated access. |
 | M14 | FIXED | Create flow now uses Mongo-backed rate limiting. |
 | M15 | FIXED | Catch blocks log internally and return `others.internalError`. |
 | M16 | FIXED | All responses use `createErrorResponse` or `createSuccessResponse`. |

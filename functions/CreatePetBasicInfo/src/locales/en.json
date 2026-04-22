@@ -17,6 +17,7 @@
     "unknownField": "Unknown field is not allowed",
     "success": "Pet added successfully",
     "others": {
+        "invalidJSON": "Invalid JSON format",
         "unauthorized": "Unauthorized",
         "internalError": "Internal Server Error",
         "missingParams": "Missing required request body",

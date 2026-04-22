@@ -3,7 +3,12 @@ function getZodIssues(error) {
 }
 
 function getFirstZodIssueMessage(error, fallback = "others.invalidInput") {
-  return getZodIssues(error)[0]?.message || fallback;
+  const message = getZodIssues(error)[0]?.message;
+  if (typeof message !== "string" || message.trim().length === 0) {
+    return fallback;
+  }
+
+  return /\s/.test(message) ? fallback : message;
 }
 
 function getJoinedZodIssueMessages(error, fallback = "others.invalidInput") {

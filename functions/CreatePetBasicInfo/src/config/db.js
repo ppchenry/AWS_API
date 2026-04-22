@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const PetSchema = require("../models/pet");
-const UserSchema = require("../models/user");
 const RateLimitSchema = require("../models/rateLimit");
+const UserSchema = require("../models/user");
 const { logInfo, logError } = require("../utils/logger");
 
 let conn = null;

@@ -6,6 +6,25 @@ const { logError } = require("../utils/logger");
 
 const PAGE_SIZE = 16;
 const EXCLUDED_SITES = ["Arc Dog Shelter", "Tolobunny", "HKRABBIT"];
+const LIST_PROJECTION = {
+  _id: 1,
+  Name: 1,
+  Age: 1,
+  Sex: 1,
+  Breed: 1,
+  Image_URL: 1,
+};
+const DETAIL_PROJECTION = {
+  _id: 1,
+  Name: 1,
+  Age: 1,
+  Sex: 1,
+  Breed: 1,
+  Image_URL: 1,
+  Remark: 1,
+  AdoptionSite: 1,
+  URL: 1,
+};
 
 const AGE_RANGES = {
   幼年: { Age: { $lt: 12 } },
@@ -81,6 +100,7 @@ async function getAdoptionList({ event, query }) {
       { $sort: { parsedDate: -1, _id: -1 } },
       { $skip: (page - 1) * PAGE_SIZE },
       { $limit: PAGE_SIZE },
+      { $project: LIST_PROJECTION },
     ]);
 
     return createSuccessResponse(200, event, {
@@ -104,7 +124,7 @@ async function getAdoptionById({ event, query }) {
 
   try {
     const Adoption = mongoose.model("Adoption");
-    const pet = await Adoption.findOne({ _id: query.id }).lean();
+    const pet = await Adoption.findOne({ _id: query.id }).select(DETAIL_PROJECTION).lean();
 
     if (!pet) {
       return createErrorResponse(404, "adoption.petNotFound", event);
@@ -126,6 +146,8 @@ async function getAdoptionById({ event, query }) {
 
 module.exports = {
   PAGE_SIZE,
+  LIST_PROJECTION,
+  DETAIL_PROJECTION,
   buildAdoptionListQuery,
   getAdoptionList,
   getAdoptionById,

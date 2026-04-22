@@ -1,0 +1,16 @@
+{
+  "others": {
+    "internalError": "Internal Server Error",
+    "invalidJSON": "Invalid JSON format",
+    "invalidPathParam": "Invalid path parameter",
+    "methodNotAllowed": "Method not allowed",
+    "originNotAllowed": "Origin not allowed",
+    "unauthorized": "Unauthorized"
+  },
+  "petInfoByPetNumber": {
+    "errors": {
+      "notFound": "Pet not found",
+      "tagIdRequired": "Tag ID is required"
+    }
+  }
+}

@@ -1,5 +1,23 @@
 const mongoose = require("../functions/GetAdoption/node_modules/mongoose");
 
+function makeEvent(overrides = {}) {
+  return {
+    httpMethod: "GET",
+    resource: "/adoption",
+    headers: {},
+    queryStringParameters: { lang: "en" },
+    ...overrides,
+  };
+}
+
+function makeContext(overrides = {}) {
+  return {
+    awsRequestId: "req-ctx-1",
+    callbackWaitsForEmptyEventLoop: true,
+    ...overrides,
+  };
+}
+
 describe("GetAdoption CORS", () => {
   function loadCorsWithOrigins(origins) {
     jest.resetModules();
@@ -34,6 +52,25 @@ describe("GetAdoption CORS", () => {
     expect(JSON.parse(response.body)).toMatchObject({
       success: false,
       errorKey: "others.originNotAllowed",
+    });
+  });
+
+  test("returns translated error body for disallowed origin", () => {
+    const { handleOptions } = loadCorsWithOrigins("https://allowed.example.com");
+
+    const response = handleOptions({
+      httpMethod: "OPTIONS",
+      headers: { Origin: "https://evil.example.com" },
+      queryStringParameters: { lang: "zh" },
+      awsRequestId: "req-3",
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(JSON.parse(response.body)).toMatchObject({
+      success: false,
+      errorKey: "others.originNotAllowed",
+      error: "來源不被允許",
+      requestId: "req-3",
     });
   });
 });
@@ -126,8 +163,59 @@ describe("GetAdoption router", () => {
   });
 });
 
+describe("GetAdoption handler", () => {
+  afterEach(() => {
+    jest.resetModules();
+    jest.clearAllMocks();
+  });
+
+  test("public routes bypass authJWT entirely", async () => {
+    const authJWT = jest.fn(() => {
+      throw new Error("authJWT should not run for public routes");
+    });
+    const getReadConnection = jest.fn().mockResolvedValue({});
+    const validateAdoptionRequest = jest.fn().mockResolvedValue({
+      isValid: true,
+      query: { page: 1 },
+    });
+    const routeRequest = jest.fn().mockResolvedValue({
+      statusCode: 200,
+      body: JSON.stringify({ success: true }),
+    });
+
+    jest.doMock("../functions/GetAdoption/src/middleware/authJWT", () => ({ authJWT }));
+    jest.doMock("../functions/GetAdoption/src/config/db", () => ({ getReadConnection }));
+    jest.doMock("../functions/GetAdoption/src/middleware/guard", () => ({ validateAdoptionRequest }));
+    jest.doMock("../functions/GetAdoption/src/router", () => ({ routeRequest }));
+    jest.doMock("../functions/GetAdoption/src/config/env", () => ({}));
+
+    const { handleRequest } = require("../functions/GetAdoption/src/handler");
+
+    const response = await handleRequest(
+      makeEvent({
+        resource: "/adoption/{id}",
+        pathParameters: { id: "507f1f77bcf86cd799439011" },
+        headers: { Authorization: "Bearer ignored-token" },
+      }),
+      makeContext()
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(authJWT).not.toHaveBeenCalled();
+    expect(validateAdoptionRequest).toHaveBeenCalledTimes(1);
+    expect(getReadConnection).toHaveBeenCalledTimes(1);
+    expect(routeRequest).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("GetAdoption services", () => {
-  const { buildAdoptionListQuery, getAdoptionList, getAdoptionById } = require("../functions/GetAdoption/src/services/adoption");
+  const {
+    buildAdoptionListQuery,
+    getAdoptionList,
+    getAdoptionById,
+    LIST_PROJECTION,
+    DETAIL_PROJECTION,
+  } = require("../functions/GetAdoption/src/services/adoption");
 
   afterEach(() => {
     jest.restoreAllMocks();
@@ -159,9 +247,10 @@ describe("GetAdoption services", () => {
       {
         _id: "adoption-1",
         Name: "Milo",
+        Age: 12,
+        Sex: "M",
+        Breed: "Shiba",
         Image_URL: ["https://example.com/milo.jpg"],
-        parsedDate: new Date(),
-        __v: 7,
       },
     ]);
 
@@ -192,6 +281,9 @@ describe("GetAdoption services", () => {
       {
         _id: "adoption-1",
         Name: "Milo",
+        Age: 12,
+        Sex: "M",
+        Breed: "Shiba",
         Image_URL: ["https://example.com/milo.jpg"],
       },
     ]);
@@ -199,11 +291,17 @@ describe("GetAdoption services", () => {
     expect(body.maxPage).toBe(1);
     expect(countDocuments).toHaveBeenCalledTimes(1);
     expect(aggregate).toHaveBeenCalledTimes(1);
+    expect(aggregate).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ $project: LIST_PROJECTION }),
+      ])
+    );
   });
 
   test("getAdoptionById returns 404 when pet is missing", async () => {
     const lean = jest.fn().mockResolvedValue(null);
-    const findOne = jest.fn().mockReturnValue({ lean });
+    const select = jest.fn().mockReturnValue({ lean });
+    const findOne = jest.fn().mockReturnValue({ select });
     jest.spyOn(mongoose, "model").mockReturnValue({ findOne });
 
     const response = await getAdoptionById({
@@ -217,6 +315,8 @@ describe("GetAdoption services", () => {
     });
 
     expect(response.statusCode).toBe(404);
+    expect(findOne).toHaveBeenCalledWith({ _id: "507f1f77bcf86cd799439011" });
+    expect(select).toHaveBeenCalledWith(DETAIL_PROJECTION);
     expect(JSON.parse(response.body)).toMatchObject({
       success: false,
       errorKey: "adoption.petNotFound",

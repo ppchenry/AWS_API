@@ -1,3 +1,5 @@
+const { createErrorResponse } = require("./utils/response");
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean)
   : [];
@@ -33,18 +35,7 @@ function handleOptions(event) {
 
   const headers = corsHeaders(event);
   if (Object.keys(headers).length === 0) {
-    return {
-      statusCode: 403,
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        success: false,
-        errorKey: "others.originNotAllowed",
-        error: "Origin not allowed",
-        ...(event.awsRequestId ? { requestId: event.awsRequestId } : {}),
-      }),
-    };
+    return createErrorResponse(403, "others.originNotAllowed", event);
   }
 
   return {

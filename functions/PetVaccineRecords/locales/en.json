@@ -4,6 +4,7 @@
     "forbidden": "Forbidden",
     "internalError": "Internal server error",
     "methodNotAllowed": "Method Not Allowed",
+    "originNotAllowed": "Origin not allowed",
     "invalidJSON": "Invalid JSON format",
     "missingParams": "Missing required parameters"
   },

@@ -20,9 +20,12 @@ async function handleRequest(event, context) {
       return optionsResponse;
     }
 
-    const authError = authJWT({ event });
-    if (authError && !PUBLIC_RESOURCES.includes(event.resource)) {
-      return authError;
+    const isPublicResource = PUBLIC_RESOURCES.includes(event.resource);
+    if (!isPublicResource) {
+      const authError = authJWT({ event });
+      if (authError) {
+        return authError;
+      }
     }
 
     const guardResult = await validateAdoptionRequest({ event });

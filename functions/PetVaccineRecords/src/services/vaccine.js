@@ -10,6 +10,8 @@ const {
   updateVaccineRecordSchema,
 } = require("../zodSchema/vaccineSchema");
 
+const ACTIVE_VACCINE_FILTER = { isDeleted: { $ne: true } };
+
 async function getVaccineRecords({ event }) {
   const scope = "services.vaccine.getVaccineRecords";
 
@@ -19,7 +21,7 @@ async function getVaccineRecords({ event }) {
     if (!petAccess.isValid) return petAccess.error;
 
     const VaccineRecords = mongoose.model("Vaccine_Records");
-    const vaccineRecords = await VaccineRecords.find({ petId: petID })
+    const vaccineRecords = await VaccineRecords.find({ petId: petID, ...ACTIVE_VACCINE_FILTER })
       .select("vaccineDate vaccineName vaccineNumber vaccineTimes vaccinePosition petId")
       .lean();
 
@@ -70,8 +72,8 @@ async function createVaccineRecord({ event, body }) {
     });
 
     const [count, latest] = await Promise.all([
-      VaccineRecords.countDocuments({ petId: petID }),
-      VaccineRecords.find({ petId: petID })
+      VaccineRecords.countDocuments({ petId: petID, ...ACTIVE_VACCINE_FILTER }),
+      VaccineRecords.find({ petId: petID, ...ACTIVE_VACCINE_FILTER })
         .select("vaccineDate")
         .sort({ vaccineDate: -1 })
         .limit(1)
@@ -131,7 +133,7 @@ async function updateVaccineRecord({ event, body }) {
     if (data.vaccinePosition !== undefined) updateFields.vaccinePosition = data.vaccinePosition;
 
     const updated = await VaccineRecords.findOneAndUpdate(
-      { _id: vaccineID, petId: petID },
+      { _id: vaccineID, petId: petID, ...ACTIVE_VACCINE_FILTER },
       { $set: updateFields },
       {
         new: true,
@@ -143,7 +145,7 @@ async function updateVaccineRecord({ event, body }) {
       return createErrorResponse(404, "vaccineRecord.vaccineRecordNotFound", event);
     }
 
-    const latest = await VaccineRecords.find({ petId: petID })
+    const latest = await VaccineRecords.find({ petId: petID, ...ACTIVE_VACCINE_FILTER })
       .select("vaccineDate")
       .sort({ vaccineDate: -1 })
       .limit(1)
@@ -177,14 +179,19 @@ async function deleteVaccineRecord({ event }) {
     const VaccineRecords = mongoose.model("Vaccine_Records");
     const Pets = mongoose.model("Pet");
 
-    const deleted = await VaccineRecords.deleteOne({ _id: vaccineID, petId: petID });
-    if (deleted.deletedCount === 0) {
+    const deleted = await VaccineRecords.findOneAndUpdate(
+      { _id: vaccineID, petId: petID, ...ACTIVE_VACCINE_FILTER },
+      { $set: { isDeleted: true, deletedAt: new Date() } },
+      { new: true, projection: "_id" }
+    ).lean();
+
+    if (!deleted) {
       return createErrorResponse(404, "vaccineRecord.vaccineRecordNotFound", event);
     }
 
     const [count, latest] = await Promise.all([
-      VaccineRecords.countDocuments({ petId: petID }),
-      VaccineRecords.find({ petId: petID })
+      VaccineRecords.countDocuments({ petId: petID, ...ACTIVE_VACCINE_FILTER }),
+      VaccineRecords.find({ petId: petID, ...ACTIVE_VACCINE_FILTER })
         .select("vaccineDate")
         .sort({ vaccineDate: -1 })
         .limit(1)

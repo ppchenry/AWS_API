@@ -1,0 +1,16 @@
+{
+  "others": {
+    "internalError": "內部伺服器錯誤",
+    "invalidJSON": "JSON 格式無效",
+    "invalidPathParam": "路徑參數無效",
+    "methodNotAllowed": "不支援的請求方法",
+    "originNotAllowed": "來源不被允許",
+    "unauthorized": "未授權"
+  },
+  "petInfoByPetNumber": {
+    "errors": {
+      "notFound": "找不到寵物資料",
+      "tagIdRequired": "必須提供晶片或標籤編號"
+    }
+  }
+}

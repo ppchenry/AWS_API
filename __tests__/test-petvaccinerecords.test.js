@@ -18,7 +18,7 @@ const envConfig = require("../env.json");
 
 jest.setTimeout(30000);
 
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = "http://127.0.0.1:3000";
 const config = envConfig.PetVaccineRecordsFunction || {};
 const fixtureFallback = envConfig.PetMedicalRecordFunction || {};
 
@@ -131,6 +131,7 @@ async function req(method, path, body, headers = {}, extra = {}) {
           ? body
           : JSON.stringify(body)
         : undefined,
+    signal: AbortSignal.timeout(10000),
     ...extra,
   });
 
@@ -161,12 +162,9 @@ afterAll(async () => {
 
 describe("OPTIONS preflight", () => {
   test("returns 204 with CORS headers for an allowed origin", async () => {
-    const res = await fetch(
-      `${BASE_URL}/pets/${NONEXISTENT_PET_ID}/vaccine-record?lang=en`,
-      {
-        method: "OPTIONS",
-        headers: { Origin: VALID_ORIGIN },
-      }
+    const res = await req(
+      "OPTIONS",
+      `/pets/${NONEXISTENT_PET_ID}/vaccine-record`
     );
 
     expect(res.status).toBe(204);
@@ -175,26 +173,27 @@ describe("OPTIONS preflight", () => {
   });
 
   test("returns 403 for a disallowed origin", async () => {
-    const res = await fetch(
-      `${BASE_URL}/pets/${NONEXISTENT_PET_ID}/vaccine-record?lang=en`,
-      {
-        method: "OPTIONS",
-        headers: { Origin: DISALLOWED_ORIGIN },
-      }
+    const res = await req(
+      "OPTIONS",
+      `/pets/${NONEXISTENT_PET_ID}/vaccine-record`,
+      undefined,
+      { Origin: DISALLOWED_ORIGIN }
     );
 
     expect(res.status).toBe(403);
+    expect(res.body.errorKey).toBe("others.originNotAllowed");
   });
 
   test("returns 403 when Origin header is absent", async () => {
-    const res = await fetch(
-      `${BASE_URL}/pets/${NONEXISTENT_PET_ID}/vaccine-record?lang=en`,
-      {
-        method: "OPTIONS",
-      }
+    const res = await req(
+      "OPTIONS",
+      `/pets/${NONEXISTENT_PET_ID}/vaccine-record`,
+      undefined,
+      { Origin: undefined }
     );
 
     expect(res.status).toBe(403);
+    expect(res.body.errorKey).toBe("others.originNotAllowed");
   });
 });
 
@@ -264,13 +263,15 @@ describe("JWT authentication", () => {
     const res = await req("GET", `/pets/${NONEXISTENT_PET_ID}/vaccine-record`);
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
-    expect(typeof res.body.errorKey).toBe("string");
+    expect(res.body.errorKey).toBe("others.unauthorized");
     expect(typeof res.body.error).toBe("string");
     expect(typeof res.body.requestId).toBe("string");
   });
 
   test("error responses include CORS headers for allowed origin", async () => {
     const res = await req("GET", `/pets/${NONEXISTENT_PET_ID}/vaccine-record`);
+    expect(res.status).toBe(401);
+    expect(res.body.errorKey).toBe("others.unauthorized");
     expect(res.headers.get("access-control-allow-origin")).toBe(VALID_ORIGIN);
   });
 });
@@ -344,14 +345,15 @@ describe("Router and nonexistent resource behavior", () => {
     expect(res.body.errorKey).toBe("petNotFound");
   });
 
-  test("returns 403/405 at API layer for unsupported method", async () => {
+  test("returns exact 405 for unsupported method", async () => {
     const res = await req(
       "PATCH",
       `/pets/${NONEXISTENT_PET_ID}/vaccine-record`,
       undefined,
       strangerAuth()
     );
-    expect([403, 405]).toContain(res.status);
+    expect(res.status).toBe(405);
+    expect(res.body.errorKey).toBe("others.methodNotAllowed");
   });
 });
 
@@ -496,9 +498,11 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
   ownerTest("owner deletes vaccine record successfully", async () => {
     expect(state.vaccineRecordId).toBeTruthy();
 
+    const deletedRecordId = state.vaccineRecordId;
+
     const res = await req(
       "DELETE",
-      `/pets/${TEST_PET_ID}/vaccine-record/${state.vaccineRecordId}`,
+      `/pets/${TEST_PET_ID}/vaccine-record/${deletedRecordId}`,
       undefined,
       ownerAuth()
     );
@@ -506,6 +510,19 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
     expect(res.body.success).toBe(true);
     expect(res.body.message).toBe("Pet vaccine record deleted successfully");
     expect(res.body.id).toBe(TEST_PET_ID);
+
+    const listRes = await req(
+      "GET",
+      `/pets/${TEST_PET_ID}/vaccine-record`,
+      undefined,
+      ownerAuth()
+    );
+    expect(listRes.status).toBe(200);
+    expect(Array.isArray(listRes.body.form.vaccineRecords)).toBe(true);
+    expect(
+      listRes.body.form.vaccineRecords.some((record) => record._id === deletedRecordId)
+    ).toBe(false);
+
     state.vaccineRecordId = "";
   }, FIXTURE_TEST_TIMEOUT_MS);
 });

@@ -2,6 +2,12 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim())
   : [];
 
+const { getTranslation, loadTranslations } = require("./utils/i18n");
+
+function getRequestLanguage(event) {
+  return event.cookies?.language || event.queryStringParameters?.lang || "zh";
+}
+
 function corsHeaders(event) {
   const origin = event.headers?.origin || event.headers?.Origin;
   const normalizedOrigin = origin ? origin.trim() : null;
@@ -36,10 +42,17 @@ function handleOptions(event) {
       };
     }
 
+    const translations = loadTranslations(getRequestLanguage(event));
+
     return {
       statusCode: 403,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: "Origin not allowed" }),
+      body: JSON.stringify({
+        success: false,
+        errorKey: "others.originNotAllowed",
+        error: getTranslation(translations, "others.originNotAllowed"),
+        ...(event.awsRequestId ? { requestId: event.awsRequestId } : {}),
+      }),
     };
   }
 }

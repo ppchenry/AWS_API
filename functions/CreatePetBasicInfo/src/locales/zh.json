@@ -17,6 +17,7 @@
     "unknownField": "不允許未知欄位",
     "success": "寵物添加成功",
     "others": {
+        "invalidJSON": "無效的 JSON 格式",
         "unauthorized": "未授權",
         "internalError": "伺服器內部錯誤",
         "missingParams": "缺少必要的請求內容",

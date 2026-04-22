@@ -1,8 +1,8 @@
-const { corsHeaders } = require("../cors");
 const { loadTranslations, getTranslation } = require("./i18n");
 
 function createErrorResponse(statusCode, error, event) {
   const translations = loadTranslations(event.locale || event.queryStringParameters?.lang || "zh");
+  const { corsHeaders } = require("../cors");
 
   return {
     statusCode,
@@ -20,6 +20,8 @@ function createErrorResponse(statusCode, error, event) {
 }
 
 function createSuccessResponse(statusCode, event, data = {}, extraHeaders = {}) {
+  const { corsHeaders } = require("../cors");
+
   return {
     statusCode,
     headers: {

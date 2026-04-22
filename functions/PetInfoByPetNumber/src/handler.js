@@ -2,14 +2,26 @@ require("./config/env");
 
 const { getReadConnection } = require("./config/db");
 const { handleOptions } = require("./cors");
-const { authJWT } = require("./middleware/authJWT");
 const { validatePetLookupRequest } = require("./middleware/guard");
 const { createErrorResponse, createSuccessResponse } = require("./utils/response");
 const { logError } = require("./utils/logger");
 const { sanitizePet } = require("./utils/sanitize");
 
-const PUBLIC_RESOURCES = ["/pets/getPetInfobyTagId/{tagId}"];
 const ROUTE_KEY = "GET /pets/getPetInfobyTagId/{tagId}";
+const PUBLIC_PET_PROJECTION = {
+  name: 1,
+  breedimage: 1,
+  animal: 1,
+  birthday: 1,
+  weight: 1,
+  sex: 1,
+  sterilization: 1,
+  breed: 1,
+  features: 1,
+  info: 1,
+  status: 1,
+  receivedDate: 1,
+};
 
 async function handleRequest(event, context) {
   context.callbackWaitsForEmptyEventLoop = false;
@@ -19,11 +31,6 @@ async function handleRequest(event, context) {
     const optionsResponse = handleOptions(event);
     if (optionsResponse) {
       return optionsResponse;
-    }
-
-    const authError = authJWT({ event });
-    if (authError && !PUBLIC_RESOURCES.includes(event.resource)) {
-      return authError;
     }
 
     const validation = validatePetLookupRequest({ event });
@@ -41,16 +48,11 @@ async function handleRequest(event, context) {
     const pet = await Pet.findOne({
       tagId: validation.tagId,
       deleted: { $ne: true },
-    }).lean();
-
-    if (!pet) {
-      return createErrorResponse(404, "petInfoByPetNumber.errors.notFound", event);
-    }
+    }, PUBLIC_PET_PROJECTION).lean();
 
     return createSuccessResponse(200, event, {
-      message: "Pet basic info retrieved successfully",
+      message: "Pet tag lookup processed successfully",
       form: sanitizePet(pet),
-      id: pet._id,
     });
   } catch (error) {
     logError("Unhandled request error", {
