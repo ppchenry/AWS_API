@@ -4,30 +4,30 @@ const { isValidEmail, isValidPhoneNumber, isValidDateFormat } = require("../util
 
 // Zod schema for updatePassword
 const userUpdatePasswordSchema = z.object({
-  userId: z.string({ error: "updatePassword.invalidUserId" }).refine(isValidObjectId, { message: "updatePassword.invalidUserId" }),
-  oldPassword: z.string({ error: "updatePassword.paramsMissing" }).min(1, { message: "updatePassword.paramsMissing" }),
-  newPassword: z.string({ error: "updatePassword.passwordLong" }).min(8, { message: "updatePassword.passwordLong" }),
+  userId: z.string({ error: "userRoutes.errors.updatePassword.invalidUserId" }).refine(isValidObjectId, { message: "userRoutes.errors.updatePassword.invalidUserId" }),
+  oldPassword: z.string({ error: "userRoutes.errors.updatePassword.paramsMissing" }).min(1, { message: "userRoutes.errors.updatePassword.paramsMissing" }),
+  newPassword: z.string({ error: "userRoutes.errors.updatePassword.passwordLong" }).min(8, { message: "userRoutes.errors.updatePassword.passwordLong" }),
 });
 
 // Zod schema for updateUserImage
 const userUpdateImageSchema = z.object({
-  userId: z.string({ error: "updateImage.invalidUserId" }).refine(isValidObjectId, { message: "updateImage.invalidUserId" }),
-  image: z.string({ error: "updateImage.invalidImageUrl" }).refine(isValidImageUrl, { message: "updateImage.invalidImageUrl" }),
+  userId: z.string({ error: "userRoutes.errors.updateImage.invalidUserId" }).refine(isValidObjectId, { message: "userRoutes.errors.updateImage.invalidUserId" }),
+  image: z.string({ error: "userRoutes.errors.updateImage.invalidImageUrl" }).refine(isValidImageUrl, { message: "userRoutes.errors.updateImage.invalidImageUrl" }),
 });
 
 const userUpdateDetailsSchema = z.object({
-  userId: z.string({ error: "others.invalidPUT" }).refine(isValidObjectId, { message: "others.invalidPUT" }),
+  userId: z.string({ error: "userRoutes.errors.invalidPUT" }).refine(isValidObjectId, { message: "userRoutes.errors.invalidPUT" }),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
-  birthday: z.string().refine(isValidDateFormat, { message: "others.invalidDateFormat" }).optional(),
-  email: z.string().refine(isValidEmail, { message: "others.invalidEmailFormat" }).optional(),
+  birthday: z.string().refine(isValidDateFormat, { message: "common.invalidDateFormat" }).optional(),
+  email: z.string().refine(isValidEmail, { message: "common.invalidEmailFormat" }).optional(),
   district: z.string().optional(),
   image: z.string().optional(),
-  phoneNumber: z.string().refine(isValidPhoneNumber, { message: "others.invalidPhoneFormat" }).optional(),
+  phoneNumber: z.string().refine(isValidPhoneNumber, { message: "common.invalidPhoneFormat" }).optional(),
 });
 
 const deleteUserByEmailSchema = z.object({
-  email: z.string().refine(isValidEmail, { message: "deleteAccount.invalidEmailFormat" }),
+  email: z.string().refine(isValidEmail, { message: "userRoutes.errors.deleteAccount.invalidEmailFormat" }),
 });
 
 module.exports = {

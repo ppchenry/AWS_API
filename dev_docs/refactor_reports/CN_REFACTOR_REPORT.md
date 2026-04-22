@@ -337,3 +337,105 @@ refresh 流程會：
 * 穩定性
 
 這不是最終架構，但它是通往最終架構前必要且正確的基礎。如果目標是在持續交付的同時保護業務，這份 2026-04-21 報告應被視為早期安全風險退場與工程複利累積，而非 cosmetic refactoring。
+
+---
+
+## 附錄（2026-04-22）— 語系與 errorKey 標準化
+
+在完成各 Lambda 的首輪重構後，整個 monorepo 針對 `errorKey` 與語系檔進行了全面標準化，涵蓋 17 個已重構的 Lambda 以及 `purchaseConfirmation`。這次整合為所有 API 錯誤與成功訊息建立了統一、可被機器讀取的格式。
+
+### 問題
+
+標準化前，每個 Lambda 的 `locales/*.json` 各自為政：
+
+* 有些使用扁平鍵名（例如 `"unauthorized"`、`"invalidJSON"`、`"petNotFound"`）。
+* 有些使用一層點記法（例如 `"phoneRegister.userExist"`、`"verification.codeExpired"`）。
+* 有些使用 `others.*` 命名空間混合特定網域葉節點（例如 `"others.unauthorized"`、`"updateImage.invalidUserId"`）。
+* `unauthorized`、`internalError`、`invalidJSON` 等跨切面的錯誤鍵值每個 Lambda 各自重複定義，沒有單一事實來源。
+* 英文與中文檔經常漂移 — 其中一個語系存在的鍵，另一個語系卻沒有。
+
+後果：前端與測試程式碼必須硬綁 Lambda-specific 的鍵格式、CloudWatch 過濾器依賴不一致的分類法，新增錯誤訊息時必須猜測應該放進哪個命名空間。
+
+### 統一格式（現已強制執行）
+
+每個 Lambda 的每個 `locales/<lang>.json` 皆遵循：
+
+```json
+{
+  "common": {
+    "unauthorized": "...",
+    "internalError": "...",
+    "invalidJSON": "...",
+    "missingParams": "...",
+    "rateLimited": "...",
+    "methodNotAllowed": "...",
+    "forbidden": "...",
+    "...": "..."
+  },
+  "<lambdaDomainCamel>": {
+    "errors":  { "<leaf>": "..." },
+    "success": { "<leaf>": "..." }
+  }
+}
+```
+
+* `common.<leaf>` — 所有 Lambda 自共用基準重新匯出的跨切面鍵。
+* `<lambdaDomainCamel>.errors.<leaf>` — 特定端點的錯誤訊息。
+* `<lambdaDomainCamel>.success.<leaf>` — 特定端點的成功訊息。
+
+`<lambdaDomainCamel>` 為 Lambda 資料夾名稱的 camelCase 形式：
+
+| Lambda 資料夾 | Domain 前綴 |
+| --- | --- |
+| `AuthRoute` | `authRoute` |
+| `CreatePetBasicInfo` | `createPetBasicInfo` |
+| `EmailVerification` | `emailVerification` |
+| `EyeUpload` | `eyeUpload` |
+| `GetAdoption` | `getAdoption` |
+| `GetAllPets` | `getAllPets` |
+| `OrderVerification` | `orderVerification` |
+| `PetBasicInfo` | `petBasicInfo` |
+| `PetBiometricRoutes` | `petBiometricRoutes` |
+| `PetDetailInfo` | `petDetailInfo` |
+| `PetInfoByPetNumber` | `petInfoByPetNumber` |
+| `PetLostandFound` | `petLostAndFound` |
+| `PetMedicalRecord` | `petMedicalRecord` |
+| `PetVaccineRecords` | `petVaccineRecords` |
+| `purchaseConfirmation` | `purchaseConfirmation` |
+| `SFExpressRoutes` | `sfExpressRoutes` |
+| `UserRoutes` | `userRoutes` |
+
+當網域本身有子資源時，允許在 `<domain>.errors` / `<domain>.success` 下再分組 — 例如 `petDetailInfo.errors.petAdoption.invalidDateFormat`、`petMedicalRecord.errors.bloodTest.notFound` 或 `userRoutes.errors.verification.codeExpired`。
+
+### 工具合約
+
+* `utils/response.js::createErrorResponse(statusCode, errorKey, event)` 回傳 `{ success: false, errorKey, error, requestId }`，其中 `errorKey` 為標準點記法路徑。
+* `utils/response.js::createSuccessResponse(statusCode, event, data)` 回傳 `{ success: true, message, ...data }`，其中 `message` 由同一標準路徑解析得到。
+* `utils/i18n.js::getTranslation(dict, "domain.group.leaf")` 走訪語系 JSON 樹，遇到缺鍵時優雅回退。
+
+`errorKey` 在所有語系下皆保持穩定 — 前端與測試應以 `errorKey` 作為分支依據，絕不應使用 `error`（本地化人類可讀文字）。
+
+### 遷移成果
+
+* 跨 `functions/**`、`shared/**`、`__tests__/**` 共修改 **217 個檔案**。
+* 差異量 **+2,281 / −2,355 行** — 淨減少，因為原本每個 Lambda 重複的跨切面扁平鍵，已收斂為共享的 `common.*` 區塊。
+* 對 `sam local start-api` 啟動的本機 API 跑完全部 20 個 Jest 套件（5 個單元測試 + 15 個整合測試）皆通過。
+* 在驗證過程中發現並修復兩個由遷移引入的 bug：
+  1. `functions/PetDetailInfo/src/middleware/ownership.js` 引用了先前重寫時遺留的未定義識別字 `callerNgoId`，已替換為 `event.ngoId`，恢復 `PetDetailInfo` 的 82 筆測試案例。
+  2. `__tests__/test-sms-service.test.js` 對 `verifySmsCode` 的新用戶與已驗證用戶流程仍然使用舊期望；已更新以對齊目前的服務行為（每次成功驗證都會 upsert `SmsVerificationCode`；尚未連結到帳戶的電話號碼會回傳 `isNewUser: true`）。
+* `__tests__/test-petmedicalrecord.test.js` 與 `__tests__/test-petvaccinerecords.test.js` 有兩個用例仍期望共享 pet-id 驗證錯誤使用舊的 `petDetailInfo.errors.*` 前綴；已更新為各自 Lambda 的前綴。
+
+### 文件連鎖更新（2026-04-22）
+
+同一波更新中，`dev_docs/api_docs/` 下所有 API 參考文件皆已改引用新的標準 `errorKey`：
+
+* `dev_docs/api_docs/README.md` 現已記錄 `common.*` / `<domain>.errors.*` / `<domain>.success.*` 格式並列出所有跨切面 `common.*` 鍵。
+* `ACCOUNT_API.md`、`AUTH_FLOW_API.md`、`MEDIA_UPLOAD_API.md`、`NGO_ADMIN_API.md`、`PET_ADOPTION_API.md`、`PET_BIOMETRICS_API.md`、`PET_DETAIL_INFO_API.md`、`PET_HEALTH_API.md`、`PET_LOST_FOUND_API.md`、`PET_PROFILE_API.md`、`PURCHASE_ORDER_API.md` 與 `SF_EXPRESS_API.md` 裡每個端點的錯誤表都已重寫，確保列出的每個 `errorKey` 都原樣存在於對應 Lambda 的 `locales/en.json`。
+
+### 為什麼這件事重要
+
+* **前端的確定性。** `unauthorized`、`internalError`、`rateLimited` 等錯誤現在有單一穩定鍵，前端只需實作一個全域攔截器，而不用為每個 API 客製化。
+* **測試衛生。** 整合斷言與 Lambda 實際輸出的鍵完全對齊，任何服務層回歸都會立刻在對應的測試套件裡曝光。
+* **可觀測性。** CloudWatch 的 `errorKey` 過濾器現已一致 — 一個 `errorKey=common.internalError` 過濾器就能抓到所有 Lambda 的 500。
+* **i18n 就緒。** 新增語系只是翻譯既有葉節點，不需要創造新的鍵路徑。
+* **貢獻者阻力。** 新增錯誤只需在兩個語系檔加兩行，並在 `createErrorResponse` 呼叫處引用 — 不再是設計決策。

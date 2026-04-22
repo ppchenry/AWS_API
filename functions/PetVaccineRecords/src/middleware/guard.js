@@ -16,7 +16,7 @@ async function validateUserRequest({ event }) {
     } catch {
       return {
         isValid: false,
-        error: createErrorResponse(400, "others.invalidJSON", event),
+        error: createErrorResponse(400, "common.invalidJSON", event),
       };
     }
   }
@@ -27,7 +27,7 @@ async function validateUserRequest({ event }) {
   ) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "others.missingParams", event),
+      error: createErrorResponse(400, "common.missingParams", event),
     };
   }
 
@@ -35,14 +35,14 @@ async function validateUserRequest({ event }) {
   if (!petID) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "missingPetId", event),
+      error: createErrorResponse(400, "petVaccineRecords.errors.missingPetId", event),
     };
   }
 
   if (!isValidObjectId(petID)) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "invalidPetIdFormat", event),
+      error: createErrorResponse(400, "petVaccineRecords.errors.invalidPetIdFormat", event),
     };
   }
 
@@ -52,14 +52,14 @@ async function validateUserRequest({ event }) {
     if (!recordId) {
       return {
         isValid: false,
-        error: createErrorResponse(400, "vaccineRecord.putMissingVaccineId", event),
+        error: createErrorResponse(400, "petVaccineRecords.errors.missingVaccineId", event),
       };
     }
 
     if (!isValidObjectId(recordId)) {
       return {
         isValid: false,
-        error: createErrorResponse(400, "vaccineRecord.invalidVaccineIdFormat", event),
+        error: createErrorResponse(400, "petVaccineRecords.errors.invalidVaccineIdFormat", event),
       };
     }
   }

@@ -17,7 +17,7 @@ async function printCloudWaybill({ event, body }) {
       identifier: getRateLimitKey(event),
     });
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     const parseResult = printCloudWaybillSchema.safeParse(body);
@@ -56,12 +56,12 @@ async function printCloudWaybill({ event, body }) {
     });
 
     if (apiResultData.success === false) {
-      return createErrorResponse(500, "sfExpress.errors.sfApiError", event);
+      return createErrorResponse(500, "sfExpressRoutes.errors.sfApiError", event);
     }
 
     const files = apiResultData.obj?.files || [];
     if (files.length === 0) {
-      return createErrorResponse(500, "sfExpress.errors.missingPrintFile", event);
+      return createErrorResponse(500, "sfExpressRoutes.errors.missingPrintFile", event);
     }
 
     const file = files[0];
@@ -82,9 +82,9 @@ async function printCloudWaybill({ event, body }) {
       error,
     });
 
-    const errorKey = error.message && error.message.includes("sfExpress.")
+    const errorKey = error.message && error.message.includes("sfExpressRoutes.")
       ? error.message
-      : "others.internalError";
+      : "common.internalError";
 
     return createErrorResponse(500, errorKey, event);
   }

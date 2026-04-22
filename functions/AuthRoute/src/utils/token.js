@@ -88,17 +88,17 @@ function readRefreshTokenFromEvent(event) {
     if (cookieMap.refreshToken) {
       return { token: cookieMap.refreshToken, errorKey: null };
     }
-    return { token: null, errorKey: "authRefresh.invalidRefreshTokenCookie" };
+    return { token: null, errorKey: "authRoute.errors.invalidRefreshTokenCookie" };
   }
 
   const cookieHeader = event.headers?.cookie || event.headers?.Cookie;
   if (!cookieHeader) {
-    return { token: null, errorKey: "authRefresh.missingRefreshToken" };
+    return { token: null, errorKey: "authRoute.errors.missingRefreshToken" };
   }
 
   const cookieMap = parseCookieString(cookieHeader);
   if (!cookieMap.refreshToken) {
-    return { token: null, errorKey: "authRefresh.invalidRefreshTokenCookie" };
+    return { token: null, errorKey: "authRoute.errors.invalidRefreshTokenCookie" };
   }
 
   return { token: cookieMap.refreshToken, errorKey: null };

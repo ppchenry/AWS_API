@@ -1,5 +1,5 @@
 {
-  "others": {
+  "common": {
     "internalError": "Internal Server Error",
     "invalidJSON": "Invalid JSON format",
     "invalidPathParam": "Invalid path parameter",

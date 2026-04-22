@@ -124,7 +124,7 @@ Every Lambda must implement the same lifecycle stages, but there is one allowed 
 
 8. Catch-all
    → logError("Unhandled request error", { scope, event, error })
-   → return createErrorResponse(500, "others.internalError", event)
+   → return createErrorResponse(500, "common.internalError", event)
 ```
 
 ---
@@ -149,7 +149,7 @@ Must not contain any business logic, routing, or imports beyond the handler dele
 - Never put JWT bypass logic here. It belongs in `authJWT.js`.
 - If the Lambda's guard only performs JSON parse, empty-body validation, cheap RBAC, and ObjectId format checks, run the guard before opening the DB connection so malformed requests fail without touching MongoDB.
 - If ownership validation requires fetching a DB document first, do not force that lookup into the handler-level guard just to satisfy a rigid stage order.
-- The `try/catch` at the outer level must log with `logError` and return `createErrorResponse(500, "others.internalError", event)`.
+- The `try/catch` at the outer level must log with `logError` and return `createErrorResponse(500, "common.internalError", event)`.
 - Always set `context.callbackWaitsForEmptyEventLoop = false`.
 - Always copy `context.awsRequestId` onto `event.awsRequestId` before any middleware runs.
 
@@ -170,9 +170,9 @@ Exact behavioral contract from UserRoutes:
 
 - Skip verification for `OPTIONS` — return `null` immediately.
 - If `JWT_BYPASS === "true"` AND `NODE_ENV !== "production"`: attach a dev identity and return `null`. Log `logWarn` when bypass is active. Never allow bypass in production.
-- Extract `Authorization` or `authorization` header. Require `Bearer ` prefix. Return `createErrorResponse(401, "others.unauthorized", event)` if missing or malformed.
+- Extract `Authorization` or `authorization` header. Require `Bearer ` prefix. Return `createErrorResponse(401, "common.unauthorized", event)` if missing or malformed.
 - Call `jwt.verify(token, process.env.JWT_SECRET)` with `algorithms: ["HS256"]` explicitly to block `alg:none` attacks. Return 401 on any thrown error including expiry.
-- If `JWT_SECRET` is missing from env, log `logError` and return `createErrorResponse(500, "others.internalError", event)`.
+- If `JWT_SECRET` is missing from env, log `logError` and return `createErrorResponse(500, "common.internalError", event)`.
 - Call `_attachUserToEvent(event, decoded)` on success. At minimum set:
   - `event.user = decoded`
   - `event.userId = decoded.userId || decoded.sub`
@@ -232,13 +232,13 @@ const connectToMongoDB = async () => {
 
 Implement in this order:
 
-1. **JSON body parse**: if body is a non-empty string, `JSON.parse()`. On `SyntaxError`, return `createErrorResponse(400, "others.invalidJSON", event)`.
-2. **Empty body check**: if `PUT` or `POST` and `parsedBody` is null or has no keys, return `createErrorResponse(400, "others.missingParams", event)`. Apply only to routes that actually require a body.
+1. **JSON body parse**: if body is a non-empty string, `JSON.parse()`. On `SyntaxError`, return `createErrorResponse(400, "common.invalidJSON", event)`.
+2. **Empty body check**: if `PUT` or `POST` and `parsedBody` is null or has no keys, return `createErrorResponse(400, "common.missingParams", event)`. Apply only to routes that actually require a body.
 3. **Ownership/self-access check** _(include only if Lambda has ownership-based routes and the check is DB-free)_: invoke the ownership check here only when it compares JWT identity against path/body fields already present on the event. Return 403 on mismatch. If the check requires loading a DB resource first, perform it later through `selfAccess.js` or a service-start helper after the DB connection is ready.
 4. **RBAC check** _(include only if Lambda has role-restricted routes)_: define a `Set` of exact `event.resource` strings per role tier. Return 403 when the caller's role is insufficient. Omit this step if all authenticated routes are accessible to any valid caller.
 5. **Path parameter validation** _(include only if Lambda uses ObjectId path params)_: validate that path ObjectId params are well-formed before the service is reached. Return 400 on invalid format. Use `mongoose.isValidObjectId()`.
 
-Preserve the Lambda's existing `errorKey` contract when applying these checks. If the Lambda already exposes domain-scoped keys such as `petBasicInfo.errors.invalidJSON`, do not force-migrate them to shared `others.*` keys in the same refactor pass unless contract change is explicitly approved.
+Preserve the Lambda's existing `errorKey` contract when applying these checks. Cross-cutting keys live under the shared `common.*` namespace (`common.invalidJSON`, `common.missingParams`, `common.internalError`, `common.unauthorized`, `common.forbidden`, `common.rateLimited`, `common.methodNotAllowed`, `common.originNotAllowed`, `common.invalidPathParam`, `common.invalidObjectId`, `common.selfAccessDenied`, `common.serviceUnavailable`). Domain-scoped keys live under `<lambdaDomainCamel>.errors.*` and `<lambdaDomainCamel>.success.*` — see `dev_docs/refactor_reports/EN_REFACTOR_REPORT.md` addendum (2026-04-22) for the full scheme.
 
 ---
 
@@ -276,7 +276,7 @@ async function routeRequest(routeContext) {
   const routeAction = routes[routeKey];
 
   if (!routeAction) {
-    return createErrorResponse(405, "others.methodNotAllowed", event);
+    return createErrorResponse(405, "common.methodNotAllowed", event);
   }
   return await routeAction(routeContext);
 }
@@ -297,7 +297,7 @@ Each service function receives `{ event, body }` and must follow this internal o
 1. **Rate limiting** (on public or sensitive routes):
    ```js
    const rateLimit = await enforceRateLimit({ event, action: "login", limit: 5, windowSec: 300 });
-   if (!rateLimit.allowed) return createErrorResponse(429, "others.rateLimited", event);
+   if (!rateLimit.allowed) return createErrorResponse(429, "common.rateLimited", event);
    ```
 
 2. **Zod validation**:
@@ -322,7 +322,7 @@ Each service function receives `{ event, body }` and must follow this internal o
    return createSuccessResponse(200, event, { result: sanitize{Entity}(entity) });
    ```
 
-8. **Catch block**: log `logError` with scope, event, and error. Return `createErrorResponse(500, "others.internalError", event)`.
+8. **Catch block**: log `logError` with scope, event, and error. Return `createErrorResponse(500, "common.internalError", event)`.
 
 Do not hardcode role values in service logic. Role checks belong in `guard.js`.
 
@@ -440,7 +440,7 @@ Never call `error.errors` anywhere in the codebase.
   ```js
   z.string({ error: "register.errors.firstNameRequired" }).min(1, "register.errors.firstNameRequired")
   ```
-- Preserve the Lambda's existing error-key taxonomy unless a cross-Lambda standardization change is explicitly approved. Refactoring is not the time to rename public `errorKey` values casually.
+- Error-key taxonomy is now standardized across all refactored Lambdas: cross-cutting keys under `common.*`, domain keys under `<lambdaDomainCamel>.errors.*` and `<lambdaDomainCamel>.success.*`. See `dev_docs/refactor_reports/EN_REFACTOR_REPORT.md` addendum (2026-04-22). New Lambdas must follow this scheme; new keys in existing Lambdas must be placed in the correct namespace.
 - Strip unknown fields with `.strict()` or explicit `.omit()` or simply by only reading from `parseResult.data`. Never read from the original `body` after a successful parse.
 - Role, deleted, and other internal fields must never appear in any schema that clients can submit. Drop them at the schema boundary.
 - `envSchema.js` lives here, not in `config/`. It is a schema definition, not config.
@@ -515,7 +515,7 @@ All 19 findings from the UserRoutes security audit must be verified as addressed
 ### Medium Severity (must close before production)
 
 - [ ] **M14 — No rate limiting on public flows**: apply `enforceRateLimit` on registration, login, password reset, SMS code generation, and SMS verification. Set appropriate limits and windows per action.
-- [ ] **M15 — Raw error messages leak to clients**: catch blocks must call `logError` and return `createErrorResponse(500, "others.internalError", event)`. Never return `error.message` or stack traces.
+- [ ] **M15 — Raw error messages leak to clients**: catch blocks must call `logError` and return `createErrorResponse(500, "common.internalError", event)`. Never return `error.message` or stack traces.
 - [ ] **M16 — Inconsistent status codes and response shape**: all responses must use `createErrorResponse` or `createSuccessResponse`. All error responses must include `success: false`, `errorKey`, `error`, `requestId`.
 - [ ] **M17 — Delete without consistent token revocation**: soft-delete and token revocation must happen atomically. Use `Promise.all([softDelete, revokeTokens])`.
 
@@ -585,7 +585,7 @@ Each module must have a single purpose. The test for this is: can you name what 
 ### Naming Conventions
 
 - Route key strings: `"${HTTP_METHOD} ${event.resource}"` — all caps method, exact resource template.
-- Error keys: `"domain.errorType"` dot notation, all lowercase, matches locale JSON path.
+- Error keys: dot-notation path into `locales/<lang>.json`. Cross-cutting keys live under `common.*` (e.g. `common.internalError`, `common.unauthorized`). Domain-specific keys live under `<lambdaDomainCamel>.errors.*` and `<lambdaDomainCamel>.success.*`. See `dev_docs/refactor_reports/EN_REFACTOR_REPORT.md` addendum (2026-04-22).
 - Scope strings in logs: `"module.functionName"` — matches file and exported function name.
 - Policy map keys in `selfAccess.js`: same format as route keys.
 - RBAC sets in `guard.js`: `SCREAMING_SNAKE_CASE` const names (`NGO_ONLY_RESOURCES`, `ADMIN_ONLY_RESOURCES`).
@@ -602,7 +602,7 @@ Each module must have a single purpose. The test for this is: can you name what 
 ### Error Handling Rules
 
 1. Every service function must have a top-level `try/catch`.
-2. The catch block must: call `logError` with scope, event, and the caught error; return `createErrorResponse(500, "others.internalError", event)`. Never rethrow from a service.
+2. The catch block must: call `logError` with scope, event, and the caught error; return `createErrorResponse(500, "common.internalError", event)`. Never rethrow from a service.
 3. Validation errors must return 400 before reaching the catch block.
 4. Resource-not-found cases must return 404, not 500.
 5. Conflict cases (duplicate email, duplicate ID) must return 409, not 500.
@@ -755,7 +755,7 @@ Refactor the target Lambda to the UserRoutes standard defined in dev_docs/REFACT
 
 Implement the Canonical Request Lifecycle with the correct stage separation: OPTIONS → authJWT → cheap guard → DB → router → service, with DB-backed ownership checks allowed at service start when they require a fetched resource.
 
-Apply the module patterns from REFACTOR_CHECKLIST.md at the right scope: thin index.js, handler orchestration, explicit router (if multi-route), lazyRoute dispatch, Zod validation with locale dot-key error messages, structured JSON logging, createErrorResponse/createSuccessResponse for all responses, singleton DB connection with maxPoolSize:1, env Zod validation at startup. Preserve existing public `errorKey` values unless a contract change is explicitly approved. Include enforceRateLimit only if the Lambda has public or sensitive write flows. Include sanitize{Entity}() on any endpoint returning DB documents. Include selfAccess.js, token.js, and duplicateCheck.js only if the Lambda actually needs them.
+Apply the module patterns from REFACTOR_CHECKLIST.md at the right scope: thin index.js, handler orchestration, explicit router (if multi-route), lazyRoute dispatch, Zod validation with locale dot-key error messages, structured JSON logging, createErrorResponse/createSuccessResponse for all responses, singleton DB connection with maxPoolSize:1, env Zod validation at startup. Use the standardized locale scheme: `common.*` for cross-cutting keys, `<lambdaDomainCamel>.errors.*` / `<lambdaDomainCamel>.success.*` for domain keys (see `dev_docs/refactor_reports/EN_REFACTOR_REPORT.md` addendum). Include enforceRateLimit only if the Lambda has public or sensitive write flows. Include sanitize{Entity}() on any endpoint returning DB documents. Include selfAccess.js, token.js, and duplicateCheck.js only if the Lambda actually needs them.
 
 Address all 20 security checklist items. Classify each as FIXED, NOT APPLICABLE, or DEFERRED(code-owned|infra-owned).
 

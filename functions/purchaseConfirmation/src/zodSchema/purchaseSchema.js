@@ -6,45 +6,45 @@ const { z } = require("zod");
  */
 const purchaseConfirmationSchema = z.object({
   lastName: z
-    .string({ error: "purchase.errors.missingRequiredFields" })
-    .min(1, "purchase.errors.missingRequiredFields"),
+    .string({ error: "purchaseConfirmation.errors.purchase.missingRequiredFields" })
+    .min(1, "purchaseConfirmation.errors.purchase.missingRequiredFields"),
   email: z
-    .string({ error: "purchase.errors.missingRequiredFields" })
-    .min(1, "purchase.errors.missingRequiredFields")
-    .email("purchase.errors.invalidEmail"),
+    .string({ error: "purchaseConfirmation.errors.purchase.missingRequiredFields" })
+    .min(1, "purchaseConfirmation.errors.purchase.missingRequiredFields")
+    .email("purchaseConfirmation.errors.purchase.invalidEmail"),
   address: z
-    .string({ error: "purchase.errors.missingRequiredFields" })
-    .min(1, "purchase.errors.missingRequiredFields"),
+    .string({ error: "purchaseConfirmation.errors.purchase.missingRequiredFields" })
+    .min(1, "purchaseConfirmation.errors.purchase.missingRequiredFields"),
   option: z
-    .string({ error: "purchase.errors.missingRequiredFields" })
-    .min(1, "purchase.errors.missingRequiredFields")
-    .max(64, "purchase.errors.invalidOption")
-    .regex(/^[a-zA-Z0-9_-]+$/, "purchase.errors.invalidOption"),
+    .string({ error: "purchaseConfirmation.errors.purchase.missingRequiredFields" })
+    .min(1, "purchaseConfirmation.errors.purchase.missingRequiredFields")
+    .max(64, "purchaseConfirmation.errors.purchase.invalidOption")
+    .regex(/^[a-zA-Z0-9_-]+$/, "purchaseConfirmation.errors.purchase.invalidOption"),
   tempId: z
-    .string({ error: "purchase.errors.missingRequiredFields" })
-    .min(1, "purchase.errors.missingRequiredFields")
-    .max(64, "purchase.errors.invalidTempId")
-    .regex(/^[a-zA-Z0-9_-]+$/, "purchase.errors.invalidTempId"),
+    .string({ error: "purchaseConfirmation.errors.purchase.missingRequiredFields" })
+    .min(1, "purchaseConfirmation.errors.purchase.missingRequiredFields")
+    .max(64, "purchaseConfirmation.errors.purchase.invalidTempId")
+    .regex(/^[a-zA-Z0-9_-]+$/, "purchaseConfirmation.errors.purchase.invalidTempId"),
   paymentWay: z
-    .string({ error: "purchase.errors.missingRequiredFields" })
-    .min(1, "purchase.errors.missingRequiredFields")
+    .string({ error: "purchaseConfirmation.errors.purchase.missingRequiredFields" })
+    .min(1, "purchaseConfirmation.errors.purchase.missingRequiredFields")
     .max(128),
   delivery: z
-    .string({ error: "purchase.errors.missingRequiredFields" })
-    .min(1, "purchase.errors.missingRequiredFields")
+    .string({ error: "purchaseConfirmation.errors.purchase.missingRequiredFields" })
+    .min(1, "purchaseConfirmation.errors.purchase.missingRequiredFields")
     .max(128),
   petName: z
-    .string({ error: "purchase.errors.missingRequiredFields" })
-    .min(1, "purchase.errors.missingRequiredFields"),
+    .string({ error: "purchaseConfirmation.errors.purchase.missingRequiredFields" })
+    .min(1, "purchaseConfirmation.errors.purchase.missingRequiredFields"),
   // Optional fields
   phoneNumber: z
     .string()
-    .min(1, "purchase.errors.missingPhoneNumber")
-    .regex(/^\d{7,15}$/, "purchase.errors.invalidPhone"),
+    .min(1, "purchaseConfirmation.errors.purchase.missingPhoneNumber")
+    .regex(/^\d{7,15}$/, "purchaseConfirmation.errors.purchase.invalidPhone"),
   type: z.string().max(64).optional().default(""),
   shopCode: z
-    .string({ error: "purchase.errors.invalidShopCode" })
-    .min(1, "purchase.errors.invalidShopCode")
+    .string({ error: "purchaseConfirmation.errors.purchase.invalidShopCode" })
+    .min(1, "purchaseConfirmation.errors.purchase.invalidShopCode")
     .max(64),
   promotionCode: z.string().max(64).optional().default(""),
   petContact: z.string().optional().default(""),

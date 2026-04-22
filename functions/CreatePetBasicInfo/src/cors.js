@@ -40,7 +40,7 @@ function handleOptions(event) {
       },
       body: JSON.stringify({
         success: false,
-        errorKey: "others.originNotAllowed",
+        errorKey: "common.originNotAllowed",
         error: "Origin not allowed",
         ...(event.awsRequestId ? { requestId: event.awsRequestId } : {}),
       }),

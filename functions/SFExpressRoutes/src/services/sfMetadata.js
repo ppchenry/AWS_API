@@ -25,7 +25,7 @@ async function getToken({ event }) {
       identifier: getRateLimitKey(event),
     });
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     const configError = getConfigError(event, "services.sfMetadata.getToken", ["SF_ADDRESS_API_KEY"]);
@@ -41,7 +41,7 @@ async function getToken({ event }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -55,7 +55,7 @@ async function getArea({ event, body }) {
       identifier: getRateLimitKey(event),
     });
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     const parseResult = getAreaSchema.safeParse(body);
@@ -73,7 +73,7 @@ async function getArea({ event, body }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -87,7 +87,7 @@ async function getNetCode({ event, body }) {
       identifier: getRateLimitKey(event),
     });
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     const parseResult = getNetCodeSchema.safeParse(body);
@@ -105,7 +105,7 @@ async function getNetCode({ event, body }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -119,7 +119,7 @@ async function getPickupLocations({ event, body }) {
       identifier: getRateLimitKey(event),
     });
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     const parseResult = getPickupLocationsSchema.safeParse(body);
@@ -137,7 +137,7 @@ async function getPickupLocations({ event, body }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

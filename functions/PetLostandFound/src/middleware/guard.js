@@ -36,7 +36,7 @@ async function validateRequest({ event }) {
     } catch {
       return {
         isValid: false,
-        error: createErrorResponse(400, "others.invalidJSON", event),
+        error: createErrorResponse(400, "common.invalidJSON", event),
       };
     }
   }
@@ -49,7 +49,7 @@ async function validateRequest({ event }) {
   ) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "others.missingParams", event),
+      error: createErrorResponse(400, "common.missingParams", event),
     };
   }
 
@@ -59,7 +59,7 @@ async function validateRequest({ event }) {
     if (pathUserId && event.userId && event.userId !== pathUserId) {
       return {
         isValid: false,
-        error: createErrorResponse(403, "others.selfAccessDenied", event),
+        error: createErrorResponse(403, "common.selfAccessDenied", event),
       };
     }
   }
@@ -69,7 +69,7 @@ async function validateRequest({ event }) {
   if (userId && !isValidObjectId(userId)) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "others.invalidPathParam", event),
+      error: createErrorResponse(400, "common.invalidPathParam", event),
     };
   }
 
@@ -77,7 +77,7 @@ async function validateRequest({ event }) {
   if (petLostID && !isValidObjectId(petLostID)) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "others.invalidPathParam", event),
+      error: createErrorResponse(400, "common.invalidPathParam", event),
     };
   }
 
@@ -85,7 +85,7 @@ async function validateRequest({ event }) {
   if (petFoundID && !isValidObjectId(petFoundID)) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "others.invalidPathParam", event),
+      error: createErrorResponse(400, "common.invalidPathParam", event),
     };
   }
 
@@ -93,7 +93,7 @@ async function validateRequest({ event }) {
   if (notificationId && !isValidObjectId(notificationId)) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "others.invalidPathParam", event),
+      error: createErrorResponse(400, "common.invalidPathParam", event),
     };
   }
 

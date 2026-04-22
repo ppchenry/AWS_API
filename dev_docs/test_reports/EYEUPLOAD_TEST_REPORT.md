@@ -18,7 +18,7 @@ Tests were executed as end-to-end integration tests against a live SAM local env
 Current status:
 
 - All six active routes are covered across auth, validation, happy-path upload, ownership, and rate-limit behavior.
-- Legacy dead routes remain explicitly mapped to `405 others.methodNotAllowed`.
+- Legacy dead routes remain explicitly mapped to `405 common.methodNotAllowed`.
 - Strict Zod validation is now consistently enforced across create, update, and breed-analysis flows.
 - File upload and folder allowlist protections are covered with integration tests.
 
@@ -53,43 +53,43 @@ Current status:
 
 #### Fixture-backed ownership checks (verified)
 
-- Stranger updates fixture pet → `403 eyeUpload.forbidden`
+- Stranger updates fixture pet → `403 eyeUpload.errors.forbidden`
 - Fixture owner updates fixture pet → `200`
-- Stranger runs eye-upload analysis on fixture pet → `403 eyeUpload.forbidden`
-- Fixture owner on eye-upload with missing input → `400 eyeUpload.missingArguments`
+- Stranger runs eye-upload analysis on fixture pet → `403 eyeUpload.errors.forbidden`
+- Fixture owner on eye-upload with missing input → `400 eyeUpload.errors.missingArguments`
 
 #### Input validation — 400 responses (verified)
 
-- Invalid ObjectId in eye-upload path → `400 eyeUpload.invalidObjectId`
-- Malformed JSON body on breed analysis → `400 others.invalidJSON`
-- Empty JSON body on breed analysis → `400 others.missingParams`
+- Invalid ObjectId in eye-upload path → `400 eyeUpload.errors.invalidObjectId`
+- Malformed JSON body on breed analysis → `400 common.invalidJSON`
+- Empty JSON body on breed analysis → `400 common.missingParams`
 - Missing or empty `species` → `400 eyeUpload.speciesRequired`
 - Missing `url` → `400 eyeUpload.urlRequired`
 - Invalid URL format → `400 eyeUpload.invalidUrl`
-- Unknown fields rejected by strict Zod schemas across create, update, and breed routes → `400 eyeUpload.unknownField`
+- Unknown fields rejected by strict Zod schemas across create, update, and breed routes → `400 eyeUpload.errors.unknownField`
 - Missing required `name`, `animal`, or `sex` on create → `400`
-- Malformed or non-integer `removedIndices` on update → `400 eyeUpload.invalidRemovedIndices`
-- Missing image and `image_url` on eye-upload → `400 eyeUpload.missingArguments`
-- Unsupported image type on eye-upload → `400 eyeUpload.unsupportedFormat`
-- Empty folder or disallowed folder in uploadPetBreedImage → `400 eyeUpload.invalidFolder`
+- Malformed or non-integer `removedIndices` on update → `400 eyeUpload.errors.invalidRemovedIndices`
+- Missing image and `image_url` on eye-upload → `400 eyeUpload.errors.missingArguments`
+- Unsupported image type on eye-upload → `400 eyeUpload.errors.unsupportedFormat`
+- Empty folder or disallowed folder in uploadPetBreedImage → `400 eyeUpload.errors.invalidFolder`
 - No files uploaded where required → `400 eyeUpload.noFilesUploaded`
-- More than one file on `/util/uploadImage` → `400 eyeUpload.tooManyFiles`
-- Invalid image content type for upload routes → `400 eyeUpload.invalidImageFormat`
+- More than one file on `/util/uploadImage` → `400 eyeUpload.errors.tooManyFiles`
+- Invalid image content type for upload routes → `400 eyeUpload.errors.invalidImageFormat`
 
 #### 401 / 403 / 404 / 413 / 429 behaviour (verified)
 
-- No auth header → `401 others.unauthorized`
-- Expired / tampered / malformed / `alg:none` JWTs → `401 others.unauthorized`
-- User not found on create and eye-upload routes → `404 eyeUpload.userNotFound`
-- Pet not found on update and eye-upload routes → `404 eyeUpload.petNotFound`
-- Ownership violations on update and eye-upload routes → `403 eyeUpload.forbidden`
-- NGO authorization failures on create / update → `403 eyeUpload.ngoRoleRequired`, `403 eyeUpload.ngoIdClaimRequired`, or `403 eyeUpload.forbidden`
-- Zero-byte eye-upload file → `413 eyeUpload.fileTooSmall` or, under some SAM-local multipart parsing behavior, `400 eyeUpload.missingArguments`
-- All six active routes enforce Mongo-backed rate limits and return `429 eyeUpload.rateLimited`
+- No auth header → `401 common.unauthorized`
+- Expired / tampered / malformed / `alg:none` JWTs → `401 common.unauthorized`
+- User not found on create and eye-upload routes → `404 eyeUpload.errors.userNotFound`
+- Pet not found on update and eye-upload routes → `404 eyeUpload.errors.petNotFound`
+- Ownership violations on update and eye-upload routes → `403 eyeUpload.errors.forbidden`
+- NGO authorization failures on create / update → `403 eyeUpload.ngoRoleRequired`, `403 eyeUpload.ngoIdClaimRequired`, or `403 eyeUpload.errors.forbidden`
+- Zero-byte eye-upload file → `413 eyeUpload.fileTooSmall` or, under some SAM-local multipart parsing behavior, `400 eyeUpload.errors.missingArguments`
+- All six active routes enforce Mongo-backed rate limits and return `429 common.rateLimited`
 
 #### Dead routes (verified)
 
-The EyeUpload router explicitly maps these legacy routes to `405 others.methodNotAllowed`:
+The EyeUpload router explicitly maps these legacy routes to `405 common.methodNotAllowed`:
 
 - `PUT /pets/updatePetEye`
 - `GET /pets/gets3Image`
@@ -106,7 +106,7 @@ All EyeUpload errors follow the standard shape:
 ```json
 {
   "success": false,
-  "errorKey": "eyeUpload.petNotFound",
+  "errorKey": "eyeUpload.errors.petNotFound",
   "error": "Pet not found",
   "requestId": "aws-request-id"
 }
@@ -132,21 +132,21 @@ AWS Console -> CloudWatch -> Log Groups -> /aws/lambda/EyeUpload
 
 | errorKey | Meaning |
 | --- | --- |
-| `others.unauthorized` | Missing or invalid JWT |
-| `others.invalidJSON` | Malformed JSON body |
-| `others.missingParams` | Empty JSON body |
-| `others.methodNotAllowed` | Legacy dead route |
-| `eyeUpload.invalidObjectId` | Invalid ObjectId input |
-| `eyeUpload.userNotFound` | JWT user record missing or soft-deleted |
-| `eyeUpload.petNotFound` | Pet record missing or soft-deleted |
-| `eyeUpload.forbidden` | Ownership or authorization failure |
-| `eyeUpload.missingArguments` | Missing multipart image input |
-| `eyeUpload.unsupportedFormat` | Unsupported eye-analysis image type |
-| `eyeUpload.invalidImageFormat` | Unsupported upload image type |
-| `eyeUpload.tooManyFiles` | More than one file sent to `/util/uploadImage` |
-| `eyeUpload.invalidFolder` | Invalid uploadPetBreedImage folder path |
-| `eyeUpload.invalidRemovedIndices` | Malformed removedIndices payload |
-| `eyeUpload.rateLimited` | Write / upload rate limit exceeded |
+| `common.unauthorized` | Missing or invalid JWT |
+| `common.invalidJSON` | Malformed JSON body |
+| `common.missingParams` | Empty JSON body |
+| `common.methodNotAllowed` | Legacy dead route |
+| `eyeUpload.errors.invalidObjectId` | Invalid ObjectId input |
+| `eyeUpload.errors.userNotFound` | JWT user record missing or soft-deleted |
+| `eyeUpload.errors.petNotFound` | Pet record missing or soft-deleted |
+| `eyeUpload.errors.forbidden` | Ownership or authorization failure |
+| `eyeUpload.errors.missingArguments` | Missing multipart image input |
+| `eyeUpload.errors.unsupportedFormat` | Unsupported eye-analysis image type |
+| `eyeUpload.errors.invalidImageFormat` | Unsupported upload image type |
+| `eyeUpload.errors.tooManyFiles` | More than one file sent to `/util/uploadImage` |
+| `eyeUpload.errors.invalidFolder` | Invalid uploadPetBreedImage folder path |
+| `eyeUpload.errors.invalidRemovedIndices` | Malformed removedIndices payload |
+| `common.rateLimited` | Write / upload rate limit exceeded |
 
 ---
 
@@ -159,7 +159,7 @@ AWS Console -> CloudWatch -> Log Groups -> /aws/lambda/EyeUpload
 | Cross-owner pet update | `loadAuthorizedPet` enforces owner / NGO ownership | ✅ Asserted |
 | Cross-owner eye analysis | `loadAuthorizedPet` enforces owner / NGO ownership | ✅ Asserted |
 | Client-supplied `userId` mass-assignment | Strict schemas reject `userId` in create flow; eye analysis uses JWT identity only | ✅ Asserted |
-| Unknown field mass-assignment | Schema-level allowlist validation rejects extra fields with `eyeUpload.unknownField` before DB writes | ✅ Asserted |
+| Unknown field mass-assignment | Schema-level allowlist validation rejects extra fields with `eyeUpload.errors.unknownField` before DB writes | ✅ Asserted |
 | Invalid JSON body | Guard rejects malformed JSON before service execution | ✅ Asserted |
 | Folder traversal / arbitrary key injection | uploadPetBreedImage uses allowlisted top-level prefixes and rejects `.` / `..` segments | ✅ Asserted |
 | Upload validation mismatch | `/util/uploadImage` validates the actual uploaded file and restricts requests to one file | ✅ Asserted |

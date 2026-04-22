@@ -1,14 +1,23 @@
 const { corsHeaders } = require("../cors");
 const { getTranslation, loadTranslations } = require("./i18n");
+const { logWarn } = require("./logger");
 
 /**
  * Builds a standardised error response with CORS headers, translated error message, and requestId.
  * @param {number} statusCode - HTTP status code
- * @param {string} error - Dot-separated error key (e.g. 'others.unauthorized')
+ * @param {string} error - Dot-separated error key (e.g. 'common.unauthorized')
  * @param {object} event - API Gateway event
  * @returns {object} API Gateway-compatible response object
  */
 const createErrorResponse = (statusCode, error, event) => {
+  if (statusCode >= 400 && statusCode < 500) {
+    logWarn("Expected client error response", {
+      scope: "utils.response.createErrorResponse",
+      event,
+      extra: { statusCode, errorKey: error },
+    });
+  }
+
   const defaultHeaders = {
     "Content-Type": "application/json",
     ...corsHeaders(event),

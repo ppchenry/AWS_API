@@ -7,7 +7,7 @@ const sourceCreateSchema = z.object({
   causeOfInjury: z.string().optional(),
 }).refine(
   (data) => data.placeofOrigin || data.channel,
-  { message: "petSource.missingRequiredFields" }
+  { message: "petDetailInfo.errors.petSource.missingRequiredFields" }
 );
 
 const sourceUpdateSchema = z.object({

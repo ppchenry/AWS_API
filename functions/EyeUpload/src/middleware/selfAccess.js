@@ -30,7 +30,7 @@ function checkPetOwnership({ event, pet }) {
 
   return {
     isValid: false,
-    error: createErrorResponse(403, "eyeUpload.forbidden", event),
+    error: createErrorResponse(403, "eyeUpload.errors.forbidden", event),
   };
 }
 
@@ -62,7 +62,7 @@ async function loadAuthorizedPet({ event, petId, options = {} }) {
   if (!pet) {
     return {
       isValid: false,
-      error: createErrorResponse(404, "eyeUpload.petNotFound", event),
+      error: createErrorResponse(404, "eyeUpload.errors.petNotFound", event),
     };
   }
 

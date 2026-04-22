@@ -32,7 +32,7 @@ async function getOrderVerifications({ event }) {
     });
   } catch (error) {
     logError("getOrderVerifications failed", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -56,10 +56,10 @@ async function deleteOrderVerification({ event }) {
     ).lean();
 
     if (!existing) {
-      return createErrorResponse(404, "purchase.errors.orderVerificationNotFound", event);
+      return createErrorResponse(404, "purchaseConfirmation.errors.purchase.orderVerificationNotFound", event);
     }
     if (existing.cancelled) {
-      return createErrorResponse(409, "purchase.errors.alreadyCancelled", event);
+      return createErrorResponse(409, "purchaseConfirmation.errors.purchase.alreadyCancelled", event);
     }
 
     await OrderVerification.updateOne(
@@ -79,7 +79,7 @@ async function deleteOrderVerification({ event }) {
     });
   } catch (error) {
     logError("deleteOrderVerification failed", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

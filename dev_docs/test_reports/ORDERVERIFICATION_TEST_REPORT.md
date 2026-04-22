@@ -21,10 +21,10 @@ Current status:
 - Both update routes now assert persisted DB changes, including normalized phone fields and stored `verifyDate`.
 - The tag read flow verifies sanitized output by ensuring `discountProof` is not leaked.
 - The frozen `DELETE /v2/orderVerification/{tagId}` route is verified to return `405`.
-- Handler-level failure coverage proves `others.internalError` responses include `requestId` and emit structured JSON logs.
+- Handler-level failure coverage proves `common.internalError` responses include `requestId` and emit structured JSON logs.
 - DB-backed tests no longer false-pass on early return when MongoDB setup fails; a configured but unreachable DB now fails the suite.
 - WhatsApp notification dispatch is only tested for graceful non-dispatch in this routine suite (`notificationDispatched: false` when the test environment does not provide the outbound token). Live provider delivery is not exercised here.
-- `functions/OrderVerification/API.md` and `functions/OrderVerification/CHANGELOG.md` have been reconciled with the tested route map, request bodies, ownership/RBAC behavior, sanitized response shape, notification behavior, and stable error keys.
+- `dev_docs/api_docs/PURCHASE_ORDER_API.md` and `functions/OrderVerification/CHANGELOG.md` have been reconciled with the tested route map, request bodies, ownership/RBAC behavior, sanitized response shape, notification behavior, and stable error keys.
 
 ### 1.1 Endpoint Coverage
 
@@ -91,7 +91,7 @@ Current status:
 #### Traceability and failure handling
 
 - Standard error response shape includes `success`, `errorKey`, `error`, and `requestId`
-- Injected handler failure returns `500 others.internalError` with `requestId`
+- Injected handler failure returns `500 common.internalError` with `requestId`
 - Structured JSON error log is emitted with handler scope, API Gateway request ID, Lambda request ID, and serialized error message
 
 ---
@@ -134,7 +134,7 @@ if (!data.success) {
 
   if (data.errorKey === "orderVerification.errors.invalidDate") {
     highlightVerifyDateField();
-  } else if (data.errorKey === "others.unauthorized") {
+  } else if (data.errorKey === "common.unauthorized") {
     redirectToLogin();
   }
 }
@@ -153,13 +153,13 @@ The current OrderVerification locale bundle defines the following error keys and
 
 | errorKey | Default message (en) |
 | --- | --- |
-| `others.internalError` | Internal server error |
-| `others.methodNotAllowed` | Method not allowed |
-| `others.invalidJSON` | Invalid JSON body |
-| `others.missingParams` | Required parameters are missing |
-| `others.unauthorized` | Unauthorized |
-| `others.originNotAllowed` | Origin not allowed |
-| `others.invalidInput` | Invalid input |
+| `common.internalError` | Internal server error |
+| `common.methodNotAllowed` | Method not allowed |
+| `common.invalidJSON` | Invalid JSON body |
+| `common.missingParams` | Required parameters are missing |
+| `common.unauthorized` | Unauthorized |
+| `common.originNotAllowed` | Origin not allowed |
+| `common.invalidInput` | Invalid input |
 | `orderVerification.errors.missingOrderId` | orderId is required |
 | `orderVerification.errors.missingTagId` | tagId is required |
 | `orderVerification.errors.missingTempId` | tempId is required |
@@ -187,16 +187,16 @@ The current OrderVerification locale bundle defines the following error keys and
 
 | Attack / Risk | Mitigation | Verified |
 | --- | --- | --- |
-| Disallowed browser origin | CORS allowlist rejects preflight with `403 others.originNotAllowed` | Yes |
+| Disallowed browser origin | CORS allowlist rejects preflight with `403 common.originNotAllowed` | Yes |
 | Missing / expired / tampered JWT | `jsonwebtoken.verify()` rejects and returns `401` | Yes |
 | `alg:none` JWT bypass | JWT verification pins `HS256` and rejects unsigned token | Yes |
 | Unauthorized order list access | `GET /v2/orderVerification/getAllOrders` now rejects non-admin/non-developer callers with `403` | Yes |
 | Cross-user supplier data access | DB-backed ownership checks reject non-owner callers with `403` | Yes |
 | Overly broad privileged access | `developer` bypass works only on intended privileged path | Yes |
-| Malformed JSON | Guard rejects request before service logic with `400 others.invalidJSON` | Yes |
+| Malformed JSON | Guard rejects request before service logic with `400 common.invalidJSON` | Yes |
 | Invalid WhatsApp `_id` | Guard rejects invalid ObjectId before DB lookup with `400` | Yes |
 | Duplicate tag/order linkage | Duplicate `orderId` update is blocked with `409 orderVerification.errors.duplicateOrderId` | Yes |
-| Unsupported DELETE route use | Frozen route returns `405 others.methodNotAllowed` | Yes |
+| Unsupported DELETE route use | Frozen route returns `405 common.methodNotAllowed` | Yes |
 | Sensitive field leakage on read | `discountProof` is not exposed on tag lookup response | Yes |
 | Silent operational failure | Handler `500` path returns `requestId` and emits structured JSON log entry | Yes |
 
@@ -226,7 +226,7 @@ Time:        67.989 s
 
 ## 5. Documentation Cross-References
 
-- API contract: `functions/OrderVerification/API.md`
+- API contract: `dev_docs/api_docs/PURCHASE_ORDER_API.md`
 - Refactor changelog: `functions/OrderVerification/CHANGELOG.md`
 - Monorepo refactor reports: `dev_docs/refactor_reports/EN_REFACTOR_REPORT.md` and `dev_docs/refactor_reports/CN_REFACTOR_REPORT.md`
 - Refactor inventory status: `dev_docs/LAMBDA_REFACTOR_INVENTORY.md`

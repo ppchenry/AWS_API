@@ -18,7 +18,7 @@ async function getDetailInfo({ event }) {
       .lean();
 
     if (!pet) {
-      return createErrorResponse(404, "petNotFound", event);
+      return createErrorResponse(404, "petDetailInfo.errors.petNotFound", event);
     }
 
     return createSuccessResponse(200, event, {
@@ -27,7 +27,7 @@ async function getDetailInfo({ event }) {
     });
   } catch (error) {
     logError("Failed to get pet detail info", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -46,10 +46,10 @@ async function updateDetailInfo({ event, body }) {
 
     // Validate date formats
     if (data.motherDOB && !isValidDateFormat(data.motherDOB)) {
-      return createErrorResponse(400, "petDetailInfo.invalidDateFormat", event);
+      return createErrorResponse(400, "petDetailInfo.errors.invalidDateFormat", event);
     }
     if (data.fatherDOB && !isValidDateFormat(data.fatherDOB)) {
-      return createErrorResponse(400, "petDetailInfo.invalidDateFormat", event);
+      return createErrorResponse(400, "petDetailInfo.errors.invalidDateFormat", event);
     }
 
     // Build update fields
@@ -69,13 +69,13 @@ async function updateDetailInfo({ event, body }) {
     if (data.fatherPlaceOfBirth !== undefined) updateFields.fatherPlaceOfBirth = data.fatherPlaceOfBirth;
 
     if (Object.keys(updateFields).length === 0) {
-      return createErrorResponse(400, "others.noFieldsToUpdate", event);
+      return createErrorResponse(400, "common.noFieldsToUpdate", event);
     }
 
     // Include deleted:false in write filter to prevent TOCTOU
     const result = await Pet.updateOne({ _id: petID, deleted: false }, { $set: updateFields });
     if (result.matchedCount === 0) {
-      return createErrorResponse(404, "petNotFound", event);
+      return createErrorResponse(404, "petDetailInfo.errors.petNotFound", event);
     }
 
     return createSuccessResponse(200, event, {
@@ -84,7 +84,7 @@ async function updateDetailInfo({ event, body }) {
     });
   } catch (error) {
     logError("Failed to update pet detail info", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

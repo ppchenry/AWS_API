@@ -56,42 +56,42 @@ Current status:
 
 #### Authentication and authorization
 
-- Missing `Authorization` header returns `401 others.unauthorized`.
+- Missing `Authorization` header returns `401 common.unauthorized`.
 - Expired JWT returns `401`.
 - Garbage token returns `401`.
 - Wrong-secret token returns `401`.
 - `alg:none` token returns `401`.
 - Token without `Bearer ` prefix returns `401`.
 - Stranger token cannot access another user's detail info, transfer, source, or adoption data.
-- Ownership denial returns `403 others.forbidden`.
-- NGO transfer rejects non-NGO callers with `403 others.ngoOnly`.
+- Ownership denial returns `403 common.forbidden`.
+- NGO transfer rejects non-NGO callers with `403 common.forbidden`.
 
 #### Input validation - 400 responses
 
 Every required guard and validation path is checked individually:
 
 - Invalid `petID` -> `400 invalidPetIdFormat`
-- Invalid `transferId` -> `400 transferPath.invalidTransferIdFormat`
-- Invalid `sourceId` -> `400 petSource.invalidSourceIdFormat`
-- Invalid `adoptionId` -> `400 petAdoption.invalidAdoptionIdFormat`
+- Invalid `transferId` -> `400 petDetailInfo.errors.transferPath.invalidIdFormat`
+- Invalid `sourceId` -> `400 petDetailInfo.errors.petSource.invalidSourceIdFormat`
+- Invalid `adoptionId` -> `400 petDetailInfo.errors.petAdoption.invalidAdoptionIdFormat`
 - Malformed JSON -> `400 common.invalidJSON`
-- Empty POST/PUT bodies -> `400 others.missingParams`
-- Invalid detail dates -> `400 petDetailInfo.invalidDateFormat`
-- Invalid transfer dates -> `400 transferPath.invalidDateFormat`
-- Invalid NGO transfer email -> `400 ngoTransfer.invalidEmailFormat`
-- Invalid NGO transfer phone -> `400 ngoTransfer.invalidPhoneFormat`
-- Missing NGO transfer fields -> `400 ngoTransfer.missingRequiredFields`
+- Empty POST/PUT bodies -> `400 common.missingParams`
+- Invalid detail dates -> `400 petDetailInfo.errors.invalidDateFormat`
+- Invalid transfer dates -> `400 petDetailInfo.errors.transferPath.invalidDateFormat`
+- Invalid NGO transfer email -> `400 petDetailInfo.errors.ngoTransfer.invalidEmailFormat`
+- Invalid NGO transfer phone -> `400 petDetailInfo.errors.ngoTransfer.invalidPhoneFormat`
+- Missing NGO transfer fields -> `400 petDetailInfo.errors.ngoTransfer.missingRequiredFields`
 - Invalid source/adoption update payloads -> `400`
 - Empty Zod-stripped source/adoption updates -> `400 noFieldsToUpdate`
 
 #### Business-logic errors - 4xx responses
 
 - Nonexistent pet -> `404 petNotFound`
-- Nonexistent transfer update/delete -> `404 transferPath.transferNotFound`
-- Duplicate source create -> `409 petSource.duplicateRecord`
-- Nonexistent source update -> `404 petSource.recordNotFound`
-- Duplicate adoption create -> `409 petAdoption.duplicateRecord`
-- Nonexistent adoption update/delete -> `404 petAdoption.recordNotFound`
+- Nonexistent transfer update/delete -> `404 petDetailInfo.errors.transferPath.notFound`
+- Duplicate source create -> `409 petDetailInfo.errors.petSource.duplicateRecord`
+- Nonexistent source update -> `404 petDetailInfo.errors.petSource.recordNotFound`
+- Duplicate adoption create -> `409 petDetailInfo.errors.petAdoption.duplicateRecord`
+- Nonexistent adoption update/delete -> `404 petDetailInfo.errors.petAdoption.recordNotFound`
 - SAM/API Gateway undeclared methods return `403` before Lambda router execution
 
 #### Detail-info flow
@@ -172,9 +172,9 @@ if (!data.success) {
   showToast(data.error);
   console.error("[PetDetailInfo API Error]", data.errorKey, "requestId:", data.requestId);
 
-  if (data.errorKey === "others.forbidden") {
+  if (data.errorKey === "common.forbidden") {
     redirectToPetList();
-  } else if (data.errorKey === "petDetailInfo.invalidDateFormat") {
+  } else if (data.errorKey === "petDetailInfo.errors.invalidDateFormat") {
     highlightDateFields();
   }
 }
@@ -193,35 +193,35 @@ The main `errorKey` values used across PetDetailInfo:
 
 | errorKey | Meaning |
 | --- | --- |
-| `others.unauthorized` | Missing or invalid JWT |
-| `others.forbidden` | Caller does not own the pet and is not the pet's NGO |
-| `others.ngoOnly` | Caller is authenticated but not an NGO user |
-| `others.missingParams` | Empty request body or missing required parameters |
-| `others.noFieldsToUpdate` | No valid detail/transfer fields remain after validation stripping |
-| `others.methodNotAllowed` | Method/resource pair reached Lambda router but is unsupported |
+| `common.unauthorized` | Missing or invalid JWT |
+| `common.forbidden` | Caller does not own the pet and is not the pet's NGO |
+| `common.forbidden` | Caller is authenticated but not an NGO user |
+| `common.missingParams` | Empty request body or missing required parameters |
+| `common.noFieldsToUpdate` | No valid detail/transfer fields remain after validation stripping |
+| `common.methodNotAllowed` | Method/resource pair reached Lambda router but is unsupported |
 | `common.invalidJSON` | Malformed JSON request body |
 | `invalidPetIdFormat` | Invalid pet ObjectId |
 | `petNotFound` | Pet does not exist or is deleted |
-| `transferPath.invalidTransferIdFormat` | Invalid transfer ObjectId |
-| `transferPath.transferNotFound` | Transfer record does not exist on this pet |
-| `transferPath.invalidDateFormat` | Invalid transfer date |
-| `ngoTransfer.invalidEmailFormat` | Invalid target email |
-| `ngoTransfer.invalidPhoneFormat` | Invalid target phone |
-| `ngoTransfer.invalidDateFormat` | Invalid NGO transfer date |
-| `ngoTransfer.userIdentityMismatch` | Target email and phone resolve to different users |
-| `ngoTransfer.targetUserNotFound` | Target email or phone did not resolve to a user |
-| `petDetailInfo.invalidDateFormat` | Invalid mother/father date |
-| `petDetailInfo.invalidMotherParity` | Mother parity is not numeric |
-| `petSource.invalidSourceIdFormat` | Invalid source ObjectId |
-| `petSource.recordNotFound` | Source record does not exist for this pet |
-| `petSource.noFieldsToUpdate` | No valid source fields remain after validation stripping |
-| `petSource.missingRequiredFields` | Source create omitted both `placeofOrigin` and `channel` |
-| `petSource.duplicateRecord` | Source record already exists for this pet |
-| `petAdoption.invalidDateFormat` | Invalid adoption date field |
-| `petAdoption.invalidAdoptionIdFormat` | Invalid adoption ObjectId |
-| `petAdoption.recordNotFound` | Adoption record does not exist for this pet |
-| `petAdoption.noFieldsToUpdate` | No valid adoption fields remain after validation stripping |
-| `petAdoption.duplicateRecord` | Adoption record already exists for this pet |
+| `petDetailInfo.errors.transferPath.invalidIdFormat` | Invalid transfer ObjectId |
+| `petDetailInfo.errors.transferPath.notFound` | Transfer record does not exist on this pet |
+| `petDetailInfo.errors.transferPath.invalidDateFormat` | Invalid transfer date |
+| `petDetailInfo.errors.ngoTransfer.invalidEmailFormat` | Invalid target email |
+| `petDetailInfo.errors.ngoTransfer.invalidPhoneFormat` | Invalid target phone |
+| `petDetailInfo.errors.ngoTransfer.invalidDateFormat` | Invalid NGO transfer date |
+| `petDetailInfo.errors.ngoTransfer.userIdentityMismatch` | Target email and phone resolve to different users |
+| `petDetailInfo.errors.ngoTransfer.targetUserNotFound` | Target email or phone did not resolve to a user |
+| `petDetailInfo.errors.invalidDateFormat` | Invalid mother/father date |
+| `petDetailInfo.errors.invalidMotherParity` | Mother parity is not numeric |
+| `petDetailInfo.errors.petSource.invalidSourceIdFormat` | Invalid source ObjectId |
+| `petDetailInfo.errors.petSource.recordNotFound` | Source record does not exist for this pet |
+| `petDetailInfo.errors.petSource.noFieldsToUpdate` | No valid source fields remain after validation stripping |
+| `petDetailInfo.errors.petSource.missingRequiredFields` | Source create omitted both `placeofOrigin` and `channel` |
+| `petDetailInfo.errors.petSource.duplicateRecord` | Source record already exists for this pet |
+| `petDetailInfo.errors.petAdoption.invalidDateFormat` | Invalid adoption date field |
+| `petDetailInfo.errors.petAdoption.invalidAdoptionIdFormat` | Invalid adoption ObjectId |
+| `petDetailInfo.errors.petAdoption.recordNotFound` | Adoption record does not exist for this pet |
+| `petDetailInfo.errors.petAdoption.noFieldsToUpdate` | No valid adoption fields remain after validation stripping |
+| `petDetailInfo.errors.petAdoption.duplicateRecord` | Adoption record already exists for this pet |
 
 ---
 

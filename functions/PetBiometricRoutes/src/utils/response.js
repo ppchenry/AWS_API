@@ -1,5 +1,6 @@
 const { corsHeaders } = require("../cors");
 const { getTranslation, loadTranslations } = require("./i18n");
+const { logWarn } = require("./logger");
 
 /**
  * Builds a localized error response with the standard Lambda error shape.
@@ -10,6 +11,14 @@ const { getTranslation, loadTranslations } = require("./i18n");
  * @returns {{ statusCode: number, headers: Record<string, string>, body: string }}
  */
 function createErrorResponse(statusCode, error, event) {
+  if (statusCode >= 400 && statusCode < 500) {
+    logWarn("Expected client error response", {
+      scope: "utils.response.createErrorResponse",
+      event,
+      extra: { statusCode, errorKey: error },
+    });
+  }
+
   const translations = loadTranslations(
     event.cookies?.language || event.queryStringParameters?.lang || "zh"
   );

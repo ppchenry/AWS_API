@@ -5,7 +5,7 @@ const PRIVILEGED_ROLES = new Set(["admin", "developer"]);
 const ORDER_OWNERSHIP_PROJECTION = "_id tempId email";
 
 function createUnauthorizedResponse(event) {
-  return createErrorResponse(403, "others.unauthorized", event);
+  return createErrorResponse(403, "common.unauthorized", event);
 }
 
 function isPrivilegedCaller(event) {

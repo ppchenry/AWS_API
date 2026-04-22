@@ -1,41 +1,52 @@
 {
-    "others": {
-        "unauthorized": "需要身份驗證",
-        "internalError": "內部伺服器錯誤",
-        "methodNotAllowed": "不允許的方法",
-        "missingParams": "缺少必要參數",
-        "invalidJSON": "無效的 JSON 格式",
-        "rateLimited": "請求過於頻繁，請稍後再試"
-    },
-    "common": {
-        "invalidJSON": "無效的 JSON 格式"
-    },
-    "ngoPath": {
+  "common": {
+    "internalError": "內部伺服器錯誤",
+    "invalidJSON": "無效的 JSON 格式",
+    "methodNotAllowed": "不允許的方法",
+    "missingParams": "缺少必要參數",
+    "rateLimited": "請求過多，請稍後再試",
+    "unauthorized": "未授權"
+  },
+  "getAllPets": {
+    "errors": {
+      "ngoPath": {
         "missingNgoId": "需要非政府組織 ID",
         "invalidNgoIdFormat": "無效的非政府組織 ID 格式",
-        "noPetsFound": "沒有找到寵物",
-        "success": "寵物已成功領取"
-    },
-    "deleteStatus": {
-        "missingPetId": "需要寵物身分證",
+        "noPetsFound": "沒有找到寵物"
+      },
+      "deleteStatus": {
         "invalidPetIdFormat": "無效的寵物 ID 格式",
         "petNotFound": "未找到寵物",
         "petAlreadyDeleted": "寵物已被刪除",
-        "success": "寵物刪除狀態更新成功"
-    },
-    "updatePetEye": {
-        "missingRequiredFields": "需要 petId、date、leftEyeImage1PublicAccessUrl 和 rightEyeImage1PublicAccessUrl",
+        "missingPetId": "需要寵物身分證"
+      },
+      "updatePetEye": {
         "invalidPetIdFormat": "無效的寵物 ID 格式",
         "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 格式",
         "invalidImageUrlFormat": "無效的圖片 URL 格式",
         "petNotFound": "未找到寵物",
         "petDeleted": "寵物已被刪除",
-        "success": "成功更新寵物眼部圖片"
-    },
-    "getPetsByUser": {
+        "missingRequiredFields": "需要 petId、date、leftEyeImage1PublicAccessUrl 和 rightEyeImage1PublicAccessUrl"
+      },
+      "getPetsByUser": {
         "missingUserId": "需要用戶 ID",
         "invalidUserIdFormat": "無效的用戶 ID 格式",
-        "noPetsFound": "沒有找到寵物",
-        "success": "成功檢索寵物"
+        "noPetsFound": "沒有找到寵物"
+      }
+    },
+    "success": {
+      "ngoPath": {
+        "retrieved": "寵物已成功領取"
+      },
+      "deleteStatus": {
+        "deleted": "寵物刪除狀態更新成功"
+      },
+      "updatePetEye": {
+        "updated": "成功更新寵物眼部圖片"
+      },
+      "getPetsByUser": {
+        "retrieved": "成功檢索寵物"
+      }
     }
+  }
 }

@@ -1,5 +1,5 @@
 {
-  "others": {
+  "common": {
     "internalError": "Internal server error",
     "invalidJSON": "Invalid JSON in request body",
     "missingParams": "Missing required parameters",
@@ -9,58 +9,58 @@
     "selfAccessDenied": "Access denied: you can only access your own resources",
     "rateLimited": "Too many requests. Please try again later."
   },
-  "petLost": {
+  "petLostAndFound": {
     "errors": {
-      "nameRequired": "Pet name is required",
-      "sexRequired": "Pet sex is required",
-      "animalRequired": "Animal type is required",
-      "lostDateRequired": "Lost date is required",
-      "lostLocationRequired": "Lost location is required",
-      "lostDistrictRequired": "Lost district is required",
-      "notFound": "No lost pets found",
-      "idRequired": "Pet lost ID is required",
-      "invalidPetId": "Invalid pet ID format",
-      "petNotFound": "The specified pet was not found",
-      "createFailed": "Failed to create lost pet record"
+      "petLost": {
+        "nameRequired": "Pet name is required",
+        "sexRequired": "Pet sex is required",
+        "animalRequired": "Animal type is required",
+        "lostDateRequired": "Lost date is required",
+        "lostLocationRequired": "Lost location is required",
+        "lostDistrictRequired": "Lost district is required",
+        "notFound": "No lost pets found",
+        "idRequired": "Pet lost ID is required",
+        "invalidPetId": "Invalid pet ID format",
+        "petNotFound": "The specified pet was not found",
+        "createFailed": "Failed to create lost pet record"
+      },
+      "petFound": {
+        "animalRequired": "Animal type is required",
+        "foundDateRequired": "Found date is required",
+        "foundLocationRequired": "Found location is required",
+        "foundDistrictRequired": "Found district is required",
+        "notFound": "No found pets found",
+        "idRequired": "Pet found ID is required",
+        "createFailed": "Failed to create found pet record"
+      },
+      "notifications": {
+        "typeRequired": "Notification type is required",
+        "userIdRequired": "User ID is required",
+        "notificationIdRequired": "Notification ID is required",
+        "notFound": "Notification not found or does not belong to this user",
+        "invalidPetId": "Invalid pet ID format",
+        "createFailed": "Failed to create notification",
+        "archiveFailed": "Failed to archive notification"
+      }
     },
     "success": {
-      "listRetrieved": "All lost pets retrieved successfully",
-      "created": "Successfully added lost pet",
-      "deleted": "Pet lost record deleted successfully",
-      "noRecord": "No record with the specified ID exists"
-    }
-  },
-  "petFound": {
-    "errors": {
-      "animalRequired": "Animal type is required",
-      "foundDateRequired": "Found date is required",
-      "foundLocationRequired": "Found location is required",
-      "foundDistrictRequired": "Found district is required",
-      "notFound": "No found pets found",
-      "idRequired": "Pet found ID is required",
-      "createFailed": "Failed to create found pet record"
-    },
-    "success": {
-      "listRetrieved": "All found pets retrieved successfully",
-      "created": "Successfully added found pet",
-      "deleted": "Pet found record deleted successfully"
-    }
-  },
-  "notifications": {
-    "errors": {
-      "typeRequired": "Notification type is required",
-      "userIdRequired": "User ID is required",
-      "notificationIdRequired": "Notification ID is required",
-      "notFound": "Notification not found or does not belong to this user",
-      "invalidPetId": "Invalid pet ID format",
-      "createFailed": "Failed to create notification",
-      "archiveFailed": "Failed to archive notification"
-    },
-    "success": {
-      "listRetrieved": "Notifications retrieved successfully",
-      "emptyList": "No notifications found for this user",
-      "created": "Notification created successfully",
-      "archived": "Notification archived successfully"
+      "petLost": {
+        "listRetrieved": "All lost pets retrieved successfully",
+        "created": "Successfully added lost pet",
+        "deleted": "Pet lost record deleted successfully",
+        "noRecord": "No record with the specified ID exists"
+      },
+      "petFound": {
+        "listRetrieved": "All found pets retrieved successfully",
+        "created": "Successfully added found pet",
+        "deleted": "Pet found record deleted successfully"
+      },
+      "notifications": {
+        "listRetrieved": "Notifications retrieved successfully",
+        "emptyList": "No notifications found for this user",
+        "created": "Notification created successfully",
+        "archived": "Notification archived successfully"
+      }
     }
   }
 }

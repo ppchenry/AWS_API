@@ -1,13 +1,13 @@
 const { z } = require("zod");
 
 const MSG = {
-  nameRequired: "eyeUpload.nameRequired",
-  animalRequired: "eyeUpload.animalRequired",
-  sexRequired: "eyeUpload.sexRequired",
-  petIdRequired: "eyeUpload.petIdRequired",
-  tooLong: "eyeUpload.fieldTooLong",
-  invalidUrl: "eyeUpload.invalidUrl",
-  unknownField: "eyeUpload.unknownField",
+  nameRequired: "eyeUpload.errors.nameRequired",
+  animalRequired: "eyeUpload.errors.animalRequired",
+  sexRequired: "eyeUpload.errors.sexRequired",
+  petIdRequired: "eyeUpload.errors.petIdRequired",
+  tooLong: "eyeUpload.errors.fieldTooLong",
+  invalidUrl: "eyeUpload.errors.invalidUrl",
+  unknownField: "eyeUpload.errors.unknownField",
 };
 
 const CREATE_ALLOWED_FIELDS = [

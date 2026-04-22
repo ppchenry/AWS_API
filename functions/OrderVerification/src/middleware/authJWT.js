@@ -27,7 +27,7 @@ function authJWT({ event }) {
 
     const authHeader = event.headers?.Authorization || event.headers?.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return createErrorResponse(401, "others.unauthorized", event);
+      return createErrorResponse(401, "common.unauthorized", event);
     }
 
     const jwtSecret = process.env.JWT_SECRET;
@@ -36,7 +36,7 @@ function authJWT({ event }) {
         scope: "middleware.authJWT",
         event,
       });
-      return createErrorResponse(500, "others.internalError", event);
+      return createErrorResponse(500, "common.internalError", event);
     }
 
     const token = authHeader.slice(7);
@@ -49,7 +49,7 @@ function authJWT({ event }) {
       event,
       error,
     });
-    return createErrorResponse(401, "others.unauthorized", event);
+    return createErrorResponse(401, "common.unauthorized", event);
   }
 }
 

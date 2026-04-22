@@ -56,7 +56,7 @@ async function eyeUploadAnalysis({ event }) {
       windowSec: 300,
     });
     if (!rl.allowed) {
-      return createErrorResponse(429, "eyeUpload.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     const ApiLog = mongoose.model("ApiLog");
@@ -79,7 +79,7 @@ async function eyeUploadAnalysis({ event }) {
     if (!user) {
       activityLog.error = "USER_NOT_FOUND";
       await activityLog.save();
-      return createErrorResponse(404, "eyeUpload.userNotFound", event);
+      return createErrorResponse(404, "eyeUpload.errors.userNotFound", event);
     }
 
     activityLog.userId = user._id;
@@ -100,7 +100,7 @@ async function eyeUploadAnalysis({ event }) {
     if (!imageUrl && !file) {
       activityLog.error = "MISSING_ARGUMENTS";
       await activityLog.save();
-      return createErrorResponse(400, "eyeUpload.missingArguments", event);
+      return createErrorResponse(400, "eyeUpload.errors.missingArguments", event);
     }
 
     // Handle file upload or use provided URL
@@ -111,19 +111,19 @@ async function eyeUploadAnalysis({ event }) {
       if (!ALLOWED_IMAGE_TYPES.has(file.contentType)) {
         activityLog.error = "IMAGE_ERROR_UNSUPPORTED_FORMAT";
         await activityLog.save();
-        return createErrorResponse(400, "eyeUpload.unsupportedFormat", event);
+        return createErrorResponse(400, "eyeUpload.errors.unsupportedFormat", event);
       }
 
       if (fileSizeInMb > MAX_FILE_SIZE_MB) {
         activityLog.error = "IMAGE_FILE_TOO_LARGE";
         await activityLog.save();
-        return createErrorResponse(413, "eyeUpload.fileTooLarge", event);
+        return createErrorResponse(413, "eyeUpload.errors.fileTooLarge", event);
       }
 
       if (fileSizeInMb === 0) {
         activityLog.error = "IMAGE_FILE_TOO_SMALL";
         await activityLog.save();
-        return createErrorResponse(413, "eyeUpload.fileTooSmall", event);
+        return createErrorResponse(413, "eyeUpload.errors.fileTooSmall", event);
       }
 
       // Wrap into multer-style object for s3Upload
@@ -152,7 +152,7 @@ async function eyeUploadAnalysis({ event }) {
     if (data[0].status !== "fulfilled" || !data[0].value) {
       activityLog.error = "ANALYSIS_FAILED";
       await activityLog.save();
-      return createErrorResponse(500, "eyeUpload.analysisError", event);
+      return createErrorResponse(500, "eyeUpload.errors.analysisError", event);
     }
 
     const keys = Object.keys(data[0].value);
@@ -164,7 +164,7 @@ async function eyeUploadAnalysis({ event }) {
       const value = Object.values(data[0].value)[0];
       activityLog.error = value;
       await activityLog.save();
-      return createErrorResponse(400, "eyeUpload.analysisError", event);
+      return createErrorResponse(400, "eyeUpload.errors.analysisError", event);
     }
 
     // Save successful analysis
@@ -202,7 +202,7 @@ async function eyeUploadAnalysis({ event }) {
       }
     }
 
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

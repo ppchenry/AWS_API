@@ -24,7 +24,7 @@ async function breedAnalysis({ event, body }) {
       windowSec: 300,
     });
     if (!rl.allowed) {
-      return createErrorResponse(429, "eyeUpload.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     // Zod validation — rejects unknown fields, enforces type/format
@@ -59,7 +59,7 @@ async function breedAnalysis({ event, body }) {
     });
   } catch (error) {
     logError("Breed analysis failed", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

@@ -9,7 +9,7 @@ function validatePetLookupRequest({ event }) {
     } catch {
       return {
         isValid: false,
-        error: createErrorResponse(400, "others.invalidJSON", event),
+        error: createErrorResponse(400, "common.invalidJSON", event),
       };
     }
   }
@@ -28,7 +28,7 @@ function validatePetLookupRequest({ event }) {
   if (tagId.length > 120) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "others.invalidPathParam", event),
+      error: createErrorResponse(400, "common.invalidPathParam", event),
     };
   }
 

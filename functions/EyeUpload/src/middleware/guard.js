@@ -17,13 +17,13 @@ function validateEyeUploadRequest({ event }) {
     if (!petId) {
       return {
         isValid: false,
-        error: createErrorResponse(400, "eyeUpload.missingPetId", event),
+        error: createErrorResponse(400, "eyeUpload.errors.missingPetId", event),
       };
     }
     if (!mongoose.isValidObjectId(petId)) {
       return {
         isValid: false,
-        error: createErrorResponse(400, "eyeUpload.invalidObjectId", event),
+        error: createErrorResponse(400, "eyeUpload.errors.invalidObjectId", event),
       };
     }
   }
@@ -37,14 +37,14 @@ function validateEyeUploadRequest({ event }) {
       } catch {
         return {
           isValid: false,
-          error: createErrorResponse(400, "others.invalidJSON", event),
+          error: createErrorResponse(400, "common.invalidJSON", event),
         };
       }
     }
     if (!parsedBody || Object.keys(parsedBody).length === 0) {
       return {
         isValid: false,
-        error: createErrorResponse(400, "others.missingParams", event),
+        error: createErrorResponse(400, "common.missingParams", event),
       };
     }
     return { isValid: true, body: parsedBody };

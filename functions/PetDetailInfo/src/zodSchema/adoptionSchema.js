@@ -3,7 +3,7 @@ const { z } = require("zod");
 const adoptionCreateSchema = z.object({
   postAdoptionName: z.string().optional().nullable(),
   isNeutered: z.boolean().optional().nullable(),
-  NeuteredDate: z.string({ error: "petAdoption.invalidDateFormat" }).optional().nullable(),
+  NeuteredDate: z.string({ error: "petDetailInfo.errors.petAdoption.invalidDateFormat" }).optional().nullable(),
   firstVaccinationDate: z.string().optional().nullable(),
   secondVaccinationDate: z.string().optional().nullable(),
   thirdVaccinationDate: z.string().optional().nullable(),

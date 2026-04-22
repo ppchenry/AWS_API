@@ -44,9 +44,9 @@ Current status:
 - OPTIONS preflight returns 204 with CORS headers without opening a DB connection
 - Unmapped HTTP methods (PUT on `/auth/refresh`) return 405 as a Lambda safety net and are not production API Gateway routes
 - POST `/auth/refresh` bypasses authJWT because it is in `PUBLIC_RESOURCES`; failures come from the service rather than the auth layer
-- Missing refresh token cookie -> 401 with `authRefresh.missingRefreshToken`
-- Invalid refresh token cookie -> 401 with `authRefresh.invalidRefreshTokenCookie`
-- Stale or missing refresh session record -> 401 with `authRefresh.invalidSession`
+- Missing refresh token cookie -> 401 with `authRoute.errors.missingRefreshToken`
+- Invalid refresh token cookie -> 401 with `authRoute.errors.invalidRefreshTokenCookie`
+- Stale or missing refresh session record -> 401 with `authRoute.errors.invalidSession`
 
 #### Authentication & authorisation
 
@@ -55,13 +55,13 @@ Current status:
 - Valid Bearer token attaches `userId`, `userEmail`, `userRole`, `user`, and `requestContext.authorizer` to the event
 - Malformed Bearer header (wrong prefix) -> 401
 - Expired token -> 401
-- Missing `JWT_SECRET` at request time -> 500 with `others.internalError`
+- Missing `JWT_SECRET` at request time -> 500 with `common.internalError`
 - `JWT_BYPASS=true` in non-production attaches dev identity (`dev-user-id`) and returns null
 - `JWT_BYPASS=true` is ignored when `NODE_ENV=production` -> 401
 
 #### Security hardening
 
-- Rate limiting enforced on refresh -> 429 with `others.rateLimited`
+- Rate limiting enforced on refresh -> 429 with `common.rateLimited`
 - Refresh token replay fails after the original token is consumed atomically via `findOneAndDelete`
 - NGO session refresh preserves `ngoId` and `ngoName` claims instead of downgrading the session to a plain user token
 - NGO session refresh returns 403 when NGO approval has been revoked (`!isActive || !isVerified`)
@@ -75,7 +75,7 @@ Every error response from AuthRoute follows a fixed shape:
 ```json
 {
   "success": false,
-  "errorKey": "authRefresh.missingRefreshToken",
+  "errorKey": "authRoute.errors.missingRefreshToken",
   "error": "缺少 refresh token cookie",
   "requestId": "3b1c2d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e"
 }
@@ -101,14 +101,14 @@ AWS Console -> CloudWatch -> Log Groups -> /aws/lambda/AuthRoute
 
 | errorKey | Default message (zh) | HTTP |
 | --- | --- | --- |
-| `authRefresh.missingRefreshToken` | 缺少 refresh token cookie | 401 |
-| `authRefresh.invalidRefreshTokenCookie` | refresh token cookie 格式無效 | 401 |
-| `authRefresh.invalidSession` | Refresh token 已過期或無效 | 401 |
-| `authRefresh.ngoApprovalRequired` | NGO 帳號尚未獲批，無法刷新工作階段 | 403 |
-| `others.unauthorized` | 需要登入驗證 | 401 |
-| `others.internalError` | 發生內部錯誤 | 500 |
-| `others.methodNotAllowed` | 不支援此 HTTP 方法 | 405 |
-| `others.rateLimited` | 請求過於頻繁，請稍後再試 | 429 |
+| `authRoute.errors.missingRefreshToken` | 缺少 refresh token cookie | 401 |
+| `authRoute.errors.invalidRefreshTokenCookie` | refresh token cookie 格式無效 | 401 |
+| `authRoute.errors.invalidSession` | Refresh token 已過期或無效 | 401 |
+| `authRoute.errors.ngoApprovalRequired` | NGO 帳號尚未獲批，無法刷新工作階段 | 403 |
+| `common.unauthorized` | 需要登入驗證 | 401 |
+| `common.internalError` | 發生內部錯誤 | 500 |
+| `common.methodNotAllowed` | 不支援此 HTTP 方法 | 405 |
+| `common.rateLimited` | 請求過於頻繁，請稍後再試 | 429 |
 
 ---
 

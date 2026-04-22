@@ -38,7 +38,7 @@ async function listNotifications({ event }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -78,7 +78,7 @@ async function createNotification({ event, body }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -91,7 +91,7 @@ async function archiveNotification({ event }) {
     const notificationId = event.pathParameters?.notificationId;
 
     if (!notificationId) {
-      return createErrorResponse(400, "notifications.errors.notificationIdRequired", event);
+      return createErrorResponse(400, "petLostAndFound.errors.notifications.notificationIdRequired", event);
     }
 
     const Notifications = mongoose.model("Notifications");
@@ -101,7 +101,7 @@ async function archiveNotification({ event }) {
     );
 
     if (result.matchedCount === 0) {
-      return createErrorResponse(404, "notifications.errors.notFound", event);
+      return createErrorResponse(404, "petLostAndFound.errors.notifications.notFound", event);
     }
 
     return createSuccessResponse(200, event, {
@@ -114,7 +114,7 @@ async function archiveNotification({ event }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

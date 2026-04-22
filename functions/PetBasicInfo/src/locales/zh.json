@@ -1,5 +1,5 @@
 {
-  "others": {
+  "common": {
     "unauthorized": "未授權",
     "internalError": "內部伺服器錯誤",
     "rateLimited": "請求過於頻繁，請稍後再試。"

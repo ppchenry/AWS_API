@@ -217,13 +217,13 @@ describe("Authentication", () => {
   test("GET /pets/pet-lost without Authorization header → 401", async () => {
     const res = await req("GET", "/pets/pet-lost");
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("GET /pets/pet-found with expired JWT → 401", async () => {
     const res = await req("GET", "/pets/pet-found", undefined, auth(expiredToken()));
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("GET /pets/pet-lost with garbage token → 401", async () => {
@@ -231,7 +231,7 @@ describe("Authentication", () => {
       Authorization: "Bearer this.is.garbage",
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("GET /pets/pet-lost with wrong algorithm (RS256) → 401", async () => {
@@ -239,13 +239,13 @@ describe("Authentication", () => {
     const badToken = jwt.sign({ userId: TEST_USER_ID }, "wrong-secret", { expiresIn: "1h" });
     const res = await req("GET", "/pets/pet-lost", undefined, auth(badToken));
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("POST /pets/pet-lost without Authorization header → 401", async () => {
     const res = await multipartReq("POST", "/pets/pet-lost", { name: "TestPet" });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 });
 
@@ -274,26 +274,26 @@ describe("Guard — path param validation", () => {
   test("DELETE /pets/pet-lost/{invalid} → 400 invalidPathParam", async () => {
     const res = await req("DELETE", `/pets/pet-lost/${INVALID_OBJECT_ID}`, undefined, auth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidPathParam");
+    expect(res.body.errorKey).toBe("common.invalidPathParam");
   });
 
   test("DELETE /pets/pet-found/{invalid} → 400 invalidPathParam", async () => {
     const res = await req("DELETE", `/pets/pet-found/${INVALID_OBJECT_ID}`, undefined, auth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidPathParam");
+    expect(res.body.errorKey).toBe("common.invalidPathParam");
   });
 
   test("PUT /v2/account/{invalid}/notifications/{notifId} → 403 selfAccessDenied (checked before pathParam)", async () => {
     const res = await req("PUT", `/v2/account/${INVALID_OBJECT_ID}/notifications/${NONEXISTENT_ID}`, { isArchived: true }, auth());
     // Self-access check runs before ObjectId validation — JWT userId ≠ path userId
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.selfAccessDenied");
+    expect(res.body.errorKey).toBe("common.selfAccessDenied");
   });
 
   test("GET /v2/account/{userId}/notifications with invalid userId → 403 selfAccessDenied", async () => {
     const res = await req("GET", `/v2/account/${INVALID_OBJECT_ID}/notifications`, undefined, auth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.selfAccessDenied");
+    expect(res.body.errorKey).toBe("common.selfAccessDenied");
   });
 });
 
@@ -305,7 +305,7 @@ describe("Guard — self-access", () => {
   test("GET /v2/account/{otherUserId}/notifications → 403 selfAccessDenied", async () => {
     const res = await req("GET", `/v2/account/${STRANGER_USER_ID}/notifications`, undefined, auth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.selfAccessDenied");
+    expect(res.body.errorKey).toBe("common.selfAccessDenied");
   });
 
   test("POST /v2/account/{otherUserId}/notifications → 403 selfAccessDenied", async () => {
@@ -314,7 +314,7 @@ describe("Guard — self-access", () => {
       petName: "TestPet",
     }, auth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.selfAccessDenied");
+    expect(res.body.errorKey).toBe("common.selfAccessDenied");
   });
 });
 
@@ -331,7 +331,7 @@ describe("Guard — body validation", () => {
       auth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidJSON");
+    expect(res.body.errorKey).toBe("common.invalidJSON");
   });
 
   test("POST /v2/account/{userId}/notifications with empty body → 400", async () => {
@@ -342,7 +342,7 @@ describe("Guard — body validation", () => {
       auth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   });
 
   test("PUT /v2/account/{userId}/notifications/{id} with empty body → 400", async () => {
@@ -353,7 +353,7 @@ describe("Guard — body validation", () => {
       auth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   });
 });
 
@@ -457,7 +457,7 @@ describe("POST /pets/pet-lost", () => {
       lostDistrict: "Yau Tsim Mong",
     }, auth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("petLost.errors.petNotFound");
+    expect(res.body.errorKey).toBe("petLostAndFound.errors.petLost.petNotFound");
   });
 });
 
@@ -469,14 +469,14 @@ describe("DELETE /pets/pet-lost/{petLostID}", () => {
   test("rejects delete of nonexistent ID → 404", async () => {
     const res = await req("DELETE", `/pets/pet-lost/${NONEXISTENT_ID}`, undefined, auth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("petLost.errors.notFound");
+    expect(res.body.errorKey).toBe("petLostAndFound.errors.petLost.notFound");
   });
 
   test("rejects delete by non-owner → 403", async () => {
     if (!state.petLostId) return;
     const res = await req("DELETE", `/pets/pet-lost/${state.petLostId}`, undefined, auth(strangerToken));
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.selfAccessDenied");
+    expect(res.body.errorKey).toBe("common.selfAccessDenied");
   });
 
   test("owner can delete their own record → 200", async () => {
@@ -490,7 +490,7 @@ describe("DELETE /pets/pet-lost/{petLostID}", () => {
     if (!state.petLostId) return;
     const res = await req("DELETE", `/pets/pet-lost/${state.petLostId}`, undefined, auth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("petLost.errors.notFound");
+    expect(res.body.errorKey).toBe("petLostAndFound.errors.petLost.notFound");
   });
 });
 
@@ -573,13 +573,13 @@ describe("DELETE /pets/pet-found/{petFoundID}", () => {
   test("rejects delete of nonexistent ID → 404", async () => {
     const res = await req("DELETE", `/pets/pet-found/${NONEXISTENT_ID}`, undefined, auth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("petFound.errors.notFound");
+    expect(res.body.errorKey).toBe("petLostAndFound.errors.petFound.notFound");
   });
 
   test("rejects invalid ObjectId → 400", async () => {
     const res = await req("DELETE", `/pets/pet-found/${INVALID_OBJECT_ID}`, undefined, auth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidPathParam");
+    expect(res.body.errorKey).toBe("common.invalidPathParam");
   });
 });
 
@@ -695,7 +695,7 @@ describe("PUT /v2/account/{userId}/notifications/{notificationId}", () => {
       auth()
     );
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("notifications.errors.notFound");
+    expect(res.body.errorKey).toBe("petLostAndFound.errors.notifications.notFound");
   });
 
   test("stranger cannot archive another user's notification → 404 (compound query)", async () => {
@@ -718,7 +718,7 @@ describe("PUT /v2/account/{userId}/notifications/{notificationId}", () => {
       auth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidPathParam");
+    expect(res.body.errorKey).toBe("common.invalidPathParam");
   });
 });
 
@@ -762,7 +762,7 @@ describe("Rate limiting on create routes", () => {
       lostDistrict: "Central and Western",
     }, auth(rlToken));
     expect(blocked.status).toBe(429);
-    expect(blocked.body.errorKey).toBe("others.rateLimited");
+    expect(blocked.body.errorKey).toBe("common.rateLimited");
   });
 
   test("POST /pets/pet-found rate limits after 5 requests in 60s → 429", async () => {
@@ -794,7 +794,7 @@ describe("Rate limiting on create routes", () => {
       foundDistrict: "Yau Tsim Mong",
     }, auth(rlToken));
     expect(blocked.status).toBe(429);
-    expect(blocked.body.errorKey).toBe("others.rateLimited");
+    expect(blocked.body.errorKey).toBe("common.rateLimited");
   });
 });
 

@@ -24,18 +24,18 @@ async function ngoTransfer({ event, body }) {
     // Validate email format
     const normalizedEmail = normalizeEmail(data.UserEmail);
     if (!isValidEmail(normalizedEmail)) {
-      return createErrorResponse(400, "ngoTransfer.invalidEmailFormat", event);
+      return createErrorResponse(400, "petDetailInfo.errors.ngoTransfer.invalidEmailFormat", event);
     }
 
     // Validate phone format
     const normalizedPhone = normalizePhone(data.UserContact);
     if (!isValidPhoneNumber(normalizedPhone)) {
-      return createErrorResponse(400, "ngoTransfer.invalidPhoneFormat", event);
+      return createErrorResponse(400, "petDetailInfo.errors.ngoTransfer.invalidPhoneFormat", event);
     }
 
     // Validate date format if provided
     if (data.regDate && !isValidDateFormat(data.regDate)) {
-      return createErrorResponse(400, "ngoTransfer.invalidDateFormat", event);
+      return createErrorResponse(400, "petDetailInfo.errors.ngoTransfer.invalidDateFormat", event);
     }
 
     // Verify user exists by email and phone (parallel)
@@ -46,12 +46,12 @@ async function ngoTransfer({ event, body }) {
 
     // Return a single generic error for missing user to prevent enumeration
     if (!userByEmail || !userByPhone) {
-      return createErrorResponse(404, "ngoTransfer.targetUserNotFound", event);
+      return createErrorResponse(404, "petDetailInfo.errors.ngoTransfer.targetUserNotFound", event);
     }
 
     // Cross-validate: email and phone must belong to the same user
     if (String(userByEmail._id) !== String(userByPhone._id)) {
-      return createErrorResponse(400, "ngoTransfer.userIdentityMismatch", event);
+      return createErrorResponse(400, "petDetailInfo.errors.ngoTransfer.userIdentityMismatch", event);
     }
 
     // Build update fields
@@ -76,7 +76,7 @@ async function ngoTransfer({ event, body }) {
 
     const result = await Pet.updateOne({ _id: petID, deleted: false }, { $set: updateFields });
     if (result.matchedCount === 0) {
-      return createErrorResponse(404, "petNotFound", event);
+      return createErrorResponse(404, "petDetailInfo.errors.petNotFound", event);
     }
 
     return createSuccessResponse(200, event, {
@@ -85,7 +85,7 @@ async function ngoTransfer({ event, body }) {
     });
   } catch (error) {
     logError("Failed to process NGO transfer", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

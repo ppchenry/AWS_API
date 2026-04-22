@@ -36,7 +36,7 @@ async function getPetBasicInfo(routeContext) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -109,7 +109,7 @@ async function updatePetBasicInfo(routeContext) {
       error,
       extra: { petID },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -132,7 +132,7 @@ async function deletePetBasicInfo(routeContext) {
       limit: 10,
       windowSec: 60,
     });
-    if (!rl.allowed) return createErrorResponse(429, "others.rateLimited", event);
+    if (!rl.allowed) return createErrorResponse(429, "common.rateLimited", event);
 
     const petResult = await loadAuthorizedPet({ event });
     if (!petResult.isValid) {
@@ -169,7 +169,7 @@ async function deletePetBasicInfo(routeContext) {
         petID,
       },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

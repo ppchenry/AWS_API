@@ -30,7 +30,7 @@ async function validateUserRequest({ event }) {
     } catch {
       return {
         isValid: false,
-        error: createErrorResponse(400, "others.invalidJSON", event),
+        error: createErrorResponse(400, "common.invalidJSON", event),
       };
     }
   }
@@ -42,7 +42,7 @@ async function validateUserRequest({ event }) {
   ) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "others.missingParams", event),
+      error: createErrorResponse(400, "common.missingParams", event),
     };
   }
 
@@ -51,13 +51,13 @@ async function validateUserRequest({ event }) {
   if (!petID) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "missingPetId", event),
+      error: createErrorResponse(400, "petMedicalRecord.errors.missingPetId", event),
     };
   }
   if (!isValidObjectId(petID)) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "invalidPetIdFormat", event),
+      error: createErrorResponse(400, "petMedicalRecord.errors.invalidPetIdFormat", event),
     };
   }
 
@@ -92,15 +92,15 @@ async function validateUserRequest({ event }) {
 function _getMissingIdKey(paramName) {
   switch (paramName) {
     case "medicalID":
-      return "medicalRecord.putMissingMedicalId";
+      return "petMedicalRecord.errors.medicalRecord.missingId";
     case "medicationID":
-      return "medicationRecord.putMissingMedicationId";
+      return "petMedicalRecord.errors.medicationRecord.missingId";
     case "dewormID":
-      return "dewormRecord.putMissingDewormId";
+      return "petMedicalRecord.errors.dewormRecord.missingId";
     case "bloodTestID":
-      return "bloodTest.putMissingBloodTestId";
+      return "petMedicalRecord.errors.bloodTest.missingId";
     default:
-      return "others.missingParams";
+      return "common.missingParams";
   }
 }
 
@@ -114,15 +114,15 @@ function _getMissingIdKey(paramName) {
 function _getInvalidIdKey(paramName) {
   switch (paramName) {
     case "medicalID":
-      return "medicalRecord.invalidMedicalIdFormat";
+      return "petMedicalRecord.errors.medicalRecord.invalidMedicalIdFormat";
     case "medicationID":
-      return "medicationRecord.invalidMedicationIdFormat";
+      return "petMedicalRecord.errors.medicationRecord.invalidMedicationIdFormat";
     case "dewormID":
-      return "dewormRecord.invalidDewormIdFormat";
+      return "petMedicalRecord.errors.dewormRecord.invalidDewormIdFormat";
     case "bloodTestID":
-      return "bloodTest.invalidBloodTestIdFormat";
+      return "petMedicalRecord.errors.bloodTest.invalidBloodTestIdFormat";
     default:
-      return "invalidPetIdFormat";
+      return "petMedicalRecord.errors.invalidPetIdFormat";
   }
 }
 

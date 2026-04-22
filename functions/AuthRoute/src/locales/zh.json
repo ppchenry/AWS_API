@@ -1,11 +1,13 @@
 {
-  "authRefresh": {
-    "missingRefreshToken": "缺少 refresh token cookie",
-    "invalidRefreshTokenCookie": "refresh token cookie 格式無效",
-    "invalidSession": "Refresh token 已過期或無效",
-    "ngoApprovalRequired": "NGO 帳號尚未獲批，無法刷新工作階段"
+  "authRoute": {
+    "errors": {
+      "missingRefreshToken": "缺少 refresh token cookie",
+      "invalidRefreshTokenCookie": "refresh token cookie 格式無效",
+      "invalidSession": "Refresh token 已過期或無效",
+      "ngoApprovalRequired": "NGO 帳號尚未獲批，無法刷新工作階段"
+    }
   },
-  "others": {
+  "common": {
     "internalError": "發生內部錯誤",
     "methodNotAllowed": "不支援此 HTTP 方法",
     "rateLimited": "請求過於頻繁，請稍後再試",

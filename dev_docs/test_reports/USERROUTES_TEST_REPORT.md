@@ -116,7 +116,7 @@ Every required field and every business rule is checked individually:
 - `DELETE /account/{userId}` with a non-ObjectId path param returns `403` — self-access guard fires before format validation
 - Public `POST /account/login-2` route disabled → 405
 - Deleted user token can no longer read the profile → 404
-- Verified SMS code with no registered account → `verification.codeIncorrect` (unit-tested)
+- Verified SMS code with no registered account → `userRoutes.errors.verification.codeIncorrect` (unit-tested)
 
 #### Security hardening
 
@@ -145,7 +145,7 @@ Every error response from UserRoutes follows a fixed shape:
 ```json
 {
   "success": false,
-  "errorKey": "emailLogin.invalidUserCredential",
+  "errorKey": "userRoutes.errors.emailLogin.invalidUserCredential",
   "error": "使用者憑證無效",
   "requestId": "3b1c2d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e"
 }
@@ -170,9 +170,9 @@ if (!data.success) {
   showToast(data.error);
   console.error("[API Error]", data.errorKey, "requestId:", data.requestId);
 
-  if (data.errorKey === "emailLogin.invalidUserCredential") {
+  if (data.errorKey === "userRoutes.errors.emailLogin.invalidUserCredential") {
     highlightPasswordField();
-  } else if (data.errorKey === "phoneRegister.existWithEmail") {
+  } else if (data.errorKey === "userRoutes.errors.phoneRegister.existWithEmail") {
     showLoginInsteadPrompt();
   }
 }
@@ -191,57 +191,57 @@ The full list of `errorKey` values used across UserRoutes, with their default (C
 
 | errorKey | Default message (zh) |
 | --- | --- |
-| `emailLogin.invalidUserCredential` | 使用者憑證無效 |
-| `emailLogin.invalidEmailFormat` | 電子郵件格式無效 |
-| `emailLogin.paramsMissing` | 需要電郵和密碼 |
-| `emailLogin.userNGONotFound` | 未找到 NGO 使用者存取權限 |
-| `emailLogin.NGONotFound` | 未找到非政府組織 |
-| `emailLogin.ngoApprovalRequired` | NGO 帳號尚未獲批，暫時無法登入。 |
-| `phoneRegister.existWithEmail` | 使用此電郵的使用者已存在 |
-| `phoneRegister.userExist` | 用戶已存在 |
-| `register.errors.firstNameRequired` | 必須提供名字 |
-| `register.errors.lastNameRequired` | 必須提供姓氏 |
-| `register.errors.passwordRequired` | 密碼必須至少 8 個字符 |
-| `register.errors.emailRequiredWithPassword` | 提供密碼時必須同時提供電子郵件 |
-| `register.errors.invalidEmailFormat` | 電子郵件格式無效 |
-| `register.errors.invalidPhoneFormat` | 電話號碼格式無效 |
-| `register.errors.emailOrPhoneRequired` | 必須提供電子郵件或電話號碼 |
-| `registerNgo.errors.firstNameRequired` | 必須提供名字 |
-| `registerNgo.errors.lastNameRequired` | 必須提供姓氏 |
-| `registerNgo.errors.passwordRequired` | 密碼必須至少 8 個字符 |
-| `registerNgo.errors.confirmPasswordRequired` | 請確認密碼 |
-| `registerNgo.errors.ngoNameRequired` | 必須提供 NGO 名稱 |
-| `registerNgo.errors.businessRegRequired` | 必須提供商業登記號碼 |
-| `registerNgo.errors.addressRequired` | 必須提供地址 |
-| `registerNgo.errors.passwordMismatch` | 密碼與確認密碼不一致 |
-| `emailRegister.invalidEmailFormat` | 電子郵件格式無效 |
-| `emailRegister.invalidPhoneFormat` | 電話號碼格式無效 |
-| `updatePassword.passwordUnchanged` | 新密碼不能與舊密碼相同 |
-| `updatePassword.currentPasswordInvalid` | 目前密碼不正確 |
-| `updatePassword.passwordLong` | 新密碼必須至少包含 8 個字符 |
-| `updatePassword.invalidUserId` | 用戶 ID 格式無效 |
-| `updatePassword.paramsMissing` | 必須提供舊密碼 |
-| `updateImage.invalidImageUrl` | 圖片 URL 格式無效 |
-| `updateImage.invalidUserId` | 用戶 ID 格式無效 |
-| `others.invalidPUT` | 使用者 ID 無效或缺失 |
-| `others.invalidEmailFormat` | 電子郵件格式無效 |
-| `others.missingParams` | 缺少電話參數 |
-| `others.unauthorized` | 需要身份驗證，請登錄 |
-| `others.methodNotAllowed` | 不允許對此路徑使用該方法 |
-| `others.internalError` | 發生錯誤，請稍後再試 |
-| `others.rateLimited` | 請稍後再試 |
-| `others.serviceUnavailable` | 服務暫時無法使用，請稍後再試 |
-| `deleteAccount.userAlreadyDeleted` | 用戶已被刪除 |
-| `deleteAccount.invalidEmailFormat` | 電子郵件格式無效 |
-| `deleteAccount.userNotFound` | 找不到與該電子郵件地址關聯的帳戶 |
-| `ngo.invalidId` | NGO ID 格式無效 |
-| `ngo.notFound` | 找不到該 NGO |
-| `ngo.missingId` | 必須提供 NGO ID |
-| `ngo.invalidBody` | 請求內容格式無效 |
-| `verification.invalidPhoneFormat` | 電話號碼格式無效 |
-| `verification.missingCodeParams` | 驗證碼參數缺失 |
-| `verification.codeIncorrect` | 驗證碼不正確，請重試 |
-| `verification.codeExpired` | 驗證碼已過期 |
+| `userRoutes.errors.emailLogin.invalidUserCredential` | 使用者憑證無效 |
+| `userRoutes.errors.emailLogin.invalidEmailFormat` | 電子郵件格式無效 |
+| `userRoutes.errors.emailLogin.paramsMissing` | 需要電郵和密碼 |
+| `userRoutes.errors.emailLogin.userNGONotFound` | 未找到 NGO 使用者存取權限 |
+| `userRoutes.errors.emailLogin.NGONotFound` | 未找到非政府組織 |
+| `userRoutes.errors.emailLogin.ngoApprovalRequired` | NGO 帳號尚未獲批，暫時無法登入。 |
+| `userRoutes.errors.phoneRegister.existWithEmail` | 使用此電郵的使用者已存在 |
+| `userRoutes.errors.phoneRegister.userExist` | 用戶已存在 |
+| `userRoutes.errors.register.errors.firstNameRequired` | 必須提供名字 |
+| `userRoutes.errors.register.errors.lastNameRequired` | 必須提供姓氏 |
+| `userRoutes.errors.register.errors.passwordRequired` | 密碼必須至少 8 個字符 |
+| `userRoutes.errors.register.errors.emailRequiredWithPassword` | 提供密碼時必須同時提供電子郵件 |
+| `userRoutes.errors.register.errors.invalidEmailFormat` | 電子郵件格式無效 |
+| `userRoutes.errors.register.errors.invalidPhoneFormat` | 電話號碼格式無效 |
+| `userRoutes.errors.register.errors.emailOrPhoneRequired` | 必須提供電子郵件或電話號碼 |
+| `userRoutes.errors.registerNgo.errors.firstNameRequired` | 必須提供名字 |
+| `userRoutes.errors.registerNgo.errors.lastNameRequired` | 必須提供姓氏 |
+| `userRoutes.errors.registerNgo.errors.passwordRequired` | 密碼必須至少 8 個字符 |
+| `userRoutes.errors.registerNgo.errors.confirmPasswordRequired` | 請確認密碼 |
+| `userRoutes.errors.registerNgo.errors.ngoNameRequired` | 必須提供 NGO 名稱 |
+| `userRoutes.errors.registerNgo.errors.businessRegRequired` | 必須提供商業登記號碼 |
+| `userRoutes.errors.registerNgo.errors.addressRequired` | 必須提供地址 |
+| `userRoutes.errors.registerNgo.errors.passwordMismatch` | 密碼與確認密碼不一致 |
+| `userRoutes.errors.emailRegister.invalidEmailFormat` | 電子郵件格式無效 |
+| `userRoutes.errors.emailRegister.invalidPhoneFormat` | 電話號碼格式無效 |
+| `userRoutes.errors.updatePassword.passwordUnchanged` | 新密碼不能與舊密碼相同 |
+| `userRoutes.errors.updatePassword.currentPasswordInvalid` | 目前密碼不正確 |
+| `userRoutes.errors.updatePassword.passwordLong` | 新密碼必須至少包含 8 個字符 |
+| `userRoutes.errors.updatePassword.invalidUserId` | 用戶 ID 格式無效 |
+| `userRoutes.errors.updatePassword.paramsMissing` | 必須提供舊密碼 |
+| `userRoutes.errors.updateImage.invalidImageUrl` | 圖片 URL 格式無效 |
+| `userRoutes.errors.updateImage.invalidUserId` | 用戶 ID 格式無效 |
+| `userRoutes.errors.invalidPUT` | 使用者 ID 無效或缺失 |
+| `common.invalidEmailFormat` | 電子郵件格式無效 |
+| `common.missingParams` | 缺少電話參數 |
+| `common.unauthorized` | 需要身份驗證，請登錄 |
+| `common.methodNotAllowed` | 不允許對此路徑使用該方法 |
+| `common.internalError` | 發生錯誤，請稍後再試 |
+| `common.rateLimited` | 請稍後再試 |
+| `common.serviceUnavailable` | 服務暫時無法使用，請稍後再試 |
+| `userRoutes.errors.deleteAccount.userAlreadyDeleted` | 用戶已被刪除 |
+| `userRoutes.errors.deleteAccount.invalidEmailFormat` | 電子郵件格式無效 |
+| `userRoutes.errors.deleteAccount.userNotFound` | 找不到與該電子郵件地址關聯的帳戶 |
+| `userRoutes.errors.ngo.invalidId` | NGO ID 格式無效 |
+| `userRoutes.errors.ngo.notFound` | 找不到該 NGO |
+| `userRoutes.errors.ngo.missingId` | 必須提供 NGO ID |
+| `userRoutes.errors.ngo.invalidBody` | 請求內容格式無效 |
+| `userRoutes.errors.userRoutes.errors.verification.invalidPhoneFormat` | 電話號碼格式無效 |
+| `userRoutes.errors.verification.missingCodeParams` | 驗證碼參數缺失 |
+| `userRoutes.errors.verification.codeIncorrect` | 驗證碼不正確，請重試 |
+| `userRoutes.errors.verification.codeExpired` | 驗證碼已過期 |
 
 ### Setup Fix Applied
 

@@ -1,5 +1,5 @@
 {
-  "others": {
+  "common": {
     "internalError": "Internal Server Error",
     "invalidJSON": "Invalid JSON request body",
     "missingParams": "Missing required parameters",
@@ -8,38 +8,36 @@
     "rateLimited": "Too many requests, please try again later",
     "invalidParams": "Invalid request parameters"
   },
-  "sfExpress": {
-    "validation": {
-      "lastNameRequired": "Last name is required",
-      "phoneNumberRequired": "Phone number is required",
-      "addressRequired": "Address is required",
-      "waybillNoRequired": "Waybill number is required",
-      "tokenRequired": "Token is required",
-      "typeIdRequired": "Type ID is required",
-      "areaIdRequired": "Area ID is required",
-      "netCodeListRequired": "netCode must be a non-empty array"
-    },
+  "sfExpressRoutes": {
     "errors": {
+      "validation": {
+        "lastNameRequired": "Last name is required",
+        "phoneNumberRequired": "Phone number is required",
+        "addressRequired": "Address is required",
+        "waybillNoRequired": "Waybill number is required",
+        "tokenRequired": "Token is required",
+        "typeIdRequired": "Type ID is required",
+        "areaIdRequired": "Area ID is required",
+        "netCodeListRequired": "netCode must be a non-empty array"
+      },
       "sfApiError": "SF API request failed",
       "invalidSfResponse": "Invalid response from SF API",
       "missingWaybill": "No waybill returned from SF API",
       "missingPrintFile": "No print file returned",
-      "emailFailed": "Failed to send waybill email"
-    }
-  },
-  "env": {
-    "errors": {
-      "missingMongoUri": "MONGODB_URI is required",
-      "missingJwtSecret": "JWT_SECRET is required",
-      "missingAllowedOrigins": "ALLOWED_ORIGINS is required",
-      "missingSfCustomerCode": "SF_CUSTOMER_CODE is required",
-      "missingSfProductionCheckCode": "SF_PRODUCTION_CHECK_CODE is required",
-      "missingSmtpFrom": "SMTP_FROM is required",
-      "missingSmtpHost": "SMTP_HOST is required",
-      "missingSmtpPass": "SMTP_PASS is required",
-      "missingSmtpPort": "SMTP_PORT is required",
-      "missingSmtpUser": "SMTP_USER is required",
-      "missingSfAddressApiKey": "SF_ADDRESS_API_KEY is required"
+      "emailFailed": "Failed to send waybill email",
+      "env": {
+        "missingMongoUri": "MONGODB_URI is required",
+        "missingJwtSecret": "JWT_SECRET is required",
+        "missingAllowedOrigins": "ALLOWED_ORIGINS is required",
+        "missingSfCustomerCode": "SF_CUSTOMER_CODE is required",
+        "missingSfProductionCheckCode": "SF_PRODUCTION_CHECK_CODE is required",
+        "missingSmtpFrom": "SMTP_FROM is required",
+        "missingSmtpHost": "SMTP_HOST is required",
+        "missingSmtpPass": "SMTP_PASS is required",
+        "missingSmtpPort": "SMTP_PORT is required",
+        "missingSmtpUser": "SMTP_USER is required",
+        "missingSfAddressApiKey": "SF_ADDRESS_API_KEY is required"
+      }
     }
   }
 }

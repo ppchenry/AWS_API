@@ -65,25 +65,25 @@ Current status:
 - Nonexistent pet referenced by petId → 404
 - Invalid petId format in notification POST → 400
 - Missing `type` field in notification POST → 400
-- Malformed JSON body on notification POST → 400 (`others.invalidJSON`)
-- Empty body on notification POST/PUT → 400 (`others.missingParams`)
-- Invalid ObjectId in path params (petLostID, petFoundID, notificationId) → 400 (`others.invalidPathParam`)
+- Malformed JSON body on notification POST → 400 (`common.invalidJSON`)
+- Empty body on notification POST/PUT → 400 (`common.missingParams`)
+- Invalid ObjectId in path params (petLostID, petFoundID, notificationId) → 400 (`common.invalidPathParam`)
 
 #### Authentication & authorization
 
-- No Authorization header → 401 (`others.unauthorized`)
+- No Authorization header → 401 (`common.unauthorized`)
 - Expired JWT → 401
 - Garbage Bearer token → 401
 - Wrong JWT secret → 401
 - Missing auth on POST multipart → 401
-- Self-access enforcement: accessing another user's notifications → 403 (`others.selfAccessDenied`)
+- Self-access enforcement: accessing another user's notifications → 403 (`common.selfAccessDenied`)
 - Self-access enforcement: posting to another user's notifications → 403
-- Ownership enforcement: deleting another user's pet-lost record → 403 (`others.selfAccessDenied`)
+- Ownership enforcement: deleting another user's pet-lost record → 403 (`common.selfAccessDenied`)
 - Compound query enforcement: archiving another user's notification → 404 (no match)
 
 #### Security hardening
 
-- **Rate limiting** — pet-lost and pet-found create routes return 429 (`others.rateLimited`) after 5 requests in 60 seconds per user
+- **Rate limiting** — pet-lost and pet-found create routes return 429 (`common.rateLimited`) after 5 requests in 60 seconds per user
 - **isArchived injection** — `isArchived: true` in notification create body is ignored; notification is created normally
 - **Ownership on delete** — DELETE routes fetch the record, check `userId` ownership, and return 403 if the caller is not the owner
 - **Guard ordering** — self-access check fires before ObjectId format validation (deny early principle)
@@ -106,7 +106,7 @@ Every error response follows a fixed shape:
 ```json
 {
   "success": false,
-  "errorKey": "others.unauthorized",
+  "errorKey": "common.unauthorized",
   "error": "未經授權的訪問",
   "requestId": "3b1c2d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e"
 }
@@ -132,21 +132,21 @@ AWS Console -> CloudWatch -> Log Groups -> /aws/lambda/PetLostandFound
 
 | errorKey | Context |
 | --- | --- |
-| `others.unauthorized` | Missing, expired, or invalid JWT |
-| `others.selfAccessDenied` | JWT userId ≠ path userId, or not record owner |
-| `others.invalidJSON` | Malformed JSON body |
-| `others.missingParams` | Empty body on POST/PUT |
-| `others.invalidPathParam` | Path parameter fails ObjectId validation |
-| `others.methodNotAllowed` | HTTP method not mapped for this resource |
-| `others.rateLimited` | Rate limit exceeded (5 req/60s on create routes) |
-| `others.internalError` | Unhandled server error |
-| `petLost.errors.petNotFound` | petId references a nonexistent pet |
-| `petLost.errors.notFound` | Pet-lost record not found (for delete) |
-| `petLost.errors.idRequired` | Missing petLostID path param |
-| `petFound.errors.notFound` | Pet-found record not found (for delete) |
-| `petFound.errors.idRequired` | Missing petFoundID path param |
-| `notifications.errors.notFound` | Notification not found (for archive) |
-| `notifications.errors.notificationIdRequired` | Missing notificationId path param |
+| `common.unauthorized` | Missing, expired, or invalid JWT |
+| `common.selfAccessDenied` | JWT userId ≠ path userId, or not record owner |
+| `common.invalidJSON` | Malformed JSON body |
+| `common.missingParams` | Empty body on POST/PUT |
+| `common.invalidPathParam` | Path parameter fails ObjectId validation |
+| `common.methodNotAllowed` | HTTP method not mapped for this resource |
+| `common.rateLimited` | Rate limit exceeded (5 req/60s on create routes) |
+| `common.internalError` | Unhandled server error |
+| `petLostAndFound.errors.petLost.petNotFound` | petId references a nonexistent pet |
+| `petLostAndFound.errors.petLost.notFound` | Pet-lost record not found (for delete) |
+| `petLostAndFound.errors.petLost.idRequired` | Missing petLostID path param |
+| `petLostAndFound.errors.petFound.notFound` | Pet-found record not found (for delete) |
+| `petLostAndFound.errors.petFound.idRequired` | Missing petFoundID path param |
+| `petLostAndFound.errors.notifications.notFound` | Notification not found (for archive) |
+| `petLostAndFound.errors.notifications.notificationIdRequired` | Missing notificationId path param |
 
 ---
 
@@ -161,8 +161,8 @@ AWS Console -> CloudWatch -> Log Groups -> /aws/lambda/PetLostandFound
 | Create-route abuse | Pet-lost and pet-found creates rate-limit at 5 req / 60 s per user | ✅ |
 | `isArchived` mass-assignment injection | Create flow ignores caller-supplied `isArchived: true` | ✅ |
 | Invalid ObjectId path injection | Path params validated before downstream DB logic | ✅ |
-| Malformed JSON body | Guard returns `400 others.invalidJSON` | ✅ |
-| Empty request body | POST and PUT body guards return `400 others.missingParams` | ✅ |
+| Malformed JSON body | Guard returns `400 common.invalidJSON` | ✅ |
+| Empty request body | POST and PUT body guards return `400 common.missingParams` | ✅ |
 | CORS origin abuse | Disallowed origins on OPTIONS return 403 | ✅ |
 | Internal field leakage | List responses exclude `__v` and preserve fixed error shape | ✅ |
 | Legacy or unmapped methods | Unsupported methods return 405 or are blocked before handler logic | ✅ |

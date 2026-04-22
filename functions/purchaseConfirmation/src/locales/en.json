@@ -1,5 +1,5 @@
 {
-  "others": {
+  "common": {
     "unauthorized": "Unauthorized. Please log in to continue.",
     "internalError": "An unexpected error occurred. Please try again later.",
     "invalidJSON": "Invalid JSON format in request body.",
@@ -10,31 +10,31 @@
     "rateLimited": "Too many requests. Please try again later.",
     "originNotAllowed": "Origin not allowed."
   },
-  "purchase": {
+  "purchaseConfirmation": {
     "errors": {
-      "missingPhoneNumber": "Phone number is required for order submission.",
-      "invalidPhone": "Phone number must be digits only (7-15 digits).",
-      "orderNotFound": "Order not found.",
-      "orderVerificationNotFound": "Order verification not found.",
-      "invalidOption": "Invalid product option selected.",
-      "missingRequiredFields": "Required order fields are missing.",
-      "invalidTempId": "Invalid order reference format.",
-      "invalidPrice": "Invalid price format.",
-      "duplicateOrder": "An order with this reference already exists.",
-      "invalidShopCode": "The provided shop code is not recognised.",
-      "alreadyCancelled": "This order verification has already been cancelled.",
-      "fileTooLarge": "Uploaded file exceeds the 5 MB size limit.",
-      "invalidFileType": "Unsupported file type. Accepted formats: JPEG, PNG, WebP, GIF.",
-      "tooManyFiles": "Too many files uploaded for a single field.",
-      "invalidEmail": "Invalid email address."
-    }
-  },
-  "email": {
-    "errors": {
-      "missingFields": "Required email fields are missing.",
-      "invalidEmail": "Invalid email address.",
-      "invalidLocationURL": "Location URL must be a valid HTTPS address.",
-      "sendFailed": "Failed to send email. Please try again."
+      "purchase": {
+        "missingPhoneNumber": "Phone number is required for order submission.",
+        "invalidPhone": "Phone number must be digits only (7-15 digits).",
+        "orderNotFound": "Order not found.",
+        "orderVerificationNotFound": "Order verification not found.",
+        "invalidOption": "Invalid product option selected.",
+        "missingRequiredFields": "Required order fields are missing.",
+        "invalidTempId": "Invalid order reference format.",
+        "invalidPrice": "Invalid price format.",
+        "duplicateOrder": "An order with this reference already exists.",
+        "invalidShopCode": "The provided shop code is not recognised.",
+        "alreadyCancelled": "This order verification has already been cancelled.",
+        "fileTooLarge": "Uploaded file exceeds the 5 MB size limit.",
+        "invalidFileType": "Unsupported file type. Accepted formats: JPEG, PNG, WebP, GIF.",
+        "tooManyFiles": "Too many files uploaded for a single field.",
+        "invalidEmail": "Invalid email address."
+      },
+      "email": {
+        "missingFields": "Required email fields are missing.",
+        "invalidEmail": "Invalid email address.",
+        "invalidLocationURL": "Location URL must be a valid HTTPS address.",
+        "sendFailed": "Failed to send email. Please try again."
+      }
     }
   }
 }

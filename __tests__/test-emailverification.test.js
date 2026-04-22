@@ -165,7 +165,7 @@ describe("frozen route /account/generate-email-code-2", () => {
     });
     expect(res.status).toBe(405);
     expect(res.body.success).toBe(false);
-    expect(res.body.errorKey).toBe("others.methodNotAllowed");
+    expect(res.body.errorKey).toBe("common.methodNotAllowed");
   });
 });
 
@@ -180,7 +180,7 @@ describe("guard: malformed body", () => {
     );
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
-    expect(res.body.errorKey).toBe("others.invalidJSON");
+    expect(res.body.errorKey).toBe("common.invalidJSON");
   });
 
   test("rejects empty body → 400", async () => {
@@ -215,7 +215,7 @@ describe("POST /account/generate-email-code — validation", () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
-    expect(res.body.errorKey).toBe("invalidEmailFormat");
+    expect(res.body.errorKey).toBe("emailVerification.errors.invalidEmailFormat");
   });
 });
 
@@ -273,7 +273,7 @@ describe("POST /account/verify-email-code — validation", () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
-    expect(res.body.errorKey).toBe("invalidResetCodeFormat");
+    expect(res.body.errorKey).toBe("emailVerification.errors.invalidResetCodeFormat");
   });
 
   test("rejects invalid email format → 400", async () => {
@@ -283,7 +283,7 @@ describe("POST /account/verify-email-code — validation", () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
-    expect(res.body.errorKey).toBe("invalidEmailFormat");
+    expect(res.body.errorKey).toBe("emailVerification.errors.invalidEmailFormat");
   });
 });
 
@@ -297,7 +297,7 @@ describe("POST /account/verify-email-code — anti-enumeration", () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
-    expect(res.body.errorKey).toBe("verificationFailed");
+    expect(res.body.errorKey).toBe("emailVerification.errors.verificationFailed");
   });
 
   test("returns generic verificationFailed for wrong code", async () => {
@@ -307,7 +307,7 @@ describe("POST /account/verify-email-code — anti-enumeration", () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
-    expect(res.body.errorKey).toBe("verificationFailed");
+    expect(res.body.errorKey).toBe("emailVerification.errors.verificationFailed");
   });
 
   test("nonexistent and wrong-code responses are indistinguishable", async () => {
@@ -483,7 +483,7 @@ describe("Tier 2: replay prevention", () => {
       });
       expect(res2.status).toBe(400);
       expect(res2.body.success).toBe(false);
-      expect(res2.body.errorKey).toBe("verificationFailed");
+      expect(res2.body.errorKey).toBe("emailVerification.errors.verificationFailed");
 
       // 4. Confirm the verification record is consumed in the DB
       const record = await verificationCodesCol().findOne({ _id: testEmail });
@@ -521,7 +521,7 @@ describe("Tier 2: expired code", () => {
         resetCode: testCode,
       });
       expect(res.status).toBe(400);
-      expect(res.body.errorKey).toBe("verificationFailed");
+      expect(res.body.errorKey).toBe("emailVerification.errors.verificationFailed");
 
       // Cleanup
       await verificationCodesCol().deleteMany({ _id: testEmail });
@@ -551,7 +551,7 @@ describe("Tier 2: already-consumed code", () => {
         resetCode: testCode,
       });
       expect(res.status).toBe(400);
-      expect(res.body.errorKey).toBe("verificationFailed");
+      expect(res.body.errorKey).toBe("emailVerification.errors.verificationFailed");
 
       // Cleanup
       await verificationCodesCol().deleteMany({ _id: testEmail });

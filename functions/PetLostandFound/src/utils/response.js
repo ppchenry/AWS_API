@@ -1,15 +1,24 @@
 const { corsHeaders } = require("../cors");
 const { getTranslation, loadTranslations } = require("./i18n");
+const { logWarn } = require("./logger");
 
 /**
  * Builds a standardized JSON error response with CORS headers.
  *
  * @param {number} statusCode
  * @param {string} error The translation key or raw error message.
- * @param {Record<string, any>} event
+ * @param {import("aws-lambda").APIGatewayProxyEvent} event
  * @returns {{statusCode: number, headers: Record<string, string>, body: string}}
  */
 const createErrorResponse = (statusCode, error, event) => {
+  if (statusCode >= 400 && statusCode < 500) {
+    logWarn("Expected client error response", {
+      scope: "utils.response.createErrorResponse",
+      event,
+      extra: { statusCode, errorKey: error },
+    });
+  }
+
   const defaultHeaders = {
     "Content-Type": "application/json",
     ...corsHeaders(event),

@@ -52,7 +52,7 @@ async function getNgoUserList({ event }) {
         page: qs.page,
       },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -66,16 +66,16 @@ async function getNgoPetPlacementOptions({ event }) {
 
     const ngoId = event.pathParameters?.ngoId;
     if (!ngoId) {
-      return createErrorResponse(400, "ngo.missingId", event);
+      return createErrorResponse(400, "userRoutes.errors.ngo.missingId", event);
     }
 
     if (!mongoose.isValidObjectId(ngoId)) {
-      return createErrorResponse(400, "ngo.invalidId", event);
+      return createErrorResponse(400, "userRoutes.errors.ngo.invalidId", event);
     }
 
     const ngo = await Ngo.findOne({ _id: ngoId }).lean();
     if (!ngo) {
-      return createErrorResponse(404, "ngo.notFound", event);
+      return createErrorResponse(404, "userRoutes.errors.ngo.notFound", event);
     }
 
     return createSuccessResponse(200, event, {
@@ -90,7 +90,7 @@ async function getNgoPetPlacementOptions({ event }) {
         ngoId: event.pathParameters?.ngoId,
       },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -107,12 +107,12 @@ async function getNgoDetails({ event }) {
 
     const ngoId = event.pathParameters?.ngoId;
     if (!mongoose.isValidObjectId(ngoId)) {
-      return createErrorResponse(400, "ngo.invalidId", event);
+      return createErrorResponse(400, "userRoutes.errors.ngo.invalidId", event);
     }
 
     const ngo = await Ngo.findOne({ _id: ngoId }).lean();
     if (!ngo) {
-      return createErrorResponse(404, "ngo.notFound", event);
+      return createErrorResponse(404, "userRoutes.errors.ngo.notFound", event);
     }
 
     // Parallel fetch for associated data
@@ -145,7 +145,7 @@ async function getNgoDetails({ event }) {
         ngoId: event.pathParameters?.ngoId,
       },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -158,7 +158,7 @@ async function editNgo({ event, body }) {
   // Validate input using Zod
   const parseResult = editNgoBodySchema.safeParse(body);
   if (!parseResult.success) {
-    return createErrorResponse(400, "ngo.invalidBody", event);
+    return createErrorResponse(400, "userRoutes.errors.ngo.invalidBody", event);
   }
   // Use the parsed data
   body = parseResult.data;
@@ -190,7 +190,7 @@ async function editNgo({ event, body }) {
     const userId = String(event.userId);
 
     if (!ngoId) {
-      return createErrorResponse(400, "ngo.missingId", event);
+      return createErrorResponse(400, "userRoutes.errors.ngo.missingId", event);
     }
 
     // 2. Prepare Updates using dot notation
@@ -208,7 +208,7 @@ async function editNgo({ event, body }) {
         deleted: false,
       });
       if (existingUserWithEmail) {
-        return createErrorResponse(409, "others.emailExists", event);
+        return createErrorResponse(409, "userRoutes.errors.emailExists", event);
       }
     }
     if (userDot.phoneNumber) {
@@ -218,7 +218,7 @@ async function editNgo({ event, body }) {
         deleted: false,
       });
       if (existingUserWithPhone) {
-        return createErrorResponse(409, "others.phoneExists", event);
+        return createErrorResponse(409, "userRoutes.errors.phoneExists", event);
       }
     }
     if (ngoDot.registrationNumber) {
@@ -227,7 +227,7 @@ async function editNgo({ event, body }) {
         _id: { $ne: ngoId },
       });
       if (existingNgoWithReg) {
-        return createErrorResponse(409, "others.registrationNumberExists", event);
+        return createErrorResponse(409, "userRoutes.errors.registrationNumberExists", event);
       }
     }
 
@@ -296,7 +296,7 @@ async function editNgo({ event, body }) {
 
     // Mongoose Validation Error
     if (err.name === "ValidationError") {
-      return createErrorResponse(400, "ngo.invalidBody", event);
+      return createErrorResponse(400, "userRoutes.errors.ngo.invalidBody", event);
     }
 
     logError("NGO edit failed", {
@@ -308,7 +308,7 @@ async function editNgo({ event, body }) {
         userId,
       },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   } finally {
     session.endSession();
   }

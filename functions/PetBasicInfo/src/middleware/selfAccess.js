@@ -45,7 +45,7 @@ function checkPetOwnership({ event, pet, routeKey }) {
 
   return {
     isValid: false,
-    error: createErrorResponse(403, 'others.unauthorized', event),
+    error: createErrorResponse(403, 'common.unauthorized', event),
   };
 }
 

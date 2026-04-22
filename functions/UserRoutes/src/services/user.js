@@ -18,7 +18,7 @@ async function findActiveUserById(userId) {
 async function getUserDetails({ event }) {
   const resolvedUser = await findActiveUserById(event.pathParameters?.userId);
   if (!resolvedUser) {
-    return createErrorResponse(404, "others.getUserNotFound", event);
+    return createErrorResponse(404, "userRoutes.errors.getUserNotFound", event);
   }
 
   return createSuccessResponse(200, event, {
@@ -55,7 +55,7 @@ async function updateUserDetails({ event, body }) {
       }).lean();
 
       if (conflict) {
-        const key = conflict.email === normalizedEmail ? "others.emailExists" : "others.phoneExists";
+        const key = conflict.email === normalizedEmail ? "userRoutes.errors.emailExists" : "userRoutes.errors.phoneExists";
         return createErrorResponse(409, key, event);
       }
     }
@@ -76,7 +76,7 @@ async function updateUserDetails({ event, body }) {
     );
 
     if (!updatedUser) {
-      return createErrorResponse(404, "others.putUserNotFound", event);
+      return createErrorResponse(404, "userRoutes.errors.putUserNotFound", event);
     }
 
     return createSuccessResponse(200, event, {
@@ -92,7 +92,7 @@ async function updateUserDetails({ event, body }) {
         userId: body?.userId,
       },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -107,7 +107,7 @@ async function deleteUser({ event }) {
     const resolvedUser = await findActiveUserById(event.pathParameters?.userId);
 
     if (!resolvedUser) {
-      return createErrorResponse(404, "others.getUserNotFound", event);
+      return createErrorResponse(404, "userRoutes.errors.getUserNotFound", event);
     }
 
     await Promise.all([
@@ -127,7 +127,7 @@ async function deleteUser({ event }) {
         userId: event.pathParameters?.userId,
       },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -150,11 +150,11 @@ async function deleteUserByEmail({ event, body }) {
     const user = await User.findOne({ email: normalizedEmail }).lean();
 
     if (!user) {
-      return createErrorResponse(404, "deleteAccount.userNotFound", event);
+      return createErrorResponse(404, "userRoutes.errors.deleteAccount.userNotFound", event);
     }
 
     if (user.deleted) {
-      return createErrorResponse(409, "deleteAccount.userAlreadyDeleted", event);
+      return createErrorResponse(409, "userRoutes.errors.deleteAccount.userAlreadyDeleted", event);
     }
 
     await Promise.all([
@@ -163,7 +163,7 @@ async function deleteUserByEmail({ event, body }) {
     ]);
 
     return createSuccessResponse(200, event, {
-      message: "deleteAccount.success",
+      message: "userRoutes.errors.deleteAccount.success",
       userId: user._id,
     });
   } catch (err) {
@@ -175,7 +175,7 @@ async function deleteUserByEmail({ event, body }) {
         email: body?.email,
       },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

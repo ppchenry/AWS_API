@@ -1,7 +1,7 @@
 const { z } = require("zod");
 
 const transferCreateSchema = z.object({
-  regDate: z.string({ error: "transferPath.invalidDateFormat" }).optional(),
+  regDate: z.string({ error: "petDetailInfo.errors.transferPath.invalidDateFormat" }).optional(),
   regPlace: z.string().optional(),
   transferOwner: z.string().optional(),
   transferContact: z.string().optional(),
@@ -9,7 +9,7 @@ const transferCreateSchema = z.object({
 });
 
 const transferUpdateSchema = z.object({
-  regDate: z.string({ error: "transferPath.invalidDateFormat" }).optional(),
+  regDate: z.string({ error: "petDetailInfo.errors.transferPath.invalidDateFormat" }).optional(),
   regPlace: z.string().optional(),
   transferOwner: z.string().optional(),
   transferContact: z.string().optional(),

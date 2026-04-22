@@ -83,7 +83,7 @@ Every error response from EmailVerification follows a fixed shape:
 ```json
 {
   "success": false,
-  "errorKey": "emailVerification.verificationFailed",
+  "errorKey": "emailVerification.errors.verificationFailed",
   "error": "驗證失敗",
   "requestId": "3b1c2d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e"
 }
@@ -109,12 +109,12 @@ AWS Console -> CloudWatch -> Log Groups -> /aws/lambda/EmailVerification
 
 | errorKey | Context |
 | --- | --- |
-| `others.invalidJSON` | Malformed JSON body |
-| `others.missingParams` | Empty or null body |
-| `others.methodNotAllowed` | Frozen route or unsupported method |
-| `emailVerification.invalidEmail` | Missing or invalid email input |
-| `emailVerification.invalidResetCode` | Missing or malformed reset code |
-| `emailVerification.verificationFailed` | Generic verify failure for wrong code, nonexistent user, expired code, or consumed code |
+| `common.invalidJSON` | Malformed JSON body |
+| `common.missingParams` | Empty or null body |
+| `common.methodNotAllowed` | Frozen route or unsupported method |
+| `emailVerification.errors.invalidEmailFormat` | Missing or invalid email input |
+| `emailVerification.errors.invalidResetCodeFormat` | Missing or malformed reset code |
+| `emailVerification.errors.verificationFailed` | Generic verify failure for wrong code, nonexistent user, expired code, or consumed code |
 
 ---
 
@@ -124,7 +124,7 @@ AWS Console -> CloudWatch -> Log Groups -> /aws/lambda/EmailVerification
 | --- | --- | --- |
 | CORS origin abuse | Allowed/disallowed/missing origin cases enforced at preflight | ✅ |
 | Deprecated route exposure | `POST /account/generate-email-code-2` returns `405` | ✅ |
-| Malformed JSON handling | Guard returns `400 others.invalidJSON` | ✅ |
+| Malformed JSON handling | Guard returns `400 common.invalidJSON` | ✅ |
 | Empty body handling | Guard rejects empty POST bodies | ✅ |
 | Input validation bypass | Generate/verify field validation and format checks | ✅ |
 | Generate endpoint enumeration | Uniform success without `newUser` or `uid` leakage | ✅ |

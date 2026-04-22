@@ -2,7 +2,7 @@
  * @fileoverview Service for verifying email codes and issuing auth tokens.
  *
  * Anti-enumeration (C7/C8): all verification failures (no record, expired,
- * wrong code, already-consumed) return a single generic "verificationFailed"
+ * wrong code, already-consumed) return a single generic "emailVerification.errors.verificationFailed"
  * error. Only malformed input returns 400 with a specific Zod key.
  *
  * Replay prevention: uses findOneAndUpdate on the EmailVerificationCode
@@ -47,7 +47,7 @@ async function verifyEmailCode({ event, body }) {
       windowSec: 300,
     });
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     // 2. Zod validation — malformed input still returns specific 400
@@ -68,7 +68,7 @@ async function verifyEmailCode({ event, body }) {
 
     // C7/C8: uniform failure for all non-success states
     const genericFail = () =>
-      createErrorResponse(400, "verificationFailed", event);
+      createErrorResponse(400, "emailVerification.errors.verificationFailed", event);
 
     // 4. Hash the submitted code for comparison
     const codeHash = crypto.createHash("sha256").update(resetCode).digest("hex");
@@ -100,7 +100,7 @@ async function verifyEmailCode({ event, body }) {
     if (event.userId) {
       const currentUser = await User.findOne({ _id: event.userId, deleted: false }).lean();
       if (!currentUser) {
-        return createErrorResponse(401, "others.unauthorized", event);
+        return createErrorResponse(401, "common.unauthorized", event);
       }
 
       const emailOwner = await User.findOne({
@@ -109,7 +109,7 @@ async function verifyEmailCode({ event, body }) {
         _id: { $ne: currentUser._id },
       }).lean();
       if (emailOwner) {
-        return createErrorResponse(409, "phoneRegister.existWithEmail", event);
+        return createErrorResponse(409, "emailVerification.errors.emailAlreadyLinked", event);
       }
 
       await User.findOneAndUpdate(
@@ -124,7 +124,7 @@ async function verifyEmailCode({ event, body }) {
       });
 
       return createSuccessResponse(200, event, {
-        message: getTranslation(t, "verifySuccessful"),
+        message: getTranslation(t, "emailVerification.success.verifySuccessful"),
         verified: true,
         isNewUser: false,
         userId: currentUser._id,
@@ -148,7 +148,7 @@ async function verifyEmailCode({ event, body }) {
       });
 
       return createSuccessResponse(200, event, {
-        message: getTranslation(t, "verifySuccessful"),
+        message: getTranslation(t, "emailVerification.success.verifySuccessful"),
         verified: true,
         isNewUser: true,
       });
@@ -180,7 +180,7 @@ async function verifyEmailCode({ event, body }) {
       200,
       event,
       {
-        message: getTranslation(t, "verifySuccessful"),
+        message: getTranslation(t, "emailVerification.success.verifySuccessful"),
         verified: true,
         isNewUser: false,
         userId: user._id,
@@ -196,7 +196,7 @@ async function verifyEmailCode({ event, body }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

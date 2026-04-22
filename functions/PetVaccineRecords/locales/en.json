@@ -1,32 +1,33 @@
 {
-  "others": {
-    "unauthorized": "Unauthorized",
+  "common": {
     "forbidden": "Forbidden",
     "internalError": "Internal server error",
-    "methodNotAllowed": "Method Not Allowed",
-    "originNotAllowed": "Origin not allowed",
     "invalidJSON": "Invalid JSON format",
-    "missingParams": "Missing required parameters"
+    "methodNotAllowed": "Method Not Allowed",
+    "missingParams": "Missing required parameters",
+    "originNotAllowed": "Origin not allowed",
+    "unauthorized": "Unauthorized"
   },
-  "common": {
-    "invalidJSON": "Invalid JSON format"
-  },
-  "missingPetId": "Pet ID is required",
-  "invalidPetIdFormat": "Invalid pet ID format",
-  "petNotFound": "Pet not found",
-  "petDeleted": "Pet has been deleted",
-  "methodNotAllowed": "Method Not Allowed",
-  "vaccineRecord": {
-    "getNotFound": "Pet vaccine record not found",
-    "getSuccess": "Pet vaccine record retrieved successfully",
-    "postSuccess": "Pet vaccine record created successfully",
-    "putMissingVaccineId": "Vaccine ID is required",
-    "invalidVaccineIdFormat": "Invalid vaccine ID format",
-    "vaccineRecordNotFound": "Vaccine record not found",
-    "putSuccess": "Pet vaccine record updated successfully",
-    "deleteSuccess": "Pet vaccine record deleted successfully",
-    "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
-    "noFieldsToUpdate": "No fields provided to update",
-    "invalidInput": "Invalid vaccine record input"
+  "petVaccineRecords": {
+    "errors": {
+      "missingPetId": "Pet ID is required",
+      "invalidPetIdFormat": "Invalid pet ID format",
+      "petNotFound": "Pet not found",
+      "petDeleted": "Pet has been deleted",
+      "notFound": "Vaccine record not found",
+      "missingVaccineId": "Vaccine ID is required",
+      "invalidVaccineIdFormat": "Invalid vaccine ID format",
+      "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
+      "noFieldsToUpdate": "No fields provided to update",
+      "vaccineRecord": {
+        "invalidInput": "Invalid vaccine record input"
+      }
+    },
+    "success": {
+      "retrieved": "Pet vaccine record retrieved successfully",
+      "created": "Pet vaccine record created successfully",
+      "updated": "Pet vaccine record updated successfully",
+      "deleted": "Pet vaccine record deleted successfully"
+    }
   }
 }

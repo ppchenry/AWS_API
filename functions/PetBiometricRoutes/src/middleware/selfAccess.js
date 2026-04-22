@@ -32,7 +32,7 @@ async function loadAuthorizedPet({ event, petId }) {
   if (!pet) {
     return {
       isValid: false,
-      error: createErrorResponse(404, "petBiometric.petNotFound", event),
+      error: createErrorResponse(404, "petBiometricRoutes.errors.petNotFound", event),
     };
   }
 
@@ -48,7 +48,7 @@ async function loadAuthorizedPet({ event, petId }) {
   if (!isAdmin && !isOwner && !isNgoMatch) {
     return {
       isValid: false,
-      error: createErrorResponse(403, "petBiometric.forbidden", event),
+      error: createErrorResponse(403, "petBiometricRoutes.errors.forbidden", event),
     };
   }
 

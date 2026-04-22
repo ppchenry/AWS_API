@@ -39,7 +39,7 @@ async function validatePurchaseRequest({ event }) {
     if (role !== "admin" && role !== "developer") {
       return {
         isValid: false,
-        error: createErrorResponse(403, "others.unauthorized", event),
+        error: createErrorResponse(403, "common.unauthorized", event),
       };
     }
   }
@@ -52,7 +52,7 @@ async function validatePurchaseRequest({ event }) {
     } catch {
       return {
         isValid: false,
-        error: createErrorResponse(400, "others.invalidJSON", event),
+        error: createErrorResponse(400, "common.invalidJSON", event),
       };
     }
   }
@@ -64,7 +64,7 @@ async function validatePurchaseRequest({ event }) {
   ) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "others.missingParams", event),
+      error: createErrorResponse(400, "common.missingParams", event),
     };
   }
 
@@ -73,7 +73,7 @@ async function validatePurchaseRequest({ event }) {
   if (orderVerificationId && !mongoose.isValidObjectId(orderVerificationId)) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "others.invalidObjectId", event),
+      error: createErrorResponse(400, "common.invalidObjectId", event),
     };
   }
 

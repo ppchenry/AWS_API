@@ -5,23 +5,23 @@ const { z } = require("zod");
  */
 const ptagDetectionEmailSchema = z.object({
   name: z
-    .string({ error: "email.errors.missingFields" })
-    .min(1, "email.errors.missingFields"),
+    .string({ error: "purchaseConfirmation.errors.email.missingFields" })
+    .min(1, "purchaseConfirmation.errors.email.missingFields"),
   tagId: z
-    .string({ error: "email.errors.missingFields" })
-    .min(1, "email.errors.missingFields"),
+    .string({ error: "purchaseConfirmation.errors.email.missingFields" })
+    .min(1, "purchaseConfirmation.errors.email.missingFields"),
   dateTime: z
-    .string({ error: "email.errors.missingFields" })
-    .min(1, "email.errors.missingFields"),
+    .string({ error: "purchaseConfirmation.errors.email.missingFields" })
+    .min(1, "purchaseConfirmation.errors.email.missingFields"),
   locationURL: z
-    .string({ error: "email.errors.missingFields" })
-    .min(1, "email.errors.missingFields")
-    .url("email.errors.invalidLocationURL")
-    .refine((url) => url.startsWith("https://"), "email.errors.invalidLocationURL"),
+    .string({ error: "purchaseConfirmation.errors.email.missingFields" })
+    .min(1, "purchaseConfirmation.errors.email.missingFields")
+    .url("purchaseConfirmation.errors.email.invalidLocationURL")
+    .refine((url) => url.startsWith("https://"), "purchaseConfirmation.errors.email.invalidLocationURL"),
   email: z
-    .string({ error: "email.errors.missingFields" })
-    .min(1, "email.errors.missingFields")
-    .email("email.errors.invalidEmail"),
+    .string({ error: "purchaseConfirmation.errors.email.missingFields" })
+    .min(1, "purchaseConfirmation.errors.email.missingFields")
+    .email("purchaseConfirmation.errors.email.invalidEmail"),
 });
 
 module.exports = { ptagDetectionEmailSchema };

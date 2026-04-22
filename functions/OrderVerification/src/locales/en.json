@@ -1,5 +1,5 @@
 {
-  "others": {
+  "common": {
     "internalError": "Internal server error",
     "methodNotAllowed": "Method not allowed",
     "invalidJSON": "Invalid JSON body",

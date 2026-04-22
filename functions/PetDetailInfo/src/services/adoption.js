@@ -44,7 +44,7 @@ async function getAdoption({ event }) {
     });
   } catch (error) {
     logError("Failed to get adoption record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -64,16 +64,16 @@ async function createAdoption({ event, body }) {
     // Validate date fields
     const invalidDateField = validateAdoptionDates(data);
     if (invalidDateField) {
-      return createErrorResponse(400, "petAdoption.invalidDateFormat", event);
+      return createErrorResponse(400, "petDetailInfo.errors.petAdoption.invalidDateFormat", event);
     }
 
     // Check for duplicate — only one adoption record per pet
     const dup = await checkDuplicates(
       { pet_adoptions: AdoptionModel },
-      [{ model: "pet_adoptions", path: "petId", value: petID, label: "petAdoption.duplicateRecord" }],
+      [{ model: "pet_adoptions", path: "petId", value: petID, label: "petDetailInfo.errors.petAdoption.duplicateRecord" }],
     );
     if (!dup.ok) {
-      return createErrorResponse(409, "petAdoption.duplicateRecord", event);
+      return createErrorResponse(409, "petDetailInfo.errors.petAdoption.duplicateRecord", event);
     }
 
     const newRecord = await AdoptionModel.create({
@@ -105,7 +105,7 @@ async function createAdoption({ event, body }) {
     });
   } catch (error) {
     logError("Failed to create adoption record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -126,13 +126,13 @@ async function updateAdoption({ event, body }) {
     // Validate date fields
     const invalidDateField = validateAdoptionDates(data);
     if (invalidDateField) {
-      return createErrorResponse(400, "petAdoption.invalidDateFormat", event);
+      return createErrorResponse(400, "petDetailInfo.errors.petAdoption.invalidDateFormat", event);
     }
 
     // Verify adoption record exists and belongs to this pet
     const existing = await AdoptionModel.findOne({ _id: adoptionId, petId: petID }).select("_id").lean();
     if (!existing) {
-      return createErrorResponse(404, "petAdoption.recordNotFound", event);
+      return createErrorResponse(404, "petDetailInfo.errors.petAdoption.recordNotFound", event);
     }
 
     const updateFields = {};
@@ -151,12 +151,12 @@ async function updateAdoption({ event, body }) {
     }
 
     if (Object.keys(updateFields).length === 0) {
-      return createErrorResponse(400, "petAdoption.noFieldsToUpdate", event);
+      return createErrorResponse(400, "petDetailInfo.errors.petAdoption.noFieldsToUpdate", event);
     }
 
     const result = await AdoptionModel.updateOne({ _id: adoptionId, petId: petID }, { $set: updateFields });
     if (result.matchedCount === 0) {
-      return createErrorResponse(404, "petAdoption.recordNotFound", event);
+      return createErrorResponse(404, "petDetailInfo.errors.petAdoption.recordNotFound", event);
     }
 
     return createSuccessResponse(200, event, {
@@ -165,7 +165,7 @@ async function updateAdoption({ event, body }) {
     });
   } catch (error) {
     logError("Failed to update adoption record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -180,7 +180,7 @@ async function deleteAdoption({ event }) {
     const deleted = await AdoptionModel.deleteOne({ _id: adoptionId, petId: petID });
 
     if (deleted.deletedCount === 0) {
-      return createErrorResponse(404, "petAdoption.recordNotFound", event);
+      return createErrorResponse(404, "petDetailInfo.errors.petAdoption.recordNotFound", event);
     }
 
     return createSuccessResponse(200, event, {
@@ -189,7 +189,7 @@ async function deleteAdoption({ event }) {
     });
   } catch (error) {
     logError("Failed to delete adoption record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

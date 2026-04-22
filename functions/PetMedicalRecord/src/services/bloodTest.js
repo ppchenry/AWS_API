@@ -61,13 +61,13 @@ async function getBloodTestRecords({ event }) {
       .lean();
 
     return createSuccessResponse(200, event, {
-      message: "bloodTest.getSuccess",
+      message: "petMedicalRecord.success.bloodTest.getSuccess",
       form: { blood_test: records.map(sanitizeRecord) },
       petId: petID,
     });
   } catch (error) {
     logError("Failed to get blood test records", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -87,11 +87,11 @@ async function createBloodTestRecord({ event, body }) {
     }
     const data = parseResult.data;
     if (Object.keys(data).length === 0) {
-      return createErrorResponse(400, "bloodTest.noFieldsToUpdate", event);
+      return createErrorResponse(400, "petMedicalRecord.errors.bloodTest.noFieldsToUpdate", event);
     }
 
     if (data.bloodTestDate && !isValidDateFormat(data.bloodTestDate)) {
-      return createErrorResponse(400, "bloodTest.invalidDateFormat", event);
+      return createErrorResponse(400, "petMedicalRecord.errors.bloodTest.invalidDateFormat", event);
     }
 
     const BloodTest = mongoose.model("blood_tests");
@@ -114,14 +114,14 @@ async function createBloodTestRecord({ event, body }) {
     });
 
     return createSuccessResponse(200, event, {
-      message: "bloodTest.postSuccess",
+      message: "petMedicalRecord.success.bloodTest.created",
       form: sanitizeRecord(newRecord),
       petId: petID,
       bloodTestRecordId: newRecord._id,
     });
   } catch (error) {
     logError("Failed to create blood test record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -143,7 +143,7 @@ async function updateBloodTestRecord({ event, body }) {
     const data = parseResult.data;
 
     if (data.bloodTestDate && !isValidDateFormat(data.bloodTestDate)) {
-      return createErrorResponse(400, "bloodTest.invalidDateFormat", event);
+      return createErrorResponse(400, "petMedicalRecord.errors.bloodTest.invalidDateFormat", event);
     }
 
     const BloodTest = mongoose.model("blood_tests");
@@ -157,7 +157,7 @@ async function updateBloodTestRecord({ event, body }) {
     if (data.babesiosis !== undefined) updateFields.babesiosis = data.babesiosis;
 
     if (Object.keys(updateFields).length === 0) {
-      return createErrorResponse(400, "bloodTest.noFieldsToUpdate", event);
+      return createErrorResponse(400, "petMedicalRecord.errors.bloodTest.noFieldsToUpdate", event);
     }
 
     const updated = await BloodTest.findOneAndUpdate(
@@ -170,20 +170,20 @@ async function updateBloodTestRecord({ event, body }) {
     ).lean();
 
     if (!updated) {
-      return createErrorResponse(404, "bloodTest.bloodTestRecordNotFound", event);
+      return createErrorResponse(404, "petMedicalRecord.errors.bloodTest.notFound", event);
     }
 
     await syncBloodTestPetSummary({ petId: petID, mode: "recalculate" });
 
     return createSuccessResponse(200, event, {
-      message: "bloodTest.putSuccess",
+      message: "petMedicalRecord.success.bloodTest.updated",
       petId: petID,
       bloodTestRecordId: bloodTestID,
       form: sanitizeRecord(updated),
     });
   } catch (error) {
     logError("Failed to update blood test record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -203,19 +203,19 @@ async function deleteBloodTestRecord({ event }) {
     const deleted = await BloodTest.deleteOne({ _id: bloodTestID, petId: petID });
 
     if (deleted.deletedCount === 0) {
-      return createErrorResponse(404, "bloodTest.bloodTestRecordNotFound", event);
+      return createErrorResponse(404, "petMedicalRecord.errors.bloodTest.notFound", event);
     }
 
     await syncBloodTestPetSummary({ petId: petID, mode: "recalculate" });
 
     return createSuccessResponse(200, event, {
-      message: "bloodTest.deleteSuccess",
+      message: "petMedicalRecord.success.bloodTest.deleted",
       petId: petID,
       bloodTestRecordId: bloodTestID,
     });
   } catch (error) {
     logError("Failed to delete blood test record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

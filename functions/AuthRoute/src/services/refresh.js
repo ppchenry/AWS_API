@@ -26,7 +26,7 @@ async function buildAccessTokenForUser(user) {
     .lean();
 
   if (!ngoUserAccess?.ngoId) {
-    return { token: null, errorKey: "authRefresh.invalidSession" };
+    return { token: null, errorKey: "authRoute.errors.invalidSession" };
   }
 
   const NGO = mongoose.model("NGO");
@@ -35,11 +35,11 @@ async function buildAccessTokenForUser(user) {
     .lean();
 
   if (!ngo) {
-    return { token: null, errorKey: "authRefresh.invalidSession" };
+    return { token: null, errorKey: "authRoute.errors.invalidSession" };
   }
 
   if (!ngo.isActive || !ngo.isVerified) {
-    return { token: null, errorKey: "authRefresh.ngoApprovalRequired" };
+    return { token: null, errorKey: "authRoute.errors.ngoApprovalRequired" };
   }
 
   return { token: issueNgoAccessToken(user, ngo), errorKey: null };
@@ -61,7 +61,7 @@ async function refreshSession({ event }) {
     });
 
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     if (refreshTokenResult.errorKey) {
@@ -76,7 +76,7 @@ async function refreshSession({ event }) {
       .lean();
 
     if (!record || new Date(record.expiresAt).getTime() <= Date.now()) {
-      return createErrorResponse(401, "authRefresh.invalidSession", event);
+      return createErrorResponse(401, "authRoute.errors.invalidSession", event);
     }
 
     const User = mongoose.model("User");
@@ -85,7 +85,7 @@ async function refreshSession({ event }) {
       .lean();
 
     if (!user) {
-      return createErrorResponse(401, "authRefresh.invalidSession", event);
+      return createErrorResponse(401, "authRoute.errors.invalidSession", event);
     }
 
     const { token: newRefreshToken } = await createRefreshToken(record.userId);
@@ -93,7 +93,7 @@ async function refreshSession({ event }) {
 
     if (accessTokenResult.errorKey) {
       return createErrorResponse(
-        accessTokenResult.errorKey === "authRefresh.ngoApprovalRequired" ? 403 : 401,
+        accessTokenResult.errorKey === "authRoute.errors.ngoApprovalRequired" ? 403 : 401,
         accessTokenResult.errorKey,
         event
       );
@@ -118,7 +118,7 @@ async function refreshSession({ event }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

@@ -72,7 +72,7 @@ async function registerPetBiometric({ event, body }) {
       windowSec: 300,
     });
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     const parseResult = registerPetBiometricSchema.safeParse(body);
@@ -153,7 +153,7 @@ async function registerPetBiometric({ event, body }) {
       if (error?.message === "PET_NOT_FOUND") {
         activityLog.error = { code: "PET_NOT_FOUND" };
         await activityLog.save();
-        return createErrorResponse(404, "petBiometric.petNotFound", event);
+        return createErrorResponse(404, "petBiometricRoutes.errors.petNotFound", event);
       }
 
       throw error;
@@ -197,7 +197,7 @@ async function registerPetBiometric({ event, body }) {
       }
     }
 
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -222,7 +222,7 @@ async function verifyPetBiometric({ event, body }) {
       windowSec: 300,
     });
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     const parseResult = verifyPetBiometricSchema.safeParse(body);
@@ -256,7 +256,7 @@ async function verifyPetBiometric({ event, body }) {
     if (!petFacial?.FaceImage?.FaceFront?.length) {
       activityLog.error = { code: "PET_NOT_REGISTERED" };
       await activityLog.save();
-      return createErrorResponse(404, "petBiometric.notRegistered", event);
+      return createErrorResponse(404, "petBiometricRoutes.errors.notRegistered", event);
     }
 
     const businessConnection = await getBusinessConnection();
@@ -273,7 +273,7 @@ async function verifyPetBiometric({ event, body }) {
     if (businesses.length !== 1) {
       activityLog.error = { code: "INVALID_CREDENTIALS" };
       await activityLog.save();
-      return createErrorResponse(400, "petBiometric.invalidCredentials", event);
+      return createErrorResponse(400, "petBiometricRoutes.errors.invalidCredentials", event);
     }
 
     let downloadURL = image_url || null;
@@ -282,7 +282,7 @@ async function verifyPetBiometric({ event, body }) {
     if (!downloadURL && !inlineFile) {
       activityLog.error = { code: "MISSING_IMAGE_INPUT" };
       await activityLog.save();
-      return createErrorResponse(400, "petBiometric.errors.imageRequired", event);
+      return createErrorResponse(400, "petBiometricRoutes.errors.imageRequired", event);
     }
 
     if (inlineFile) {
@@ -290,7 +290,7 @@ async function verifyPetBiometric({ event, body }) {
       if (!buffer || buffer.length === 0) {
         activityLog.error = { code: "IMAGE_FILE_TOO_SMALL" };
         await activityLog.save();
-        return createErrorResponse(413, "petBiometric.fileTooSmall", event);
+        return createErrorResponse(413, "petBiometricRoutes.errors.fileTooSmall", event);
       }
 
       const contentType = String(inlineFile.contentType || "").toLowerCase();
@@ -298,13 +298,13 @@ async function verifyPetBiometric({ event, body }) {
       if (!detectedContentType || !ALLOWED_IMAGE_TYPES.has(detectedContentType)) {
         activityLog.error = { code: "IMAGE_ERROR_UNSUPPORTED_FORMAT" };
         await activityLog.save();
-        return createErrorResponse(400, "petBiometric.unsupportedFormat", event);
+        return createErrorResponse(400, "petBiometricRoutes.errors.unsupportedFormat", event);
       }
 
       if (!ALLOWED_IMAGE_TYPES.has(contentType) || contentType !== detectedContentType) {
         activityLog.error = { code: "IMAGE_ERROR_UNSUPPORTED_FORMAT" };
         await activityLog.save();
-        return createErrorResponse(400, "petBiometric.unsupportedFormat", event);
+        return createErrorResponse(400, "petBiometricRoutes.errors.unsupportedFormat", event);
       }
 
       const uploadFile = {
@@ -317,13 +317,13 @@ async function verifyPetBiometric({ event, body }) {
       if (!fileSize || fileSize.megabytes === 0) {
         activityLog.error = { code: "IMAGE_FILE_TOO_SMALL" };
         await activityLog.save();
-        return createErrorResponse(413, "petBiometric.fileTooSmall", event);
+        return createErrorResponse(413, "petBiometricRoutes.errors.fileTooSmall", event);
       }
 
       if (fileSize.megabytes > MAX_FILE_SIZE_MB) {
         activityLog.error = { code: "IMAGE_FILE_TOO_LARGE" };
         await activityLog.save();
-        return createErrorResponse(413, "petBiometric.fileTooLarge", event);
+        return createErrorResponse(413, "petBiometricRoutes.errors.fileTooLarge", event);
       }
 
       try {
@@ -339,7 +339,7 @@ async function verifyPetBiometric({ event, body }) {
       if (!downloadURL) {
         activityLog.error = { code: "IMAGE_UPLOAD_FAILED" };
         await activityLog.save();
-        return createErrorResponse(503, "petBiometric.uploadFailed", event);
+        return createErrorResponse(503, "petBiometricRoutes.errors.uploadFailed", event);
       }
     }
 
@@ -364,7 +364,7 @@ async function verifyPetBiometric({ event, body }) {
       });
       activityLog.error = { code: "FACEID_API_FAILED" };
       await activityLog.save();
-      return createErrorResponse(503, "others.serviceUnavailable", event);
+      return createErrorResponse(503, "common.serviceUnavailable", event);
     }
 
     const normalizedResult = normalizeFaceIdResult(verificationResult.data);
@@ -379,7 +379,7 @@ async function verifyPetBiometric({ event, body }) {
       });
       activityLog.error = { code: "FACEID_INVALID_RESPONSE" };
       await activityLog.save();
-      return createErrorResponse(503, "others.serviceUnavailable", event);
+      return createErrorResponse(503, "common.serviceUnavailable", event);
     }
 
     activityLog.userId = business.business_name === "Pet pet club"
@@ -414,7 +414,7 @@ async function verifyPetBiometric({ event, body }) {
       }
     }
 
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -447,7 +447,7 @@ async function getPetBiometric({ event }) {
     if (!petFacial) {
       activityLog.error = { code: "NO_FACIAL_IMAGES_FOUND" };
       await activityLog.save();
-      return createErrorResponse(404, "petBiometric.notRegistered", event);
+      return createErrorResponse(404, "petBiometricRoutes.errors.notRegistered", event);
     }
 
     activityLog.result = {
@@ -495,7 +495,7 @@ async function getPetBiometric({ event }) {
       }
     }
 
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

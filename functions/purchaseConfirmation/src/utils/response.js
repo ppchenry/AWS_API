@@ -1,7 +1,16 @@
 const { corsHeaders } = require("../cors");
 const { loadTranslations, getTranslation } = require("./i18n");
+const { logWarn } = require("./logger");
 
 const createErrorResponse = (statusCode, error, event) => {
+  if (statusCode >= 400 && statusCode < 500) {
+    logWarn("Expected client error response", {
+      scope: "utils.response.createErrorResponse",
+      event,
+      extra: { statusCode, errorKey: error },
+    });
+  }
+
   const translations = loadTranslations(
     event?.cookies?.language || event?.queryStringParameters?.lang || "zh"
   );

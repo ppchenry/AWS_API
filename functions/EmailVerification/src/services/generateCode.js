@@ -57,7 +57,7 @@ async function generateEmailCode({ event, body }) {
       windowSec: 300,
     });
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     // 2. Zod validation
@@ -126,7 +126,7 @@ async function generateEmailCode({ event, body }) {
         error: smtpError,
         extra: { email },
       });
-      return createErrorResponse(503, "emailServiceUnavailable", event);
+      return createErrorResponse(503, "emailVerification.errors.emailServiceUnavailable", event);
     }
 
     logInfo("Verification email sent", {
@@ -137,7 +137,7 @@ async function generateEmailCode({ event, body }) {
 
     // 8. Uniform success — C7/C8: do not reveal whether account existed.
     return createSuccessResponse(200, event, {
-      message: getTranslation(t, "generateSuccessful"),
+      message: getTranslation(t, "emailVerification.success.generateSuccessful"),
     });
   } catch (error) {
     logError("Failed to generate email code", {
@@ -145,7 +145,7 @@ async function generateEmailCode({ event, body }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

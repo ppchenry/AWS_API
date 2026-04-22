@@ -32,16 +32,16 @@ async function handleNGOLogin({ user, event }) {
     });
 
     if (!ngoUserAccess) {
-      return createErrorResponse(403, "emailLogin.userNGONotFound", event);
+      return createErrorResponse(403, "userRoutes.errors.emailLogin.userNGONotFound", event);
     }
 
     const ngo = await NGO.findOne({ _id: ngoUserAccess.ngoId });
     if (!ngo) {
-      return createErrorResponse(500, "emailLogin.NGONotFound", event);
+      return createErrorResponse(500, "userRoutes.errors.emailLogin.NGONotFound", event);
     }
 
     if (!ngo.isActive || !ngo.isVerified) {
-      return createErrorResponse(403, "emailLogin.ngoApprovalRequired", event);
+      return createErrorResponse(403, "userRoutes.errors.emailLogin.ngoApprovalRequired", event);
     }
 
     const token = issueNgoAccessToken(user, ngo);
@@ -72,7 +72,7 @@ async function handleNGOLogin({ user, event }) {
         userId: user?._id,
       },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -100,7 +100,7 @@ async function emailLogin({ event, body }) {
       windowSec: 15 * 60,
     });
     if (!rateLimit.allowed) {
-      return createErrorResponse(429, "others.rateLimited", event);
+      return createErrorResponse(429, "common.rateLimited", event);
     }
 
     // Find user (connection already established by handler)
@@ -108,7 +108,7 @@ async function emailLogin({ event, body }) {
     const user = await User.findOne({ email, deleted: false });
 
     if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
-      return createErrorResponse(401, "emailLogin.invalidUserCredential", event);
+      return createErrorResponse(401, "userRoutes.errors.emailLogin.invalidUserCredential", event);
     }
 
     // Handle NGO role
@@ -146,7 +146,7 @@ async function emailLogin({ event, body }) {
         email: body?.email,
       },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -190,7 +190,7 @@ async function checkUserExists({ event, body }) {
         phone: body?.phone,
       },
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

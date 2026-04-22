@@ -26,7 +26,7 @@ async function getVaccineRecords({ event }) {
       .lean();
 
     return createSuccessResponse(200, event, {
-      message: "vaccineRecord.getSuccess",
+      message: "petVaccineRecords.success.retrieved",
       form: {
         vaccineRecords: vaccineRecords.map(sanitizeVaccineRecord),
       },
@@ -34,7 +34,7 @@ async function getVaccineRecords({ event }) {
     });
   } catch (error) {
     logError("Failed to get vaccine records", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -53,11 +53,11 @@ async function createVaccineRecord({ event, body }) {
 
     const data = parseResult.data;
     if (Object.keys(data).length === 0) {
-      return createErrorResponse(400, "vaccineRecord.noFieldsToUpdate", event);
+      return createErrorResponse(400, "petVaccineRecords.errors.noFieldsToUpdate", event);
     }
 
     if (data.vaccineDate && !isValidDateFormat(data.vaccineDate)) {
-      return createErrorResponse(400, "vaccineRecord.invalidDateFormat", event);
+      return createErrorResponse(400, "petVaccineRecords.errors.invalidDateFormat", event);
     }
 
     const VaccineRecords = mongoose.model("Vaccine_Records");
@@ -86,14 +86,14 @@ async function createVaccineRecord({ event, body }) {
     });
 
     return createSuccessResponse(200, event, {
-      message: "vaccineRecord.postSuccess",
+      message: "petVaccineRecords.success.created",
       form: sanitizeVaccineRecord(vaccineRecord),
       petId: petID,
       vaccineId: vaccineRecord._id,
     });
   } catch (error) {
     logError("Failed to create vaccine record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -113,11 +113,11 @@ async function updateVaccineRecord({ event, body }) {
 
     const data = parseResult.data;
     if (Object.keys(data).length === 0) {
-      return createErrorResponse(400, "vaccineRecord.noFieldsToUpdate", event);
+      return createErrorResponse(400, "petVaccineRecords.errors.noFieldsToUpdate", event);
     }
 
     if (data.vaccineDate && !isValidDateFormat(data.vaccineDate)) {
-      return createErrorResponse(400, "vaccineRecord.invalidDateFormat", event);
+      return createErrorResponse(400, "petVaccineRecords.errors.invalidDateFormat", event);
     }
 
     const VaccineRecords = mongoose.model("Vaccine_Records");
@@ -142,7 +142,7 @@ async function updateVaccineRecord({ event, body }) {
     ).lean();
 
     if (!updated) {
-      return createErrorResponse(404, "vaccineRecord.vaccineRecordNotFound", event);
+      return createErrorResponse(404, "petVaccineRecords.errors.notFound", event);
     }
 
     const latest = await VaccineRecords.find({ petId: petID, ...ACTIVE_VACCINE_FILTER })
@@ -156,14 +156,14 @@ async function updateVaccineRecord({ event, body }) {
     });
 
     return createSuccessResponse(200, event, {
-      message: "vaccineRecord.putSuccess",
+      message: "petVaccineRecords.success.updated",
       petId: petID,
       vaccineId: vaccineID,
       form: sanitizeVaccineRecord(updated),
     });
   } catch (error) {
     logError("Failed to update vaccine record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -186,7 +186,7 @@ async function deleteVaccineRecord({ event }) {
     ).lean();
 
     if (!deleted) {
-      return createErrorResponse(404, "vaccineRecord.vaccineRecordNotFound", event);
+      return createErrorResponse(404, "petVaccineRecords.errors.notFound", event);
     }
 
     const [count, latest] = await Promise.all([
@@ -204,12 +204,12 @@ async function deleteVaccineRecord({ event }) {
     });
 
     return createSuccessResponse(200, event, {
-      message: "vaccineRecord.deleteSuccess",
+      message: "petVaccineRecords.success.deleted",
       id: petAccess.pet._id,
     });
   } catch (error) {
     logError("Failed to delete vaccine record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

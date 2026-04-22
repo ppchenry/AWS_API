@@ -2,7 +2,7 @@ function getZodIssues(error) {
   return Array.isArray(error?.issues) ? error.issues : [];
 }
 
-function getFirstZodIssueMessage(error, fallback = "others.invalidInput") {
+function getFirstZodIssueMessage(error, fallback = "common.invalidInput") {
   const message = getZodIssues(error)[0]?.message;
   if (typeof message !== "string" || message.trim().length === 0) {
     return fallback;
@@ -11,7 +11,7 @@ function getFirstZodIssueMessage(error, fallback = "others.invalidInput") {
   return /\s/.test(message) ? fallback : message;
 }
 
-function getJoinedZodIssueMessages(error, fallback = "others.invalidInput") {
+function getJoinedZodIssueMessages(error, fallback = "common.invalidInput") {
   const issues = getZodIssues(error);
   if (issues.length === 0) {
     return fallback;

@@ -21,7 +21,7 @@ Current status:
 - Create-order abuse throttling is covered and returns `429` after repeated attempts from the same client IP.
 - The focused unit suite is fully green and covers the major service-failure branches that are not practical to force through the live integration path.
 - Five optional tests are intentionally skipped when the required env toggles or live fixture values are not enabled.
-- `functions/SFExpressRoutes/API.md` and `functions/SFExpressRoutes/CHANGELOG.md` have been reconciled with the tested route map, validation behavior, rate limits, ownership checks, and SF-specific error keys.
+- `dev_docs/api_docs/SF_EXPRESS_API.md` and `functions/SFExpressRoutes/CHANGELOG.md` have been reconciled with the tested route map, validation behavior, rate limits, ownership checks, and SF-specific error keys.
 
 ### 1.1 Endpoint Coverage
 
@@ -54,21 +54,21 @@ Current status:
 
 Every required field and every guard-level business rule currently covered in the suite is asserted individually:
 
-- Malformed JSON body on `POST /sf-express-routes/get-area` → `400 others.invalidJSON`
+- Malformed JSON body on `POST /sf-express-routes/get-area` → `400 common.invalidJSON`
 - Empty body on:
   - `POST /sf-express-routes/create-order`
   - `POST /sf-express-routes/get-pickup-locations`
   - `POST /sf-express-routes/get-area`
   - `POST /sf-express-routes/get-netCode`
   - `POST /v2/sf-express-routes/print-cloud-waybill`
-- Missing `lastName` on create-order → `400 sfExpress.validation.lastNameRequired`
-- Missing `phoneNumber` on create-order → `400 sfExpress.validation.phoneNumberRequired`
-- Missing `address` on create-order → `400 sfExpress.validation.addressRequired`
-- Empty `token` on get-area → `400 sfExpress.validation.tokenRequired`
-- Missing `typeId` on get-netCode → `400 sfExpress.validation.typeIdRequired`
-- Missing `areaId` on get-netCode → `400 sfExpress.validation.areaIdRequired`
-- Empty `netCode` array on get-pickup-locations → `400 sfExpress.validation.netCodeListRequired`
-- Empty `waybillNo` on cloud-waybill print → `400 sfExpress.validation.waybillNoRequired`
+- Missing `lastName` on create-order → `400 sfExpressRoutes.errors.validation.lastNameRequired`
+- Missing `phoneNumber` on create-order → `400 sfExpressRoutes.errors.validation.phoneNumberRequired`
+- Missing `address` on create-order → `400 sfExpressRoutes.errors.validation.addressRequired`
+- Empty `token` on get-area → `400 sfExpressRoutes.errors.validation.tokenRequired`
+- Missing `typeId` on get-netCode → `400 sfExpressRoutes.errors.validation.typeIdRequired`
+- Missing `areaId` on get-netCode → `400 sfExpressRoutes.errors.validation.areaIdRequired`
+- Empty `netCode` array on get-pickup-locations → `400 sfExpressRoutes.errors.validation.netCodeListRequired`
+- Empty `waybillNo` on cloud-waybill print → `400 sfExpressRoutes.errors.validation.waybillNoRequired`
 
 #### Business-logic errors — 4xx responses
 
@@ -78,7 +78,7 @@ Every required field and every guard-level business rule currently covered in th
 - Tampered JWT signature → `401`
 - `alg:none` JWT attack → `401`
 - Disallowed CORS preflight origin → `403`
-- Repeated create-order attempts from the same IP → `429 others.rateLimited`
+- Repeated create-order attempts from the same IP → `429 common.rateLimited`
 
 #### Authentication & authorisation
 
@@ -100,8 +100,8 @@ Every required field and every guard-level business rule currently covered in th
 - **Mass-assignment / unknown field protection** — handler rejects invalid create-order body shape
 - **Create-order abuse throttling** — repeated create-order requests are rate-limited with `429`
 - **JWT algorithm hardening** — unsigned `alg:none` tokens are rejected with `401`
-- **DB bootstrap failure path** — handler returns `500 others.internalError` when DB startup fails
-- **Third-party config failure path** — missing `SF_ADDRESS_API_KEY` returns `500 others.internalError`
+- **DB bootstrap failure path** — handler returns `500 common.internalError` when DB startup fails
+- **Third-party config failure path** — missing `SF_ADDRESS_API_KEY` returns `500 common.internalError`
 - **Upstream SF API hardening** — unit tests cover malformed upstream responses, missing waybill data, and cloud-print file absence
 - **Email side-effect failure handling** — cloud-waybill email-send failure returns controlled `500`
 
@@ -114,7 +114,7 @@ Every error response from SFExpressRoutes follows a fixed shape:
 ```json
 {
   "success": false,
-  "errorKey": "others.unauthorized",
+  "errorKey": "common.unauthorized",
   "error": "需要身份驗證，請登入",
   "requestId": "3b1c2d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e"
 }
@@ -139,9 +139,9 @@ if (!data.success) {
   showToast(data.error);
   console.error("[API Error]", data.errorKey, "requestId:", data.requestId);
 
-  if (data.errorKey === "others.unauthorized") {
+  if (data.errorKey === "common.unauthorized") {
     redirectToLogin();
-  } else if (data.errorKey === "sfExpress.validation.addressRequired") {
+  } else if (data.errorKey === "sfExpressRoutes.errors.validation.addressRequired") {
     highlightAddressField();
   }
 }
@@ -160,24 +160,24 @@ The main `errorKey` values verified in the current SFExpressRoutes suites:
 
 | errorKey | Context |
 | --- | --- |
-| `others.unauthorized` | Missing, expired, malformed, or tampered JWT |
-| `others.invalidJSON` | Malformed JSON body |
-| `others.missingParams` | Empty or missing request body |
-| `others.methodNotAllowed` | Unsupported method / router safety net |
-| `others.rateLimited` | Create-order rate limit exhausted |
-| `others.internalError` | Internal failure or missing service configuration |
-| `sfExpress.validation.lastNameRequired` | Missing `lastName` on create-order |
-| `sfExpress.validation.phoneNumberRequired` | Missing `phoneNumber` on create-order |
-| `sfExpress.validation.addressRequired` | Missing `address` on create-order |
-| `sfExpress.validation.tokenRequired` | Missing or empty metadata token |
-| `sfExpress.validation.typeIdRequired` | Missing `typeId` |
-| `sfExpress.validation.areaIdRequired` | Missing `areaId` |
-| `sfExpress.validation.netCodeListRequired` | Empty `netCode` array |
-| `sfExpress.validation.waybillNoRequired` | Missing or empty `waybillNo` |
-| `sfExpress.errors.sfApiError` | Upstream SF order API failure |
-| `sfExpress.errors.missingWaybill` | SF order response missing waybill data |
-| `sfExpress.errors.invalidSfResponse` | Malformed SF cloud-waybill response |
-| `sfExpress.errors.missingPrintFile` | Cloud-waybill response missing downloadable file |
+| `common.unauthorized` | Missing, expired, malformed, or tampered JWT |
+| `common.invalidJSON` | Malformed JSON body |
+| `common.missingParams` | Empty or missing request body |
+| `common.methodNotAllowed` | Unsupported method / router safety net |
+| `common.rateLimited` | Create-order rate limit exhausted |
+| `common.internalError` | Internal failure or missing service configuration |
+| `sfExpressRoutes.errors.validation.lastNameRequired` | Missing `lastName` on create-order |
+| `sfExpressRoutes.errors.validation.phoneNumberRequired` | Missing `phoneNumber` on create-order |
+| `sfExpressRoutes.errors.validation.addressRequired` | Missing `address` on create-order |
+| `sfExpressRoutes.errors.validation.tokenRequired` | Missing or empty metadata token |
+| `sfExpressRoutes.errors.validation.typeIdRequired` | Missing `typeId` |
+| `sfExpressRoutes.errors.validation.areaIdRequired` | Missing `areaId` |
+| `sfExpressRoutes.errors.validation.netCodeListRequired` | Empty `netCode` array |
+| `sfExpressRoutes.errors.validation.waybillNoRequired` | Missing or empty `waybillNo` |
+| `sfExpressRoutes.errors.sfApiError` | Upstream SF order API failure |
+| `sfExpressRoutes.errors.missingWaybill` | SF order response missing waybill data |
+| `sfExpressRoutes.errors.invalidSfResponse` | Malformed SF cloud-waybill response |
+| `sfExpressRoutes.errors.missingPrintFile` | Cloud-waybill response missing downloadable file |
 
 ---
 
@@ -192,11 +192,11 @@ The main `errorKey` values verified in the current SFExpressRoutes suites:
 | Empty-body abuse | Guard rejects empty POST bodies -> `400` | ✅ |
 | Unknown-field / mass-assignment attempt | Handler rejects invalid create-order payload shape | ✅ |
 | Create-order brute-force / abuse | Rate limiter throttles repeated attempts -> `429` | ✅ |
-| DB bootstrap failure | Handler returns controlled `500 others.internalError` | ✅ |
-| Missing third-party service config | Service returns controlled `500 others.internalError` | ✅ |
+| DB bootstrap failure | Handler returns controlled `500 common.internalError` | ✅ |
+| Missing third-party service config | Service returns controlled `500 common.internalError` | ✅ |
 | Upstream SF API malformed payload | Service returns structured SF-specific `500` errors | ✅ |
 | Cloud-waybill missing file response | Service rejects invalid print payload | ✅ |
-| Email side-effect failure in waybill flow | Service returns controlled `500 others.internalError` | ✅ |
+| Email side-effect failure in waybill flow | Service returns controlled `500 common.internalError` | ✅ |
 | JWT bypass misuse in production | Bypass works only in non-production mode | ✅ |
 
 ---
@@ -243,7 +243,7 @@ The following tests were skipped by design because their enabling env toggles or
 
 ## 5. Documentation Cross-References
 
-- API contract: `functions/SFExpressRoutes/API.md`
+- API contract: `dev_docs/api_docs/SF_EXPRESS_API.md`
 - Refactor changelog: `functions/SFExpressRoutes/CHANGELOG.md`
 - Monorepo refactor reports: `dev_docs/refactor_reports/EN_REFACTOR_REPORT.md` and `dev_docs/refactor_reports/CN_REFACTOR_REPORT.md`
 - Refactor inventory status: `dev_docs/LAMBDA_REFACTOR_INVENTORY.md`

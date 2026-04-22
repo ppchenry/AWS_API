@@ -117,7 +117,7 @@ afterAll(async () => {
   }
 });
 
-// ─── OPTIONS preflight ────────────────────────────────────────────────────────
+// â”€â”€â”€ OPTIONS preflight â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 describe("OPTIONS preflight", () => {
   test("returns 204 with CORS headers for allowed origin", async () => {
@@ -135,7 +135,7 @@ describe("OPTIONS preflight", () => {
       { Origin: DISALLOWED_ORIGIN }
     );
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.originNotAllowed");
+    expect(res.body.errorKey).toBe("common.originNotAllowed");
   });
 
   test("returns 403 when Origin header is absent", async () => {
@@ -146,20 +146,20 @@ describe("OPTIONS preflight", () => {
       { Origin: undefined }
     );
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.originNotAllowed");
+    expect(res.body.errorKey).toBe("common.originNotAllowed");
   });
 });
 
-// ─── JWT authentication ───────────────────────────────────────────────────────
+// â”€â”€â”€ JWT authentication â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 describe("JWT authentication", () => {
-  test("rejects request with no Authorization header → 401", async () => {
+  test("rejects request with no Authorization header â†’ 401", async () => {
     const res = await req("GET", `/pets/${NONEXISTENT_PET_ID}/vaccine-record`);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
-  test("rejects expired JWT → 401", async () => {
+  test("rejects expired JWT â†’ 401", async () => {
     const res = await req(
       "GET",
       `/pets/${NONEXISTENT_PET_ID}/vaccine-record`,
@@ -167,10 +167,10 @@ describe("JWT authentication", () => {
       expiredAuth()
     );
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
-  test("rejects garbage Bearer token → 401", async () => {
+  test("rejects garbage Bearer token â†’ 401", async () => {
     const res = await req(
       "GET",
       `/pets/${NONEXISTENT_PET_ID}/vaccine-record`,
@@ -178,10 +178,10 @@ describe("JWT authentication", () => {
       { Authorization: "Bearer this.is.garbage" }
     );
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
-  test("rejects token without Bearer prefix → 401", async () => {
+  test("rejects token without Bearer prefix â†’ 401", async () => {
     const res = await req(
       "GET",
       `/pets/${NONEXISTENT_PET_ID}/vaccine-record`,
@@ -189,10 +189,10 @@ describe("JWT authentication", () => {
       { Authorization: makeToken({ userId: STRANGER_USER_ID }) }
     );
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
-  test("rejects tampered JWT signature → 401", async () => {
+  test("rejects tampered JWT signature â†’ 401", async () => {
     const res = await req(
       "GET",
       `/pets/${NONEXISTENT_PET_ID}/vaccine-record`,
@@ -200,10 +200,10 @@ describe("JWT authentication", () => {
       tamperedAuth()
     );
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
-  test("rejects alg:none JWT → 401", async () => {
+  test("rejects alg:none JWT â†’ 401", async () => {
     const res = await req(
       "GET",
       `/pets/${NONEXISTENT_PET_ID}/vaccine-record`,
@@ -211,24 +211,24 @@ describe("JWT authentication", () => {
       noneAlgAuth()
     );
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("error shape includes success:false, errorKey, requestId, and CORS header", async () => {
     const res = await req("GET", `/pets/${NONEXISTENT_PET_ID}/vaccine-record`);
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
     expect(typeof res.body.error).toBe("string");
     expect(typeof res.body.requestId).toBe("string");
     expect(res.headers.get("access-control-allow-origin")).toBe(VALID_ORIGIN);
   });
 });
 
-// ─── Guard validation ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Guard validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 describe("Guard validation", () => {
-  test("rejects malformed JSON body → 400", async () => {
+  test("rejects malformed JSON body â†’ 400", async () => {
     const res = await req(
       "POST",
       `/pets/${NONEXISTENT_PET_ID}/vaccine-record`,
@@ -236,10 +236,10 @@ describe("Guard validation", () => {
       strangerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidJSON");
+    expect(res.body.errorKey).toBe("common.invalidJSON");
   });
 
-  test("rejects empty POST body → 400", async () => {
+  test("rejects empty POST body â†’ 400", async () => {
     const res = await req(
       "POST",
       `/pets/${NONEXISTENT_PET_ID}/vaccine-record`,
@@ -247,10 +247,10 @@ describe("Guard validation", () => {
       strangerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   });
 
-  test("rejects empty PUT body → 400", async () => {
+  test("rejects empty PUT body â†’ 400", async () => {
     const res = await req(
       "PUT",
       `/pets/${NONEXISTENT_PET_ID}/vaccine-record/${NONEXISTENT_RECORD_ID}`,
@@ -258,16 +258,16 @@ describe("Guard validation", () => {
       strangerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   });
 
-  test("rejects invalid petID format → 400", async () => {
+  test("rejects invalid petID format â†’ 400", async () => {
     const res = await req("GET", "/pets/bad-id/vaccine-record", undefined, strangerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("invalidPetIdFormat");
+    expect(res.body.errorKey).toBe("petVaccineRecords.errors.invalidPetIdFormat");
   });
 
-  test("rejects invalid vaccineID format on PUT → 400", async () => {
+  test("rejects invalid vaccineID format on PUT â†’ 400", async () => {
     const res = await req(
       "PUT",
       `/pets/${NONEXISTENT_PET_ID}/vaccine-record/bad-id`,
@@ -275,10 +275,10 @@ describe("Guard validation", () => {
       strangerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("vaccineRecord.invalidVaccineIdFormat");
+    expect(res.body.errorKey).toBe("petVaccineRecords.errors.invalidVaccineIdFormat");
   });
 
-  ownerTest("rejects NoSQL injection object in vaccineName field on POST → 400", async () => {
+  ownerTest("rejects NoSQL injection object in vaccineName field on POST â†’ 400", async () => {
     const res = await req(
       "POST",
       `/pets/${TEST_PET_ID}/vaccine-record`,
@@ -290,7 +290,7 @@ describe("Guard validation", () => {
   }, FIXTURE_TIMEOUT);
 });
 
-// ─── Router ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Router â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 describe("Router", () => {
   test("returns 404 petNotFound for nonexistent pet with valid auth", async () => {
@@ -301,10 +301,10 @@ describe("Router", () => {
       strangerAuth()
     );
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("petNotFound");
+    expect(res.body.errorKey).toBe("petVaccineRecords.errors.petNotFound");
   });
 
-  test("returns 403 for PATCH — method not declared in API Gateway (never reaches Lambda)", async () => {
+  test("returns 403 for PATCH â€” method not declared in API Gateway (never reaches Lambda)", async () => {
     // PATCH is not defined in template.yaml so API Gateway rejects it with 403
     // before the Lambda is invoked. The Lambda router would return 405, but
     // PATCH must not be added to template.yaml to avoid exposing the route.
@@ -318,10 +318,10 @@ describe("Router", () => {
   });
 });
 
-// ─── Authorization ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Authorization â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 describe("Owner and NGO authorization", () => {
-  ownerTest("owner can read vaccine records on fixture pet → 200", async () => {
+  ownerTest("owner can read vaccine records on fixture pet â†’ 200", async () => {
     const res = await req(
       "GET",
       `/pets/${TEST_PET_ID}/vaccine-record`,
@@ -333,7 +333,7 @@ describe("Owner and NGO authorization", () => {
     expect(Array.isArray(res.body.form.vaccineRecords)).toBe(true);
   }, FIXTURE_TIMEOUT);
 
-  ownerTest("stranger is denied access to fixture pet → 403", async () => {
+  ownerTest("stranger is denied access to fixture pet â†’ 403", async () => {
     const res = await req(
       "GET",
       `/pets/${TEST_PET_ID}/vaccine-record`,
@@ -341,10 +341,10 @@ describe("Owner and NGO authorization", () => {
       strangerAuth()
     );
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.forbidden");
+    expect(res.body.errorKey).toBe("common.forbidden");
   }, FIXTURE_TIMEOUT);
 
-  ngoTest("matching NGO can read vaccine records on fixture pet → 200", async () => {
+  ngoTest("matching NGO can read vaccine records on fixture pet â†’ 200", async () => {
     const res = await req(
       "GET",
       `/pets/${TEST_PET_ID}/vaccine-record`,
@@ -356,7 +356,7 @@ describe("Owner and NGO authorization", () => {
     expect(Array.isArray(res.body.form.vaccineRecords)).toBe(true);
   }, FIXTURE_TIMEOUT);
 
-  ownerTest("stranger is denied POST on fixture pet → 403", async () => {
+  ownerTest("stranger is denied POST on fixture pet â†’ 403", async () => {
     const res = await req(
       "POST",
       `/pets/${TEST_PET_ID}/vaccine-record`,
@@ -364,10 +364,10 @@ describe("Owner and NGO authorization", () => {
       strangerAuth()
     );
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.forbidden");
+    expect(res.body.errorKey).toBe("common.forbidden");
   }, FIXTURE_TIMEOUT);
 
-  ownerTest("stranger is denied PUT on fixture pet → 403", async () => {
+  ownerTest("stranger is denied PUT on fixture pet â†’ 403", async () => {
     const res = await req(
       "PUT",
       `/pets/${TEST_PET_ID}/vaccine-record/${NONEXISTENT_RECORD_ID}`,
@@ -375,10 +375,10 @@ describe("Owner and NGO authorization", () => {
       strangerAuth()
     );
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.forbidden");
+    expect(res.body.errorKey).toBe("common.forbidden");
   }, FIXTURE_TIMEOUT);
 
-  ownerTest("stranger is denied DELETE on fixture pet → 403", async () => {
+  ownerTest("stranger is denied DELETE on fixture pet â†’ 403", async () => {
     const res = await req(
       "DELETE",
       `/pets/${TEST_PET_ID}/vaccine-record/${NONEXISTENT_RECORD_ID}`,
@@ -386,14 +386,14 @@ describe("Owner and NGO authorization", () => {
       strangerAuth()
     );
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.forbidden");
+    expect(res.body.errorKey).toBe("common.forbidden");
   }, FIXTURE_TIMEOUT);
 });
 
-// ─── Vaccine record CRUD lifecycle ───────────────────────────────────────────
+// â”€â”€â”€ Vaccine record CRUD lifecycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 describe("Vaccine record CRUD lifecycle", () => {
-  ownerTest("rejects impossible date on create → 400", async () => {
+  ownerTest("rejects impossible date on create â†’ 400", async () => {
     const res = await req(
       "POST",
       `/pets/${TEST_PET_ID}/vaccine-record`,
@@ -401,10 +401,10 @@ describe("Vaccine record CRUD lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("vaccineRecord.invalidDateFormat");
+    expect(res.body.errorKey).toBe("petVaccineRecords.errors.invalidDateFormat");
   }, FIXTURE_TIMEOUT);
 
-  ownerTest("owner creates vaccine record → 200", async () => {
+  ownerTest("owner creates vaccine record â†’ 200", async () => {
     const res = await req(
       "POST",
       `/pets/${TEST_PET_ID}/vaccine-record`,
@@ -425,7 +425,7 @@ describe("Vaccine record CRUD lifecycle", () => {
     state.vaccineRecordId = res.body.vaccineId;
   }, FIXTURE_TIMEOUT);
 
-  ownerTest("rejects update with empty body → 400", async () => {
+  ownerTest("rejects update with empty body â†’ 400", async () => {
     const res = await req(
       "PUT",
       `/pets/${TEST_PET_ID}/vaccine-record/${NONEXISTENT_RECORD_ID}`,
@@ -433,10 +433,10 @@ describe("Vaccine record CRUD lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   }, FIXTURE_TIMEOUT);
 
-  ownerTest("rejects update with unknown field only → 400", async () => {
+  ownerTest("rejects update with unknown field only â†’ 400", async () => {
     const res = await req(
       "PUT",
       `/pets/${TEST_PET_ID}/vaccine-record/${NONEXISTENT_RECORD_ID}`,
@@ -444,10 +444,10 @@ describe("Vaccine record CRUD lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("vaccineRecord.noFieldsToUpdate");
+    expect(res.body.errorKey).toBe("petVaccineRecords.errors.noFieldsToUpdate");
   }, FIXTURE_TIMEOUT);
 
-  ownerTest("update returns 404 for nonexistent record with valid payload → 404", async () => {
+  ownerTest("update returns 404 for nonexistent record with valid payload â†’ 404", async () => {
     const res = await req(
       "PUT",
       `/pets/${TEST_PET_ID}/vaccine-record/${NONEXISTENT_RECORD_ID}`,
@@ -455,10 +455,10 @@ describe("Vaccine record CRUD lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("vaccineRecord.vaccineRecordNotFound");
+    expect(res.body.errorKey).toBe("petVaccineRecords.errors.notFound");
   }, FIXTURE_TIMEOUT);
 
-  ownerTest("owner updates vaccine record → 200 with updated fields", async () => {
+  ownerTest("owner updates vaccine record â†’ 200 with updated fields", async () => {
     expect(state.vaccineRecordId).toBeTruthy();
     const res = await req(
       "PUT",
@@ -472,7 +472,7 @@ describe("Vaccine record CRUD lifecycle", () => {
     expect(res.body.form.vaccineTimes).toBe("2");
   }, FIXTURE_TIMEOUT);
 
-  ownerTest("delete returns 404 for nonexistent record → 404", async () => {
+  ownerTest("delete returns 404 for nonexistent record â†’ 404", async () => {
     const res = await req(
       "DELETE",
       `/pets/${TEST_PET_ID}/vaccine-record/${NONEXISTENT_RECORD_ID}`,
@@ -480,10 +480,10 @@ describe("Vaccine record CRUD lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("vaccineRecord.vaccineRecordNotFound");
+    expect(res.body.errorKey).toBe("petVaccineRecords.errors.notFound");
   }, FIXTURE_TIMEOUT);
 
-  ownerTest("cross-pet mutation: record addressed via wrong petId is rejected → 404", async () => {
+  ownerTest("cross-pet mutation: record addressed via wrong petId is rejected â†’ 404", async () => {
     // Uses a real record ID (state.vaccineRecordId from the create test) but routes it
     // through a different petId (NONEXISTENT_PET_ID). The query filter { _id, petId }
     // must find nothing, proving the petId scope cannot be bypassed.
@@ -500,7 +500,7 @@ describe("Vaccine record CRUD lifecycle", () => {
     expect(res.body.success).toBe(false);
   }, FIXTURE_TIMEOUT);
 
-  ownerTest("owner soft-deletes record → 200 and record absent from subsequent list", async () => {
+  ownerTest("owner soft-deletes record â†’ 200 and record absent from subsequent list", async () => {
     expect(state.vaccineRecordId).toBeTruthy();
     const deletedId = state.vaccineRecordId;
 
@@ -528,7 +528,7 @@ describe("Vaccine record CRUD lifecycle", () => {
   }, FIXTURE_TIMEOUT);
 });
 
-// ─── Fixture configuration check ─────────────────────────────────────────────
+// â”€â”€â”€ Fixture configuration check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 describe("Fixture configuration", () => {
   test("warns when fixture env keys are missing", () => {
@@ -541,3 +541,4 @@ describe("Fixture configuration", () => {
     expect(true).toBe(true);
   });
 });
+

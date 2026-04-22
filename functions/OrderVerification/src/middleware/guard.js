@@ -34,7 +34,7 @@ async function validateOrderVerificationRequest({ event }) {
     } catch (error) {
       return {
         isValid: false,
-        error: createErrorResponse(400, "others.invalidJSON", event),
+        error: createErrorResponse(400, "common.invalidJSON", event),
       };
     }
   }
@@ -49,7 +49,7 @@ async function validateOrderVerificationRequest({ event }) {
   ) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "others.missingParams", event),
+      error: createErrorResponse(400, "common.missingParams", event),
     };
   }
 

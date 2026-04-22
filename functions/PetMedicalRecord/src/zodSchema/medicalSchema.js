@@ -1,7 +1,7 @@
 const { z } = require("zod");
 
 const createMedicalRecordSchema = z.object({
-  medicalDate: z.string({ error: "medicalRecord.invalidDateFormat" }).optional(),
+  medicalDate: z.string({ error: "petMedicalRecord.errors.medicalRecord.invalidDateFormat" }).optional(),
   medicalPlace: z.string().optional(),
   medicalDoctor: z.string().optional(),
   medicalResult: z.string().optional(),
@@ -9,7 +9,7 @@ const createMedicalRecordSchema = z.object({
 }).strict();
 
 const updateMedicalRecordSchema = z.object({
-  medicalDate: z.string({ error: "medicalRecord.invalidDateFormat" }).optional(),
+  medicalDate: z.string({ error: "petMedicalRecord.errors.medicalRecord.invalidDateFormat" }).optional(),
   medicalPlace: z.string().optional(),
   medicalDoctor: z.string().optional(),
   medicalResult: z.string().optional(),

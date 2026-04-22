@@ -85,7 +85,7 @@ Every route family now exercises negative validation cases individually:
 - Tampered JWT signature → `401`
 - `alg:none` JWT attack → `401`
 - Missing `Bearer ` prefix → `401`
-- Valid stranger token on another pet → `403 others.forbidden`
+- Valid stranger token on another pet → `403 common.forbidden`
 - Matching NGO token on NGO-linked pet → `200`
 
 #### Security hardening
@@ -107,7 +107,7 @@ Every error response from PetMedicalRecord follows a fixed shape:
 ```json
 {
   "success": false,
-  "errorKey": "others.invalidJSON",
+  "errorKey": "common.invalidJSON",
   "error": "JSON 格式無效",
   "requestId": "3b1c2d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e"
 }
@@ -140,9 +140,9 @@ if (!data.success) {
   showToast(data.error);
   console.error("[API Error]", data.errorKey, "requestId:", data.requestId);
 
-  if (data.errorKey === "others.forbidden") {
+  if (data.errorKey === "common.forbidden") {
     redirectToPetList();
-  } else if (data.errorKey === "medicalRecord.invalidDateFormat") {
+  } else if (data.errorKey === "petMedicalRecord.errors.medicalRecord.invalidDateFormat") {
     highlightDateField();
   }
 }
@@ -161,31 +161,31 @@ The main `errorKey` values exercised and verified in the PetMedicalRecord suite:
 
 | errorKey | Meaning |
 | --- | --- |
-| `others.unauthorized` | Missing, malformed, expired, or invalid JWT |
-| `others.forbidden` | Caller does not own the pet and NGO does not match |
-| `others.invalidJSON` | Request body is malformed JSON |
-| `others.missingParams` | Required POST / PUT body is empty |
-| `others.methodNotAllowed` | Unsupported route method handled by Lambda |
-| `others.internalError` | Unexpected server error |
+| `common.unauthorized` | Missing, malformed, expired, or invalid JWT |
+| `common.forbidden` | Caller does not own the pet and NGO does not match |
+| `common.invalidJSON` | Request body is malformed JSON |
+| `common.missingParams` | Required POST / PUT body is empty |
+| `common.methodNotAllowed` | Unsupported route method handled by Lambda |
+| `common.internalError` | Unexpected server error |
 | `missingPetId` | Missing `petID` path param |
 | `invalidPetIdFormat` | Invalid `petID` ObjectId format |
 | `petNotFound` | Pet missing or deleted |
-| `medicalRecord.invalidMedicalIdFormat` | Invalid `medicalID` ObjectId format |
-| `medicalRecord.medicalRecordNotFound` | Medical record not found for this pet |
-| `medicalRecord.invalidDateFormat` | Medical date failed calendar validation |
-| `medicalRecord.noFieldsToUpdate` | No valid updatable medical fields remain |
-| `medicationRecord.invalidMedicationIdFormat` | Invalid `medicationID` ObjectId format |
-| `medicationRecord.medicationRecordNotFound` | Medication record not found for this pet |
-| `medicationRecord.invalidDateFormat` | Medication date failed calendar validation |
-| `medicationRecord.noFieldsToUpdate` | No valid updatable medication fields remain |
-| `dewormRecord.invalidDewormIdFormat` | Invalid `dewormID` ObjectId format |
-| `dewormRecord.dewormRecordNotFound` | Deworm record not found for this pet |
-| `dewormRecord.invalidDateFormat` | Deworm date failed calendar validation |
-| `dewormRecord.noFieldsToUpdate` | No valid updatable deworm fields remain |
-| `bloodTest.invalidBloodTestIdFormat` | Invalid `bloodTestID` ObjectId format |
-| `bloodTest.bloodTestRecordNotFound` | Blood-test record not found for this pet |
-| `bloodTest.invalidDateFormat` | Blood-test date failed calendar validation |
-| `bloodTest.noFieldsToUpdate` | No valid updatable blood-test fields remain |
+| `petMedicalRecord.errors.medicalRecord.invalidMedicalIdFormat` | Invalid `medicalID` ObjectId format |
+| `petMedicalRecord.errors.medicalRecord.notFound` | Medical record not found for this pet |
+| `petMedicalRecord.errors.medicalRecord.invalidDateFormat` | Medical date failed calendar validation |
+| `petMedicalRecord.errors.medicalRecord.noFieldsToUpdate` | No valid updatable medical fields remain |
+| `petMedicalRecord.errors.medicationRecord.invalidMedicationIdFormat` | Invalid `medicationID` ObjectId format |
+| `petMedicalRecord.errors.medicationRecord.notFound` | Medication record not found for this pet |
+| `petMedicalRecord.errors.medicationRecord.invalidDateFormat` | Medication date failed calendar validation |
+| `petMedicalRecord.errors.medicationRecord.noFieldsToUpdate` | No valid updatable medication fields remain |
+| `petMedicalRecord.errors.dewormRecord.invalidDewormIdFormat` | Invalid `dewormID` ObjectId format |
+| `petMedicalRecord.errors.dewormRecord.notFound` | Deworm record not found for this pet |
+| `petMedicalRecord.errors.dewormRecord.invalidDateFormat` | Deworm date failed calendar validation |
+| `petMedicalRecord.errors.dewormRecord.noFieldsToUpdate` | No valid updatable deworm fields remain |
+| `petMedicalRecord.errors.bloodTest.invalidBloodTestIdFormat` | Invalid `bloodTestID` ObjectId format |
+| `petMedicalRecord.errors.bloodTest.notFound` | Blood-test record not found for this pet |
+| `petMedicalRecord.errors.bloodTest.invalidDateFormat` | Blood-test date failed calendar validation |
+| `petMedicalRecord.errors.bloodTest.noFieldsToUpdate` | No valid updatable blood-test fields remain |
 
 ---
 

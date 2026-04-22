@@ -1,5 +1,5 @@
 {
-  "others": {
+  "common": {
     "internalError": "伺服器內部錯誤",
     "invalidJSON": "JSON 請求格式不正確",
     "missingParams": "缺少必要參數",
@@ -8,38 +8,36 @@
     "rateLimited": "請求過於頻繁，請稍後再試",
     "invalidParams": "請求參數不正確"
   },
-  "sfExpress": {
-    "validation": {
-      "lastNameRequired": "必須提供姓氏",
-      "phoneNumberRequired": "必須提供電話號碼",
-      "addressRequired": "必須提供地址",
-      "waybillNoRequired": "必須提供運單號",
-      "tokenRequired": "必須提供 Token",
-      "typeIdRequired": "必須提供 typeId",
-      "areaIdRequired": "必須提供 areaId",
-      "netCodeListRequired": "netCode 必須為非空陣列"
-    },
+  "sfExpressRoutes": {
     "errors": {
+      "validation": {
+        "lastNameRequired": "必須提供姓氏",
+        "phoneNumberRequired": "必須提供電話號碼",
+        "addressRequired": "必須提供地址",
+        "waybillNoRequired": "必須提供運單號",
+        "tokenRequired": "必須提供 Token",
+        "typeIdRequired": "必須提供 typeId",
+        "areaIdRequired": "必須提供 areaId",
+        "netCodeListRequired": "netCode 必須為非空陣列"
+      },
       "sfApiError": "順豐 API 請求失敗",
       "invalidSfResponse": "順豐 API 回應格式不正確",
       "missingWaybill": "順豐 API 未回傳運單",
       "missingPrintFile": "順豐未回傳列印檔案",
-      "emailFailed": "寄送運單電郵失敗"
-    }
-  },
-  "env": {
-    "errors": {
-      "missingMongoUri": "缺少 MONGODB_URI",
-      "missingJwtSecret": "缺少 JWT_SECRET",
-      "missingAllowedOrigins": "缺少 ALLOWED_ORIGINS",
-      "missingSfCustomerCode": "缺少 SF_CUSTOMER_CODE",
-      "missingSfProductionCheckCode": "缺少 SF_PRODUCTION_CHECK_CODE",
-      "missingSmtpFrom": "缺少 SMTP_FROM",
-      "missingSmtpHost": "缺少 SMTP_HOST",
-      "missingSmtpPass": "缺少 SMTP_PASS",
-      "missingSmtpPort": "缺少 SMTP_PORT",
-      "missingSmtpUser": "缺少 SMTP_USER",
-      "missingSfAddressApiKey": "缺少 SF_ADDRESS_API_KEY"
+      "emailFailed": "寄送運單電郵失敗",
+      "env": {
+        "missingMongoUri": "缺少 MONGODB_URI",
+        "missingJwtSecret": "缺少 JWT_SECRET",
+        "missingAllowedOrigins": "缺少 ALLOWED_ORIGINS",
+        "missingSfCustomerCode": "缺少 SF_CUSTOMER_CODE",
+        "missingSfProductionCheckCode": "缺少 SF_PRODUCTION_CHECK_CODE",
+        "missingSmtpFrom": "缺少 SMTP_FROM",
+        "missingSmtpHost": "缺少 SMTP_HOST",
+        "missingSmtpPass": "缺少 SMTP_PASS",
+        "missingSmtpPort": "缺少 SMTP_PORT",
+        "missingSmtpUser": "缺少 SMTP_USER",
+        "missingSfAddressApiKey": "缺少 SF_ADDRESS_API_KEY"
+      }
     }
   }
 }

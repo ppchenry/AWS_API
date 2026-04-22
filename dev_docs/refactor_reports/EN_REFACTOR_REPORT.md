@@ -57,7 +57,7 @@ This means the refactoring effort is already producing measurable improvements i
 The core account auth flow is now also clearer at the monorepo level:
 
 * `UserRoutes` handles **verification-first registration** (no passwords for regular users), NGO auth, and protected account operations. `POST /account/login`, `PUT /account/update-password`, and `POST /account/login-2` are frozen routes returning `405`
-* `EmailVerification` handles public email proof with a **3-branch verify**: (1) authenticated user → link email to account, (2) new user → `{ verified: true, isNewUser: true }`, (3) existing user → auto-login with token
+* `EmailVerification` handles public email proof with a **3-branch verify**: (1) authenticated user â†’ link email to account, (2) new user â†’ `{ verified: true, isNewUser: true }`, (3) existing user â†’ auto-login with token
 * `AuthRoute` handles refresh-token rotation and access-token renewal
 
 The biggest improvement so far is security hardening. This refactor stage did not just clean up code structure. It materially reduced known exploitability in thirteen high-value Lambda surfaces already modernized.
@@ -102,12 +102,12 @@ The most important change is the **verification-first flow**: regular users no l
 
 For regular users:
 
-* `POST /account/login` is **frozen** and returns `405` — regular users do not log in with credentials
-* `PUT /account/update-password` is **frozen** and returns `405` — regular users have no passwords
+* `POST /account/login` is **frozen** and returns `405` â€” regular users do not log in with credentials
+* `PUT /account/update-password` is **frozen** and returns `405` â€” regular users have no passwords
 * `POST /account/login-2` is **frozen** and returns `405`
 * `POST /account/register` requires a consumed email or SMS verification code within a 10-minute window
 * registration returns `{ userId, role, isVerified, token }` with `201` and an `HttpOnly` refresh cookie
-* the full regular-user auth cycle is: **verify email/SMS → register with proof → receive session**
+* the full regular-user auth cycle is: **verify email/SMS â†’ register with proof â†’ receive session**
 
 For NGOs:
 
@@ -125,9 +125,9 @@ When `UserRoutes` does issue a session, the contract is now aligned across the s
 
 Its verify endpoint uses a **3-branch flow**:
 
-* **Branch 1 — Authenticated user** (Bearer token present): links the verified email to the caller's existing account
-* **Branch 2 — New user** (no account exists for the email): returns `{ verified: true, isNewUser: true }` so the frontend can proceed to registration with the verification proof
-* **Branch 3 — Existing user** (account exists, not authenticated): marks the account verified and issues a full session (access token + refresh cookie) as an auto-login
+* **Branch 1 â€” Authenticated user** (Bearer token present): links the verified email to the caller's existing account
+* **Branch 2 â€” New user** (no account exists for the email): returns `{ verified: true, isNewUser: true }` so the frontend can proceed to registration with the verification proof
+* **Branch 3 â€” Existing user** (account exists, not authenticated): marks the account verified and issues a full session (access token + refresh cookie) as an auto-login
 
 Its role is narrower and safer than the legacy flow:
 
@@ -303,7 +303,7 @@ For `EmailVerification`, the hardened flow now includes:
 * no placeholder or pre-verification user creation
 * dedicated verification-state storage instead of storing transient codes on `User`
 * one-time code consumption with replay prevention
-* 3-branch verify: authenticated user → link identifier, new user → `isNewUser: true`, existing user → auto-login with token
+* 3-branch verify: authenticated user â†’ link identifier, new user â†’ `isNewUser: true`, existing user â†’ auto-login with token
 * stronger refresh-cookie scoping aligned to `/auth/refresh`
 * exact-route dispatch and public-route allowlisting
 * rate limiting on both generate and verify flows
@@ -373,11 +373,11 @@ For `purchaseConfirmation`, the hardened flow now includes:
 * exact route dispatch with dead routes returning 405
 * JWT auth on all admin routes with public-route bypass for `POST /purchase/confirmation` and `GET /purchase/shop-info`
 * RBAC enforcement for admin-only routes (orders, order-verification, email sending)
-* server-authoritative pricing via `shopCode` lookup — client-supplied `price` is never persisted
+* server-authoritative pricing via `shopCode` lookup â€” client-supplied `price` is never persisted
 * Zod-backed validation for purchase multipart fields and email JSON body with locale-key error messages
 * unique DB indexes on `Order.tempId` and `OrderVerification.tagId` closing race-condition duplicates
-* write atomicity with rollback — failed tag/QR/OV creation after Order save triggers Order cleanup
-* soft-cancel idempotency — double-cancel returns 409, not 404
+* write atomicity with rollback â€” failed tag/QR/OV creation after Order save triggers Order cleanup
+* soft-cancel idempotency â€” double-cancel returns 409, not 404
 * query projections excluding bank credentials (`bankName`, `bankNumber`) at query time
 * per-IP rate limiting on the public purchase endpoint (10 req/hr, fail-closed)
 * magic-byte MIME detection replacing `mime-types` package for file uploads
@@ -551,7 +551,7 @@ Each Lambda therefore needs more than code movement. Safe refactoring requires:
 
 That takes time because the work is being done in a way that preserves availability and minimizes contract drift.
 
-The goal is not just to “rewrite files.” The goal is to produce Lambdas that are safer, cleaner, and operationally more reliable while remaining compatible with existing consumers.
+The goal is not just to â€œrewrite files.â€ The goal is to produce Lambdas that are safer, cleaner, and operationally more reliable while remaining compatible with existing consumers.
 
 This is why the work may feel slower than surface-level coding changes: secure modernization requires understanding the real request lifecycle, the actual data exposure risk, the hidden authorization assumptions, and the regression impact before changing anything. That time is not waste. It is what prevents shipping a cleaner-looking system that is still exploitable.
 
@@ -574,3 +574,105 @@ Most importantly, they demonstrate why in-situ modernization is the right first 
 This is not the end-state architecture yet, but it is the correct and necessary foundation for getting there safely.
 
 If the objective is to protect the business while continuing to ship, this 2026-04-21 report should be evaluated as early security risk reduction with compounding engineering payoff, not as cosmetic refactoring.
+
+---
+
+## Addendum (2026-04-22) â€” Locale & errorKey Standardization
+
+Following the initial per-Lambda refactor pass, a monorepo-wide normalization of `errorKey` values and locale bundles was performed across all 17 refactored Lambdas plus `purchaseConfirmation`. This pass produced a single, machine-readable convention for every error and success message emitted by the API.
+
+### Problem
+
+Prior to standardization, each Lambda independently maintained its own `locales/*.json` files with divergent structures:
+
+* Some used flat keys (e.g. `"unauthorized"`, `"invalidJSON"`, `"petNotFound"`).
+* Some used one-level dotted keys (e.g. `"phoneRegister.userExist"`, `"verification.codeExpired"`).
+* Some mixed an `others` namespace with domain-specific leaves (e.g. `"others.unauthorized"`, `"updateImage.invalidUserId"`).
+* Cross-cutting error keys such as `unauthorized`, `internalError`, and `invalidJSON` were duplicated per Lambda with no shared source-of-truth.
+* English and Chinese bundles frequently drifted â€” one locale would have a key while the other would not.
+
+The result: frontend / test code had to hard-code Lambda-specific key shapes, CloudWatch filters relied on inconsistent taxonomy, and adding a new error message required a guess about which namespace it belonged to.
+
+### Canonical scheme (now enforced)
+
+Every `locales/<lang>.json` in every Lambda conforms to:
+
+```json
+{
+  "common": {
+    "unauthorized": "...",
+    "internalError": "...",
+    "invalidJSON": "...",
+    "missingParams": "...",
+    "rateLimited": "...",
+    "methodNotAllowed": "...",
+    "forbidden": "...",
+    "...": "..."
+  },
+  "<lambdaDomainCamel>": {
+    "errors":  { "<leaf>": "..." },
+    "success": { "<leaf>": "..." }
+  }
+}
+```
+
+* `common.<leaf>` â€” cross-cutting keys that every Lambda re-exports from a shared baseline.
+* `<lambdaDomainCamel>.errors.<leaf>` â€” endpoint-specific error messages.
+* `<lambdaDomainCamel>.success.<leaf>` â€” endpoint-specific success messages.
+
+`<lambdaDomainCamel>` is the camelCase form of the Lambda's folder name:
+
+| Lambda folder | Domain prefix |
+| --- | --- |
+| `AuthRoute` | `authRoute` |
+| `CreatePetBasicInfo` | `createPetBasicInfo` |
+| `EmailVerification` | `emailVerification` |
+| `EyeUpload` | `eyeUpload` |
+| `GetAdoption` | `getAdoption` |
+| `GetAllPets` | `getAllPets` |
+| `OrderVerification` | `orderVerification` |
+| `PetBasicInfo` | `petBasicInfo` |
+| `PetBiometricRoutes` | `petBiometricRoutes` |
+| `PetDetailInfo` | `petDetailInfo` |
+| `PetInfoByPetNumber` | `petInfoByPetNumber` |
+| `PetLostandFound` | `petLostAndFound` |
+| `PetMedicalRecord` | `petMedicalRecord` |
+| `PetVaccineRecords` | `petVaccineRecords` |
+| `purchaseConfirmation` | `purchaseConfirmation` |
+| `SFExpressRoutes` | `sfExpressRoutes` |
+| `UserRoutes` | `userRoutes` |
+
+Sub-grouping under `<domain>.errors` / `<domain>.success` is allowed where the domain itself has natural sub-resources â€” for example `petDetailInfo.errors.petAdoption.invalidDateFormat`, `petMedicalRecord.errors.bloodTest.notFound`, or `userRoutes.errors.verification.codeExpired`.
+
+### Utility contract
+
+* `utils/response.js::createErrorResponse(statusCode, errorKey, event)` emits `{ success: false, errorKey, error, requestId }` where `errorKey` is the canonical dot-notation path.
+* `utils/response.js::createSuccessResponse(statusCode, event, data)` emits `{ success: true, message, ...data }` where `message` is resolved from the same canonical path.
+* `utils/i18n.js::getTranslation(dict, "domain.group.leaf")` walks the locale JSON tree and falls back gracefully when a key is missing.
+
+`errorKey` is **stable across all localizations** â€” frontends and tests should branch on `errorKey`, never on `error` (the localized human text).
+
+### Migration outcomes
+
+* **217 files modified** across `functions/**`, `shared/**`, and `__tests__/**`.
+* **+2,281 / âˆ’2,355 lines** in the diff â€” a net reduction because the old per-Lambda copies of flat cross-cutting keys collapsed into shared `common.*` blocks.
+* All 20 Jest suites pass against a live `sam local start-api` stack (5 unit suites + 15 integration suites).
+* Two migration-induced bugs were caught and fixed during the verification pass:
+  1. `functions/PetDetailInfo/src/middleware/ownership.js` referenced an undefined `callerNgoId` identifier introduced by a previous rewrite; replaced with `event.ngoId`, restoring all 82 `PetDetailInfo` test cases.
+  2. `__tests__/test-sms-service.test.js` had stale expectations for the new-user and verified-user flows of `verifySmsCode`; updated to match the current service behavior (always upserts an `SmsVerificationCode` record on successful verify; returns `isNewUser: true` for phones not tied to an account).
+* Two tests in `__tests__/test-petmedicalrecord.test.js` and `__tests__/test-petvaccinerecords.test.js` still expected the old `petDetailInfo.errors.*` prefix for shared pet-id validation errors; updated to the per-Lambda prefix.
+
+### Documentation cascade (2026-04-22)
+
+All API reference docs under `dev_docs/api_docs/` were updated in the same pass to reference the new canonical `errorKey` values:
+
+* `dev_docs/api_docs/README.md` now documents the `common.*` / `<domain>.errors.*` / `<domain>.success.*` scheme and lists all cross-cutting `common.*` keys.
+* Every per-endpoint error table in `ACCOUNT_API.md`, `AUTH_FLOW_API.md`, `MEDIA_UPLOAD_API.md`, `NGO_ADMIN_API.md`, `PET_ADOPTION_API.md`, `PET_BIOMETRICS_API.md`, `PET_DETAIL_INFO_API.md`, `PET_HEALTH_API.md`, `PET_LOST_FOUND_API.md`, `PET_PROFILE_API.md`, `PURCHASE_ORDER_API.md`, and `SF_EXPRESS_API.md` was rewritten so that every listed `errorKey` is present verbatim in the matching Lambda's `locales/en.json`.
+
+### Why this matters
+
+* **Frontend determinism.** A single, stable key for `unauthorized`, `internalError`, `rateLimited`, etc. means the frontend can build one global interceptor instead of one per API.
+* **Test hygiene.** Every integration assertion now targets the exact same key the Lambda emits, surfacing service-layer regressions within the correct suite immediately.
+* **Observability.** CloudWatch `errorKey` filters are now consistent â€” an `errorKey=common.internalError` filter finds every 500 from every Lambda.
+* **i18n readiness.** Adding a new locale is a matter of translating existing leaves; no key paths need to be invented.
+* **Contributor friction.** Adding a new error is a two-line change in two locale files plus the `createErrorResponse` call â€” never a design decision.

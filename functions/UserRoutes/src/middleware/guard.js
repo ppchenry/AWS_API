@@ -30,7 +30,7 @@ async function validateUserRequest({ event }) {
     } catch (error) {
       return {
         isValid: false,
-        error: createErrorResponse(400, "others.invalidJSON", event)
+        error: createErrorResponse(400, "common.invalidJSON", event)
       };
     }
   }
@@ -40,7 +40,7 @@ async function validateUserRequest({ event }) {
   if ((method === 'PUT' || method === 'POST') && (!parsedBody || Object.keys(parsedBody).length === 0)) {
     return {
       isValid: false,
-      error: createErrorResponse(400, "others.missingParams", event)
+      error: createErrorResponse(400, "common.missingParams", event)
     };
   }
 
@@ -61,7 +61,7 @@ async function validateUserRequest({ event }) {
   if (NGO_ONLY_RESOURCES.has(event.resource) && event.userRole !== 'ngo') {
     return {
       isValid: false,
-      error: createErrorResponse(403, 'others.unauthorized', event),
+      error: createErrorResponse(403, 'common.unauthorized', event),
     };
   }
 
@@ -74,7 +74,7 @@ async function validateUserRequest({ event }) {
   if (!isValidObjectId(userId)) {
     return { 
       isValid: false, 
-      error: createErrorResponse(400, "others.invalidGET", event) 
+      error: createErrorResponse(400, "userRoutes.errors.invalidGET", event) 
     };
   }
 

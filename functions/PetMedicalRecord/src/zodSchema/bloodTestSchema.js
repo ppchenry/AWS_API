@@ -1,7 +1,7 @@
 const { z } = require("zod");
 
 const createBloodTestSchema = z.object({
-  bloodTestDate: z.string({ error: "bloodTest.invalidDateFormat" }).optional(),
+  bloodTestDate: z.string({ error: "petMedicalRecord.errors.bloodTest.invalidDateFormat" }).optional(),
   heartworm: z.string().optional(),
   lymeDisease: z.string().optional(),
   ehrlichiosis: z.string().optional(),
@@ -10,7 +10,7 @@ const createBloodTestSchema = z.object({
 }).strict();
 
 const updateBloodTestSchema = z.object({
-  bloodTestDate: z.string({ error: "bloodTest.invalidDateFormat" }).optional(),
+  bloodTestDate: z.string({ error: "petMedicalRecord.errors.bloodTest.invalidDateFormat" }).optional(),
   heartworm: z.string().optional(),
   lymeDisease: z.string().optional(),
   ehrlichiosis: z.string().optional(),

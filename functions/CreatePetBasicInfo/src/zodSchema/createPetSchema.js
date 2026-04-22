@@ -2,7 +2,7 @@ const { z } = require("zod");
 const { isValidDateFormat, isValidImageUrl } = require("../utils/validators");
 
 const optionalTrimmedString = () => z.string().trim().optional();
-const optionalNonEmptyString = () => z.string().trim().min(1, "others.invalidInput").optional();
+const optionalNonEmptyString = () => z.string().trim().min(1, "common.invalidInput").optional();
 
 const ALLOWED_FIELDS = [
   "lang",
@@ -47,39 +47,39 @@ const createPetSchema = z
         ctx.addIssue({
           code: "custom",
           path: [key],
-          message: "unknownField",
+          message: "createPetBasicInfo.errors.unknownField",
         });
       }
     });
 
     if (typeof body.name !== "string" || body.name.trim().length === 0) {
-      ctx.addIssue({ code: "custom", path: ["name"], message: "missingName" });
+      ctx.addIssue({ code: "custom", path: ["name"], message: "createPetBasicInfo.errors.missingName" });
     }
 
     if (typeof body.birthday !== "string" || body.birthday.trim().length === 0) {
-      ctx.addIssue({ code: "custom", path: ["birthday"], message: "missingBirthday" });
+      ctx.addIssue({ code: "custom", path: ["birthday"], message: "createPetBasicInfo.errors.missingBirthday" });
     } else if (!isValidDateFormat(body.birthday)) {
-      ctx.addIssue({ code: "custom", path: ["birthday"], message: "invalidDateFormat" });
+      ctx.addIssue({ code: "custom", path: ["birthday"], message: "createPetBasicInfo.errors.invalidDateFormat" });
     }
 
     if (typeof body.sex !== "string" || body.sex.trim().length === 0) {
-      ctx.addIssue({ code: "custom", path: ["sex"], message: "missingSex" });
+      ctx.addIssue({ code: "custom", path: ["sex"], message: "createPetBasicInfo.errors.missingSex" });
     }
 
     if (typeof body.animal !== "string" || body.animal.trim().length === 0) {
-      ctx.addIssue({ code: "custom", path: ["animal"], message: "missingAnimal" });
+      ctx.addIssue({ code: "custom", path: ["animal"], message: "createPetBasicInfo.errors.missingAnimal" });
     }
 
     if (body.receivedDate !== undefined && body.receivedDate !== null) {
       if (!isValidDateFormat(body.receivedDate)) {
-        ctx.addIssue({ code: "custom", path: ["receivedDate"], message: "invalidDateFormat" });
+        ctx.addIssue({ code: "custom", path: ["receivedDate"], message: "createPetBasicInfo.errors.invalidDateFormat" });
       }
     }
 
     if (body.breedimage !== undefined && body.breedimage !== null) {
       body.breedimage.forEach((url, index) => {
         if (url && !isValidImageUrl(url)) {
-          ctx.addIssue({ code: "custom", path: ["breedimage", index], message: "invalidImageUrlFormat" });
+          ctx.addIssue({ code: "custom", path: ["breedimage", index], message: "createPetBasicInfo.errors.invalidImageUrlFormat" });
         }
       });
     }

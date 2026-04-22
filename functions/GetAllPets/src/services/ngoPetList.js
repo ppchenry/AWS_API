@@ -31,7 +31,7 @@ async function getNgoPetList({ event }) {
     const queryParams = event.queryStringParameters || {};
 
     if (!ngoId) {
-      return createErrorResponse(400, "ngoPath.missingNgoId", event);
+      return createErrorResponse(400, "getAllPets.errors.ngoPath.missingNgoId", event);
     }
 
     const pageNumber = Math.max(1, parseInt(queryParams.page || "1", 10));
@@ -72,13 +72,13 @@ async function getNgoPetList({ event }) {
     ]);
 
     if (!pets || pets.length === 0) {
-      return createErrorResponse(404, "ngoPath.noPetsFound", event);
+      return createErrorResponse(404, "getAllPets.errors.ngoPath.noPetsFound", event);
     }
 
     return createSuccessResponse(200, event, {
       message: getTranslation(
         loadTranslations(event.cookies?.language || "zh"),
-        "ngoPath.success"
+        "getAllPets.success.ngoPath.retrieved"
       ),
       pets: sanitizePets(pets),
       total: totalNumber,
@@ -91,7 +91,7 @@ async function getNgoPetList({ event }) {
       event,
       error,
     });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 

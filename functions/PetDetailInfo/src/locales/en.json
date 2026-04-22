@@ -1,74 +1,79 @@
 {
-    "others": {
-        "unauthorized": "Unauthorized",
-        "forbidden": "You do not have permission to access this pet",
-        "ngoOnly": "This operation is restricted to NGO accounts",
-        "internalError": "Internal Server Error",
-        "methodNotAllowed": "Method Not Allowed",
-        "missingParams": "Missing required parameters",
-        "invalidJSON": "Invalid JSON format",
-        "noFieldsToUpdate": "No valid fields to update"
-    },
-    "common": {
-        "invalidJSON": "Invalid JSON format"
-    },
+  "common": {
+    "forbidden": "Forbidden",
+    "internalError": "Internal server error",
+    "invalidJSON": "Invalid JSON format",
     "methodNotAllowed": "Method Not Allowed",
-    "missingPetId": "Pet ID is required",
-    "invalidPetIdFormat": "Invalid pet ID format",
-    "petNotFound": "Pet not found",
-    "petDeleted": "Pet has been deleted",
-    "transferPath": {
-        "postSuccess": "Pet detail info transfer created successfully",
-        "putMissingTransferId": "Transfer ID is required",
-        "invalidTransferIdFormat": "Invalid transfer ID format",
-        "transferNotFound": "Transfer record not found",
+    "missingParams": "Missing required parameters",
+    "noFieldsToUpdate": "No fields provided to update",
+    "unauthorized": "Unauthorized"
+  },
+  "petDetailInfo": {
+    "errors": {
+      "missingPetId": "Pet ID is required",
+      "invalidPetIdFormat": "Invalid pet ID format",
+      "petNotFound": "Pet not found",
+      "petDeleted": "Pet has been deleted",
+      "transferPath": {
+        "missingId": "Transfer ID is required",
+        "invalidIdFormat": "Invalid transfer ID format",
+        "notFound": "Transfer record not found",
         "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
         "invalidPhoneFormat": "Invalid phone number format",
-        "putSuccess": "Pet detail info transfer updated successfully",
-        "deleteMissingTransferId": "Transfer ID is required",
-        "deleteSuccess": "Pet detail info transfer deleted successfully"
-    },
-    "ngoTransfer": {
-        "missingRequiredFields": "UserEmail and UserContact are required",
+        "missingIdForDelete": "Transfer ID is required"
+      },
+      "ngoTransfer": {
         "invalidEmailFormat": "Invalid email format",
         "invalidPhoneFormat": "Invalid phone number format",
         "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
-        "userEmailNotFound": "User with this email does not exist",
-        "userPhoneNotFound": "User with this phone number does not exist",
         "userIdentityMismatch": "The email and phone number do not belong to the same user",
-        "targetUserNotFound": "Target user not found"
-    },
-    "petDetailInfo": {
-        "getDetailNotFound": "Pet detail info not found",
-        "getDetailSuccess": "Pet detail info retrieved successfully",
-        "postDetailSuccess": "Pet detail info updated successfully",
-        "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
-        "invalidMotherParity": "Mother parity must be a valid number"
-    },
-    "petSource": {
-        "getNotFound": "No rescue/origin information found for this pet",
-        "getSuccess": "Rescue/origin information retrieved successfully",
-        "postSuccess": "Rescue/origin record created successfully",
-        "putMissingSourceId": "Rescue/origin record ID is required",
+        "targetUserNotFound": "Target user not found",
+        "missingRequiredFields": "UserEmail and UserContact are required",
+        "userEmailNotFound": "User with this email does not exist",
+        "userPhoneNotFound": "User with this phone number does not exist"
+      },
+      "detailNotFound": "Pet detail info not found",
+      "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
+      "invalidMotherParity": "Mother parity must be a valid number",
+      "petSource": {
         "invalidSourceIdFormat": "Invalid rescue/origin record ID format",
         "recordNotFound": "Rescue/origin record not found",
-        "putSuccess": "Rescue/origin record updated successfully",
         "noFieldsToUpdate": "No fields provided to update",
-        "missingRequiredFields": "At least one of place of origin or channel is required",
-        "duplicateRecord": "A source record already exists for this pet"
-    },
-    "petAdoption": {
-        "getNotFound": "No post-adoption record found",
-        "getSuccess": "Post-adoption record retrieved successfully",
+        "duplicateRecord": "A source record already exists for this pet",
+        "getNotFound": "No rescue/origin information found for this pet",
+        "putMissingSourceId": "Rescue/origin record ID is required",
+        "missingRequiredFields": "At least one of place of origin or channel is required"
+      },
+      "petAdoption": {
         "invalidDateFormat": "Invalid date format. Please use ISO 8601 format (YYYY-MM-DD)",
-        "postSuccess": "Post-adoption record created successfully",
-        "putMissingAdoptionId": "Adoption ID is required",
         "invalidAdoptionIdFormat": "Invalid adoption ID format",
         "recordNotFound": "Post-adoption record not found",
         "noFieldsToUpdate": "No fields provided to update",
+        "duplicateRecord": "An adoption record already exists for this pet",
+        "getNotFound": "No post-adoption record found",
+        "putMissingAdoptionId": "Adoption ID is required",
+        "deleteMissingAdoptionId": "Adoption ID is required"
+      }
+    },
+    "success": {
+      "transferPath": {
+        "created": "Pet detail info transfer created successfully",
+        "updated": "Pet detail info transfer updated successfully",
+        "deleted": "Pet detail info transfer deleted successfully"
+      },
+      "detailUpdated": "Pet detail info updated successfully",
+      "petSource": {
+        "getSuccess": "Rescue/origin information retrieved successfully",
+        "postSuccess": "Rescue/origin record created successfully",
+        "putSuccess": "Rescue/origin record updated successfully"
+      },
+      "petAdoption": {
+        "getSuccess": "Post-adoption record retrieved successfully",
+        "postSuccess": "Post-adoption record created successfully",
         "putSuccess": "Post-adoption record updated successfully",
-        "deleteMissingAdoptionId": "Adoption ID is required",
-        "deleteSuccess": "Post-adoption record deleted successfully",
-        "duplicateRecord": "An adoption record already exists for this pet"
+        "deleteSuccess": "Post-adoption record deleted successfully"
+      },
+      "getDetailSuccess": "Pet detail info retrieved successfully"
     }
+  }
 }

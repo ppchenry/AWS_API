@@ -1,66 +1,72 @@
 {
-  "others": {
-    "unauthorized": "Unauthorized",
+  "common": {
     "forbidden": "Forbidden",
     "internalError": "Internal server error",
-    "methodNotAllowed": "Method Not Allowed",
     "invalidJSON": "Invalid JSON format",
-    "missingParams": "Missing required parameters"
+    "methodNotAllowed": "Method Not Allowed",
+    "missingParams": "Missing required parameters",
+    "unauthorized": "Unauthorized"
   },
-  "common": {
-    "invalidJSON": "Invalid JSON format"
-  },
-  "missingPetId": "Pet ID is required",
-  "invalidPetIdFormat": "Invalid pet ID format",
-  "petNotFound": "Pet not found",
-  "petDeleted": "Pet has been deleted",
-  "methodNotAllowed": "Method Not Allowed",
-  "medicalRecord": {
-    "getNotFound": "Pet medical record not found",
-    "getSuccess": "Pet medical record retrieved successfully",
-    "postSuccess": "Pet medical record created successfully",
-    "putMissingMedicalId": "Medical ID is required",
-    "invalidMedicalIdFormat": "Invalid medical ID format",
-    "medicalRecordNotFound": "Medical record not found",
-    "putSuccess": "Pet medical record updated successfully",
-    "deleteSuccess": "Medical record deleted successfully",
-    "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
-    "noFieldsToUpdate": "No fields provided to update"
-  },
-  "bloodTest": {
-    "getNotFound": "Pet blood test record not found",
-    "getSuccess": "Pet blood test records retrieved successfully",
-    "postSuccess": "Blood test record created successfully",
-    "putMissingBloodTestId": "Blood test ID is required",
-    "invalidBloodTestIdFormat": "Invalid blood test ID format",
-    "bloodTestRecordNotFound": "Blood test record not found",
-    "putSuccess": "Blood test record updated successfully",
-    "deleteSuccess": "Blood test record deleted successfully",
-    "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
-    "noFieldsToUpdate": "No fields provided to update"
-  },
-  "medicationRecord": {
-    "getNotFound": "Pet medication record not found",
-    "getSuccess": "Pet medication record retrieved successfully",
-    "postSuccess": "Pet medication record created successfully",
-    "putMissingMedicationId": "Medication ID is required",
-    "invalidMedicationIdFormat": "Invalid medication ID format",
-    "medicationRecordNotFound": "Medication record not found",
-    "putSuccess": "Pet medication record updated successfully",
-    "deleteSuccess": "Medication record deleted successfully",
-    "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
-    "noFieldsToUpdate": "No fields provided to update"
-  },
-  "dewormRecord": {
-    "getNotFound": "Pet deworm record not found",
-    "getSuccess": "Pet deworm record retrieved successfully",
-    "postSuccess": "Pet deworm record created successfully",
-    "putMissingDewormId": "Deworm Record ID is required",
-    "invalidDewormIdFormat": "Invalid deworm record ID format",
-    "dewormRecordNotFound": "Deworm record not found",
-    "putSuccess": "Pet deworm record updated successfully",
-    "deleteSuccess": "Deworm record deleted successfully",
-    "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
-    "noFieldsToUpdate": "No fields provided to update"
+  "petMedicalRecord": {
+    "errors": {
+      "missingPetId": "Pet ID is required",
+      "invalidPetIdFormat": "Invalid pet ID format",
+      "petNotFound": "Pet not found",
+      "petDeleted": "Pet has been deleted",
+      "medicalRecord": {
+        "notFound": "Medical record not found",
+        "missingId": "Medical ID is required",
+        "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
+        "noFieldsToUpdate": "No fields provided to update",
+        "invalidMedicalIdFormat": "Invalid medical ID format"
+      },
+      "bloodTest": {
+        "notFound": "Blood test record not found",
+        "missingId": "Blood test ID is required",
+        "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
+        "noFieldsToUpdate": "No fields provided to update",
+        "invalidBloodTestIdFormat": "Invalid blood test ID format"
+      },
+      "medicationRecord": {
+        "notFound": "Medication record not found",
+        "missingId": "Medication ID is required",
+        "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
+        "noFieldsToUpdate": "No fields provided to update",
+        "invalidMedicationIdFormat": "Invalid medication ID format"
+      },
+      "dewormRecord": {
+        "notFound": "Deworm record not found",
+        "missingId": "Deworm Record ID is required",
+        "invalidDateFormat": "Invalid date format. Expected YYYY-MM-DD or DD/MM/YYYY format",
+        "noFieldsToUpdate": "No fields provided to update",
+        "invalidDewormIdFormat": "Invalid deworm record ID format"
+      }
+    },
+    "success": {
+      "medicalRecord": {
+        "created": "Pet medical record created successfully",
+        "updated": "Pet medical record updated successfully",
+        "deleted": "Medical record deleted successfully",
+        "getSuccess": "Pet medical record retrieved successfully"
+      },
+      "bloodTest": {
+        "created": "Blood test record created successfully",
+        "updated": "Blood test record updated successfully",
+        "deleted": "Blood test record deleted successfully",
+        "getSuccess": "Pet blood test records retrieved successfully"
+      },
+      "medicationRecord": {
+        "created": "Pet medication record created successfully",
+        "updated": "Pet medication record updated successfully",
+        "deleted": "Medication record deleted successfully",
+        "getSuccess": "Pet medication record retrieved successfully"
+      },
+      "dewormRecord": {
+        "created": "Pet deworm record created successfully",
+        "updated": "Pet deworm record updated successfully",
+        "deleted": "Deworm record deleted successfully",
+        "getSuccess": "Pet deworm record retrieved successfully"
+      }
+    }
   }
 }

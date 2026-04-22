@@ -157,7 +157,7 @@ describe("AuthRoute handler", () => {
     expect(getReadConnection).toHaveBeenCalledTimes(1);
     expect(response.statusCode).toBe(405);
     expect(body.success).toBe(false);
-    expect(body.errorKey).toBe("others.methodNotAllowed");
+    expect(body.errorKey).toBe("common.methodNotAllowed");
   });
 
   test("POST /auth/refresh reaches the service through the full handler lifecycle", async () => {
@@ -182,7 +182,7 @@ describe("AuthRoute handler", () => {
     const body = JSON.parse(response.body);
     expect(getReadConnection).toHaveBeenCalledTimes(1);
     expect(response.statusCode).toBe(401);
-    expect(body.errorKey).toBe("authRefresh.missingRefreshToken");
+    expect(body.errorKey).toBe("authRoute.errors.missingRefreshToken");
   });
 
   test("POST /auth/refresh bypasses authJWT because it is in PUBLIC_RESOURCES", async () => {
@@ -208,8 +208,8 @@ describe("AuthRoute handler", () => {
     const body = JSON.parse(response.body);
     // Should reach the refresh service (401 from missing cookie), NOT 401 from authJWT
     expect(response.statusCode).toBe(401);
-    expect(body.errorKey).toBe("authRefresh.missingRefreshToken");
-    expect(body.errorKey).not.toBe("others.unauthorized");
+    expect(body.errorKey).toBe("authRoute.errors.missingRefreshToken");
+    expect(body.errorKey).not.toBe("common.unauthorized");
   });
 
   test("non-public resource returns 401 when Authorization header is missing", async () => {
@@ -233,7 +233,7 @@ describe("AuthRoute handler", () => {
     const body = JSON.parse(response.body);
     expect(getReadConnection).not.toHaveBeenCalled();
     expect(response.statusCode).toBe(401);
-    expect(body.errorKey).toBe("others.unauthorized");
+    expect(body.errorKey).toBe("common.unauthorized");
   });
 });
 
@@ -290,7 +290,7 @@ describe("AuthRoute authJWT middleware", () => {
 
     const body = JSON.parse(result.body);
     expect(result.statusCode).toBe(401);
-    expect(body.errorKey).toBe("others.unauthorized");
+    expect(body.errorKey).toBe("common.unauthorized");
   });
 
   test("returns 401 for an expired or tampered token", () => {
@@ -313,7 +313,7 @@ describe("AuthRoute authJWT middleware", () => {
 
     const body = JSON.parse(result.body);
     expect(result.statusCode).toBe(401);
-    expect(body.errorKey).toBe("others.unauthorized");
+    expect(body.errorKey).toBe("common.unauthorized");
   });
 
   test("returns 500 when JWT_SECRET is not available at request time", () => {
@@ -336,7 +336,7 @@ describe("AuthRoute authJWT middleware", () => {
 
       const body = JSON.parse(result.body);
       expect(result.statusCode).toBe(500);
-      expect(body.errorKey).toBe("others.internalError");
+      expect(body.errorKey).toBe("common.internalError");
     } finally {
       process.env.JWT_SECRET = savedSecret;
     }
@@ -369,7 +369,7 @@ describe("AuthRoute authJWT middleware", () => {
 
     const body = JSON.parse(result.body);
     expect(result.statusCode).toBe(401);
-    expect(body.errorKey).toBe("others.unauthorized");
+    expect(body.errorKey).toBe("common.unauthorized");
   });
 });
 
@@ -390,7 +390,7 @@ describe("AuthRoute refresh service", () => {
     const body = JSON.parse(response.body);
 
     expect(response.statusCode).toBe(429);
-    expect(body.errorKey).toBe("others.rateLimited");
+    expect(body.errorKey).toBe("common.rateLimited");
   });
 
   test("returns 401 when the refresh token cookie is missing", async () => {
@@ -404,7 +404,7 @@ describe("AuthRoute refresh service", () => {
 
     expect(response.statusCode).toBe(401);
     expect(body.success).toBe(false);
-    expect(body.errorKey).toBe("authRefresh.missingRefreshToken");
+    expect(body.errorKey).toBe("authRoute.errors.missingRefreshToken");
   });
 
   test("returns 401 when the refresh token cookie format is invalid", async () => {
@@ -424,7 +424,7 @@ describe("AuthRoute refresh service", () => {
     const body = JSON.parse(response.body);
 
     expect(response.statusCode).toBe(401);
-    expect(body.errorKey).toBe("authRefresh.invalidRefreshTokenCookie");
+    expect(body.errorKey).toBe("authRoute.errors.invalidRefreshTokenCookie");
   });
 
   test("rejects invalid sessions when the token record is missing", async () => {
@@ -454,7 +454,7 @@ describe("AuthRoute refresh service", () => {
     const body = JSON.parse(response.body);
 
     expect(response.statusCode).toBe(401);
-    expect(body.errorKey).toBe("authRefresh.invalidSession");
+    expect(body.errorKey).toBe("authRoute.errors.invalidSession");
   });
 
   test("rotates a refresh token, returns a new cookie, and rejects replay", async () => {
@@ -535,7 +535,7 @@ describe("AuthRoute refresh service", () => {
     const replayBody = JSON.parse(replayResponse.body);
 
     expect(replayResponse.statusCode).toBe(401);
-    expect(replayBody.errorKey).toBe("authRefresh.invalidSession");
+    expect(replayBody.errorKey).toBe("authRoute.errors.invalidSession");
   });
 
   test("preserves NGO claims when refreshing an NGO session", async () => {
@@ -676,6 +676,6 @@ describe("AuthRoute refresh service", () => {
     const body = JSON.parse(response.body);
 
     expect(response.statusCode).toBe(403);
-    expect(body.errorKey).toBe("authRefresh.ngoApprovalRequired");
+    expect(body.errorKey).toBe("authRoute.errors.ngoApprovalRequired");
   });
 });

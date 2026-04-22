@@ -1,32 +1,33 @@
 {
-  "others": {
-    "unauthorized": "未授權",
+  "common": {
     "forbidden": "禁止存取",
     "internalError": "內部伺服器錯誤",
-    "methodNotAllowed": "不允許的方法",
-    "originNotAllowed": "來源不被允許",
     "invalidJSON": "無效的 JSON 格式",
-    "missingParams": "缺少必要參數"
+    "methodNotAllowed": "不允許的方法",
+    "missingParams": "缺少必要參數",
+    "originNotAllowed": "來源不被允許",
+    "unauthorized": "未授權"
   },
-  "common": {
-    "invalidJSON": "無效的 JSON 格式"
-  },
-  "missingPetId": "需要寵物身分證",
-  "invalidPetIdFormat": "無效的寵物 ID 格式",
-  "petNotFound": "未找到寵物",
-  "petDeleted": "寵物已被刪除",
-  "methodNotAllowed": "不允許的方法",
-  "vaccineRecord": {
-    "getNotFound": "未找到寵物疫苗記錄",
-    "getSuccess": "寵物疫苗記錄檢索成功",
-    "postSuccess": "寵物疫苗記錄創建成功",
-    "putMissingVaccineId": "需要疫苗 ID",
-    "invalidVaccineIdFormat": "無效的疫苗 ID 格式",
-    "vaccineRecordNotFound": "未找到疫苗記錄",
-    "putSuccess": "寵物疫苗記錄更新成功",
-    "deleteSuccess": "寵物疫苗記錄刪除成功",
-    "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式",
-    "noFieldsToUpdate": "未提供任何要更新的欄位",
-    "invalidInput": "疫苗紀錄輸入無效"
+  "petVaccineRecords": {
+    "errors": {
+      "missingPetId": "需要寵物身分證",
+      "invalidPetIdFormat": "無效的寵物 ID 格式",
+      "petNotFound": "未找到寵物",
+      "petDeleted": "寵物已被刪除",
+      "notFound": "未找到疫苗記錄",
+      "missingVaccineId": "需要疫苗 ID",
+      "invalidVaccineIdFormat": "無效的疫苗 ID 格式",
+      "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式",
+      "noFieldsToUpdate": "未提供任何要更新的欄位",
+      "vaccineRecord": {
+        "invalidInput": "疫苗紀錄輸入無效"
+      }
+    },
+    "success": {
+      "retrieved": "寵物疫苗記錄檢索成功",
+      "created": "寵物疫苗記錄創建成功",
+      "updated": "寵物疫苗記錄更新成功",
+      "deleted": "寵物疫苗記錄刪除成功"
+    }
   }
 }

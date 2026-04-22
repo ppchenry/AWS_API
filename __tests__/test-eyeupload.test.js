@@ -410,13 +410,13 @@ describe("JWT authentication", () => {
   test("rejects request with no Authorization header → 401", async () => {
     const res = await req("POST", authPath, validBody);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects expired JWT → 401", async () => {
     const res = await req("POST", authPath, validBody, expiredAuth());
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects garbage Bearer token → 401", async () => {
@@ -424,14 +424,14 @@ describe("JWT authentication", () => {
       Authorization: "Bearer this.is.garbage",
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects token without Bearer prefix → 401", async () => {
     const token = makeToken({ userId: "any-user" });
     const res = await req("POST", authPath, validBody, { Authorization: token });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects tampered JWT signature → 401", async () => {
@@ -442,7 +442,7 @@ describe("JWT authentication", () => {
       Authorization: `Bearer ${tampered}`,
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects alg:none token → 401", async () => {
@@ -453,7 +453,7 @@ describe("JWT authentication", () => {
       Authorization: `Bearer ${noneToken}`,
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("error response shape: success, errorKey, error, requestId", async () => {
@@ -495,7 +495,7 @@ describe("Dead routes return 405", () => {
     });
 
     expect(response.statusCode).toBe(405);
-    expect(JSON.parse(response.body).errorKey).toBe("others.methodNotAllowed");
+    expect(JSON.parse(response.body).errorKey).toBe("common.methodNotAllowed");
   });
 });
 
@@ -507,7 +507,7 @@ describe("Guard — eye-upload petId validation", () => {
   test("rejects invalid petId format → 400", async () => {
     const res = await req("POST", "/analysis/eye-upload/not-a-valid-id", undefined, tokenAuth({ userId: "any-user" }));
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.invalidObjectId");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.invalidObjectId");
   });
 });
 
@@ -521,37 +521,37 @@ describe("Guard + Zod — breed analysis body validation", () => {
   test("rejects malformed JSON body → 400", async () => {
     const res = await rawReq("POST", "/analysis/breed", '{"species":"broken"', auth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidJSON");
+    expect(res.body.errorKey).toBe("common.invalidJSON");
   });
 
   test("rejects empty body → 400", async () => {
     const res = await req("POST", "/analysis/breed", {}, auth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   });
 
   test("rejects missing species → 400", async () => {
     const res = await req("POST", "/analysis/breed", { url: "https://example.com/img.jpg" }, auth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.speciesRequired");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.speciesRequired");
   });
 
   test("rejects empty species → 400", async () => {
     const res = await req("POST", "/analysis/breed", { species: "", url: "https://example.com/img.jpg" }, auth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.speciesRequired");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.speciesRequired");
   });
 
   test("rejects missing url → 400", async () => {
     const res = await req("POST", "/analysis/breed", { species: "dog" }, auth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.urlRequired");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.urlRequired");
   });
 
   test("rejects invalid url format → 400", async () => {
     const res = await req("POST", "/analysis/breed", { species: "dog", url: "not-a-url" }, auth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.invalidUrl");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.invalidUrl");
   });
 
   test("rejects unknown fields (strict schema) → 400", async () => {
@@ -561,7 +561,7 @@ describe("Guard + Zod — breed analysis body validation", () => {
       extra: "field",
     }, auth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.unknownField");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.unknownField");
   });
 });
 
@@ -575,7 +575,7 @@ describe("POST /pets/create-pet-basic-info-with-image", () => {
   test("rejects no auth → 401", async () => {
     const res = await multipartReq("POST", createPath);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("returns 404 when JWT user does not exist in DB", async () => {
@@ -585,7 +585,7 @@ describe("POST /pets/create-pet-basic-info-with-image", () => {
       sex: "M",
     }, [], tokenAuth({ userId: NONEXISTENT_USER_ID }));
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("eyeUpload.userNotFound");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.userNotFound");
   });
 
   // ── Zod schema enforcement ──
@@ -596,7 +596,7 @@ describe("POST /pets/create-pet-basic-info-with-image", () => {
       sex: "M",
     }, [], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.nameRequired");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.nameRequired");
   });
 
   test("rejects missing required animal → 400", async () => {
@@ -605,7 +605,7 @@ describe("POST /pets/create-pet-basic-info-with-image", () => {
       sex: "M",
     }, [], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.animalRequired");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.animalRequired");
   });
 
   test("rejects missing required sex → 400", async () => {
@@ -614,7 +614,7 @@ describe("POST /pets/create-pet-basic-info-with-image", () => {
       animal: "dog",
     }, [], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.sexRequired");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.sexRequired");
   });
 
   test("rejects unknown field (strict schema) → 400", async () => {
@@ -625,7 +625,7 @@ describe("POST /pets/create-pet-basic-info-with-image", () => {
       isRegistered: "true",
     }, [], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.unknownField");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.unknownField");
   });
 
   test("rejects invalid breedimage URL → 400", async () => {
@@ -636,7 +636,7 @@ describe("POST /pets/create-pet-basic-info-with-image", () => {
       breedimage: "not-a-url",
     }, [], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.invalidUrl");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.invalidUrl");
   });
 
   // ── Client-supplied userId is blocked by strict schema ──
@@ -649,7 +649,7 @@ describe("POST /pets/create-pet-basic-info-with-image", () => {
       userId: "000000000000000000aaaaaa",
     }, [], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.unknownField");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.unknownField");
   });
 
   // ── NGO authorization enforcement ──
@@ -662,7 +662,7 @@ describe("POST /pets/create-pet-basic-info-with-image", () => {
       ngoId: "000000000000000000bbbbbb",
     }, [], seededOwnerAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("eyeUpload.ngoRoleRequired");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.ngoRoleRequired");
   });
 
   test("NGO caller without ngoId JWT claim gets 403 ngoIdClaimRequired", async () => {
@@ -673,7 +673,7 @@ describe("POST /pets/create-pet-basic-info-with-image", () => {
       ngoId: "000000000000000000cccccc",
     }, [], tokenAuth({ userId: state.ownerUserId, userRole: "ngo" }));
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("eyeUpload.ngoIdClaimRequired");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.ngoIdClaimRequired");
   });
 
   test("NGO caller with mismatched ngoId gets 403 forbidden", async () => {
@@ -684,7 +684,7 @@ describe("POST /pets/create-pet-basic-info-with-image", () => {
       ngoId: "000000000000000000dddddd",
     }, [], tokenAuth({ userId: state.ownerUserId, userRole: "ngo", ngoId: "000000000000000000eeeeee" }));
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("eyeUpload.forbidden");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.forbidden");
   });
 
   // ── Success path — creates pet, stores state for later tests ──
@@ -727,7 +727,7 @@ describe("POST /pets/create-pet-basic-info-with-image", () => {
     });
 
     expect(res.status).toBe(429);
-    expect(res.body.errorKey).toBe("eyeUpload.rateLimited");
+    expect(res.body.errorKey).toBe("common.rateLimited");
   });
 });
 
@@ -747,7 +747,7 @@ describe("POST /pets/updatePetImage", () => {
   test("rejects no auth → 401", async () => {
     const res = await multipartReq("POST", updatePath);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects missing petId → 400", async () => {
@@ -755,7 +755,7 @@ describe("POST /pets/updatePetImage", () => {
       name: "NoPetId",
     }, [], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.petIdRequired");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.petIdRequired");
   });
 
   test("rejects invalid petId format → 400", async () => {
@@ -763,7 +763,7 @@ describe("POST /pets/updatePetImage", () => {
       petId: "not-valid",
     }, [], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.invalidObjectId");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.invalidObjectId");
   });
 
   test("returns 404 for nonexistent pet", async () => {
@@ -771,7 +771,7 @@ describe("POST /pets/updatePetImage", () => {
       petId: NONEXISTENT_PET_ID,
     }, [], seededOwnerAuth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("eyeUpload.petNotFound");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.petNotFound");
   });
 
   test("rejects unknown field (strict schema) → 400", async () => {
@@ -780,7 +780,7 @@ describe("POST /pets/updatePetImage", () => {
       isRegistered: "true",
     }, [], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.unknownField");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.unknownField");
   });
 
   test("rejects malformed removedIndices → 400", async () => {
@@ -790,7 +790,7 @@ describe("POST /pets/updatePetImage", () => {
       removedIndices: "not-json",
     }, [], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.invalidRemovedIndices");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.invalidRemovedIndices");
   });
 
   test("rejects removedIndices with non-integer values → 400", async () => {
@@ -800,7 +800,7 @@ describe("POST /pets/updatePetImage", () => {
       removedIndices: '["a","b"]',
     }, [], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.invalidRemovedIndices");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.invalidRemovedIndices");
   });
 
   // ── Exact 403 ownership tests with seeded users ──
@@ -812,7 +812,7 @@ describe("POST /pets/updatePetImage", () => {
       name: "Hijacked",
     }, [], seededStrangerAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("eyeUpload.forbidden");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.forbidden");
   });
 
   // ── Owner success path ──
@@ -848,7 +848,7 @@ describe("POST /pets/updatePetImage", () => {
       ngoId: "000000000000000000ffffff",
     }, [], seededOwnerAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("eyeUpload.forbidden");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.forbidden");
   });
 
   // ── Fixture-based ownership ──
@@ -859,7 +859,7 @@ describe("POST /pets/updatePetImage", () => {
       name: "Hijacked",
     }, [], seededStrangerAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("eyeUpload.forbidden");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.forbidden");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   petTest("fixture: owner updates fixture pet → 200", async () => {
@@ -891,7 +891,7 @@ describe("POST /pets/updatePetImage", () => {
     });
 
     expect(res.status).toBe(429);
-    expect(res.body.errorKey).toBe("eyeUpload.rateLimited");
+    expect(res.body.errorKey).toBe("common.rateLimited");
   });
 });
 
@@ -909,27 +909,27 @@ describe("POST /analysis/eye-upload/{petId}", () => {
   test("rejects no auth → 401", async () => {
     const res = await multipartReq("POST", `/analysis/eye-upload/${NONEXISTENT_PET_ID}`);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects invalid petId format → 400", async () => {
     const res = await multipartReq("POST", "/analysis/eye-upload/bad-id", {}, [], tokenAuth({ userId: "any" }));
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.invalidObjectId");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.invalidObjectId");
   });
 
   test("returns 404 when caller (JWT user) does not exist in DB", async () => {
     const res = await multipartReq("POST", `/analysis/eye-upload/${NONEXISTENT_PET_ID}`, {}, [],
       tokenAuth({ userId: NONEXISTENT_USER_ID }));
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("eyeUpload.userNotFound");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.userNotFound");
   });
 
   test("existing caller + nonexistent pet → exact 404 petNotFound", async () => {
     const res = await multipartReq("POST", `/analysis/eye-upload/${NONEXISTENT_PET_ID}`, {}, [],
       seededOwnerAuth());
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("eyeUpload.petNotFound");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.petNotFound");
   });
 
   // ── Exact 403 with seeded stranger (the core ownership proof) ──
@@ -939,7 +939,7 @@ describe("POST /analysis/eye-upload/{petId}", () => {
     const res = await multipartReq("POST", `/analysis/eye-upload/${state.createdPetId}`, {}, [],
       seededStrangerAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("eyeUpload.forbidden");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.forbidden");
   });
 
   // ── Missing input ──
@@ -949,7 +949,7 @@ describe("POST /analysis/eye-upload/{petId}", () => {
     const res = await multipartReq("POST", `/analysis/eye-upload/${state.createdPetId}`, {}, [],
       seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.missingArguments");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.missingArguments");
   });
 
   // ── File validation ──
@@ -960,7 +960,7 @@ describe("POST /analysis/eye-upload/{petId}", () => {
       { field: "files", filename: "test.bmp", contentType: "image/bmp", content: Buffer.alloc(100, 0x42) },
     ], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.unsupportedFormat");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.unsupportedFormat");
   });
 
   test("rejects zero-byte file → 413", async () => {
@@ -969,7 +969,7 @@ describe("POST /analysis/eye-upload/{petId}", () => {
       { field: "files", filename: "empty.jpg", contentType: "image/jpeg", content: Buffer.alloc(0) },
     ], seededOwnerAuth());
     expect([400, 413]).toContain(res.status);
-    expect(["eyeUpload.missingArguments", "eyeUpload.fileTooSmall"]).toContain(res.body.errorKey);
+    expect(["eyeUpload.errors.missingArguments", "eyeUpload.errors.fileTooSmall"]).toContain(res.body.errorKey);
   });
 
   // ── Fixture-based ownership ──
@@ -978,14 +978,14 @@ describe("POST /analysis/eye-upload/{petId}", () => {
     const res = await multipartReq("POST", `/analysis/eye-upload/${TEST_PET_ID}`, {}, [],
       seededStrangerAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("eyeUpload.forbidden");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.forbidden");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   petTest("fixture: owner with missing input on fixture pet → 400", async () => {
     const res = await multipartReq("POST", `/analysis/eye-upload/${TEST_PET_ID}`, {}, [],
       fixtureOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.missingArguments");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.missingArguments");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   // ── Rate limiting ──
@@ -1006,7 +1006,7 @@ describe("POST /analysis/eye-upload/{petId}", () => {
     });
 
     expect(res.status).toBe(429);
-    expect(res.body.errorKey).toBe("eyeUpload.rateLimited");
+    expect(res.body.errorKey).toBe("common.rateLimited");
   });
 });
 
@@ -1018,7 +1018,7 @@ describe("POST /analysis/breed", () => {
   test("rejects no auth → 401", async () => {
     const res = await req("POST", "/analysis/breed", { species: "dog", url: "https://example.com/img.jpg" });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects empty species → 400", async () => {
@@ -1027,7 +1027,7 @@ describe("POST /analysis/breed", () => {
       url: "https://example.com/img.jpg",
     }, seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.speciesRequired");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.speciesRequired");
   });
 
   test("rejects invalid url → 400", async () => {
@@ -1036,7 +1036,7 @@ describe("POST /analysis/breed", () => {
       url: "not-a-url",
     }, seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.invalidUrl");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.invalidUrl");
   });
 
   test("rejects unknown fields → 400", async () => {
@@ -1046,7 +1046,7 @@ describe("POST /analysis/breed", () => {
       malicious: "payload",
     }, seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.unknownField");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.unknownField");
   });
 
   // ── Rate limiting ──
@@ -1070,7 +1070,7 @@ describe("POST /analysis/breed", () => {
     });
 
     expect(res.status).toBe(429);
-    expect(res.body.errorKey).toBe("eyeUpload.rateLimited");
+    expect(res.body.errorKey).toBe("common.rateLimited");
   });
 });
 
@@ -1084,13 +1084,13 @@ describe("POST /util/uploadImage", () => {
   test("rejects no auth → 401", async () => {
     const res = await multipartReq("POST", uploadPath);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects request with no files → 400", async () => {
     const res = await multipartReq("POST", uploadPath, {}, [], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.noFilesUploaded");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.noFilesUploaded");
   });
 
   test("rejects invalid image format (text/plain) → 400", async () => {
@@ -1098,7 +1098,7 @@ describe("POST /util/uploadImage", () => {
       { field: "files", filename: "test.txt", contentType: "text/plain", content: Buffer.from("not an image") },
     ], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.invalidImageFormat");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.invalidImageFormat");
   });
 
   test("rejects more than 1 file → 400 tooManyFiles", async () => {
@@ -1110,7 +1110,7 @@ describe("POST /util/uploadImage", () => {
     }));
     const res = await multipartReq("POST", uploadPath, {}, files, seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.tooManyFiles");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.tooManyFiles");
   });
 
   test("successful JPEG upload → 200 with url", async () => {
@@ -1150,7 +1150,7 @@ describe("POST /util/uploadImage", () => {
     });
 
     expect(res.status).toBe(429);
-    expect(res.body.errorKey).toBe("eyeUpload.rateLimited");
+    expect(res.body.errorKey).toBe("common.rateLimited");
   });
 });
 
@@ -1164,13 +1164,13 @@ describe("POST /util/uploadPetBreedImage", () => {
   test("rejects no auth → 401", async () => {
     const res = await multipartReq("POST", uploadPath);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects request with no files → 400", async () => {
     const res = await multipartReq("POST", uploadPath, { url: "breed_analysis/test" }, [], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.noFilesUploaded");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.noFilesUploaded");
   });
 
   test("rejects invalid image format → 400", async () => {
@@ -1178,7 +1178,7 @@ describe("POST /util/uploadPetBreedImage", () => {
       { field: "files", filename: "test.txt", contentType: "text/plain", content: Buffer.from("not an image") },
     ], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.invalidImageFormat");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.invalidImageFormat");
   });
 
   test("rejects empty folder path → 400 invalidFolder", async () => {
@@ -1186,7 +1186,7 @@ describe("POST /util/uploadPetBreedImage", () => {
       { field: "files", filename: "img.jpg", contentType: "image/jpeg", content: tinyJpeg() },
     ], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.invalidFolder");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.invalidFolder");
   });
 
   test("rejects disallowed folder prefix → 400 invalidFolder", async () => {
@@ -1194,7 +1194,7 @@ describe("POST /util/uploadPetBreedImage", () => {
       { field: "files", filename: "img.jpg", contentType: "image/jpeg", content: tinyJpeg() },
     ], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.invalidFolder");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.invalidFolder");
   });
 
   test("rejects path traversal attempt → 400 invalidFolder", async () => {
@@ -1202,7 +1202,7 @@ describe("POST /util/uploadPetBreedImage", () => {
       { field: "files", filename: "img.jpg", contentType: "image/jpeg", content: tinyJpeg() },
     ], seededOwnerAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("eyeUpload.invalidFolder");
+    expect(res.body.errorKey).toBe("eyeUpload.errors.invalidFolder");
   });
 
   test("successful allowlisted upload (breed_analysis) → 200 with url", async () => {
@@ -1242,7 +1242,7 @@ describe("POST /util/uploadPetBreedImage", () => {
     });
 
     expect(res.status).toBe(429);
-    expect(res.body.errorKey).toBe("eyeUpload.rateLimited");
+    expect(res.body.errorKey).toBe("common.rateLimited");
   });
 });
 

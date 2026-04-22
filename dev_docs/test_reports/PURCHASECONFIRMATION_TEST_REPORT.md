@@ -59,25 +59,25 @@ Two tests are conditionally skipped when `TEST_SHOP_CODE` is not set in `env.jso
 
 Every required field and every business rule is checked individually:
 
-- Malformed JSON body → 400 `others.invalidJSON`
-- Empty JSON body → 400 `others.missingParams`
-- Invalid ObjectId format in path parameter → 400 `others.invalidObjectId`
-- Missing required purchase fields → 400 `purchase.errors.missingRequiredFields`
-- Invalid email format → 400 `purchase.errors.invalidEmail`
-- Invalid phone number (non-numeric, too short) → 400 `purchase.errors.invalidPhone`
-- Special characters in option field → 400 `purchase.errors.invalidOption`
-- Special characters in tempId → 400 `purchase.errors.invalidTempId`
-- Missing shopCode → 400 `purchase.errors.invalidShopCode`
-- Missing required email fields → 400 `email.errors.missingFields`
-- Invalid email in email route → 400 `email.errors.invalidEmail`
-- Non-HTTPS / non-URL locationURL → 400 `email.errors.invalidLocationURL`
+- Malformed JSON body → 400 `common.invalidJSON`
+- Empty JSON body → 400 `common.missingParams`
+- Invalid ObjectId format in path parameter → 400 `common.invalidObjectId`
+- Missing required purchase fields → 400 `purchaseConfirmation.errors.purchase.missingRequiredFields`
+- Invalid email format → 400 `purchaseConfirmation.errors.purchase.invalidEmail`
+- Invalid phone number (non-numeric, too short) → 400 `purchaseConfirmation.errors.purchase.invalidPhone`
+- Special characters in option field → 400 `purchaseConfirmation.errors.purchase.invalidOption`
+- Special characters in tempId → 400 `purchaseConfirmation.errors.purchase.invalidTempId`
+- Missing shopCode → 400 `purchaseConfirmation.errors.purchase.invalidShopCode`
+- Missing required email fields → 400 `purchaseConfirmation.errors.email.missingFields`
+- Invalid email in email route → 400 `purchaseConfirmation.errors.email.invalidEmail`
+- Non-HTTPS / non-URL locationURL → 400 `purchaseConfirmation.errors.email.invalidLocationURL`
 
 #### Business-logic errors — 4xx responses
 
-- Unrecognised shopCode → 400 `purchase.errors.invalidShopCode`
-- Non-existent order verification → 404 `purchase.errors.orderVerificationNotFound`
-- Double-cancel on already-cancelled order → 409 `purchase.errors.alreadyCancelled`
-- Duplicate tempId on order creation → 409 `purchase.errors.duplicateOrder` (conditional)
+- Unrecognised shopCode → 400 `purchaseConfirmation.errors.purchase.invalidShopCode`
+- Non-existent order verification → 404 `purchaseConfirmation.errors.purchase.orderVerificationNotFound`
+- Double-cancel on already-cancelled order → 409 `purchaseConfirmation.errors.purchase.alreadyCancelled`
+- Duplicate tempId on order creation → 409 `purchaseConfirmation.errors.purchase.duplicateOrder` (conditional)
 
 #### Authentication & authorisation
 
@@ -116,7 +116,7 @@ Every error response from purchaseConfirmation follows a fixed shape:
 ```json
 {
   "success": false,
-  "errorKey": "purchase.errors.invalidEmail",
+  "errorKey": "purchaseConfirmation.errors.purchase.invalidEmail",
   "error": "電郵地址格式無效。",
   "requestId": "3b1c2d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e"
 }
@@ -141,9 +141,9 @@ if (!data.success) {
   showToast(data.error);
   console.error("[API Error]", data.errorKey, "requestId:", data.requestId);
 
-  if (data.errorKey === "purchase.errors.invalidShopCode") {
+  if (data.errorKey === "purchaseConfirmation.errors.purchase.invalidShopCode") {
     highlightShopCodeField();
-  } else if (data.errorKey === "purchase.errors.alreadyCancelled") {
+  } else if (data.errorKey === "purchaseConfirmation.errors.purchase.alreadyCancelled") {
     showAlreadyCancelledPrompt();
   }
 }
@@ -162,25 +162,25 @@ The full list of `errorKey` values used across purchaseConfirmation, with their 
 
 | errorKey | Default message (zh) |
 | --- | --- |
-| `others.originNotAllowed` | 來源不被允許。 |
-| `others.unauthorized` | 未經授權，請登入後再試。 |
-| `others.invalidJSON` | 請求內容格式錯誤。 |
-| `others.missingParams` | 缺少必填欄位。 |
-| `others.invalidObjectId` | ID 格式無效。 |
-| `others.methodNotAllowed` | 此路由已不再使用。 |
-| `others.rateLimited` | 請求次數過多，請稍後再試。 |
-| `purchase.errors.missingRequiredFields` | 缺少必填訂單欄位。 |
-| `purchase.errors.invalidEmail` | 電郵地址格式無效。 |
-| `purchase.errors.invalidPhone` | 電話號碼只能包含數字（7-15位）。 |
-| `purchase.errors.invalidOption` | 所選產品選項無效。 |
-| `purchase.errors.invalidTempId` | 訂單參考格式無效。 |
-| `purchase.errors.invalidShopCode` | 提供的店舗代碼無法識別。 |
-| `purchase.errors.orderVerificationNotFound` | 找不到訂單驗證記錄。 |
-| `purchase.errors.alreadyCancelled` | 該訂單驗證記錄已被取消。 |
-| `purchase.errors.duplicateOrder` | 該參考編號的訂單已存在。 |
-| `email.errors.missingFields` | 缺少必填電郵欄位。 |
-| `email.errors.invalidEmail` | 電郵地址格式無效。 |
-| `email.errors.invalidLocationURL` | 位置連結必須是有效的 HTTPS 地址。 |
+| `common.originNotAllowed` | 來源不被允許。 |
+| `common.unauthorized` | 未經授權，請登入後再試。 |
+| `common.invalidJSON` | 請求內容格式錯誤。 |
+| `common.missingParams` | 缺少必填欄位。 |
+| `common.invalidObjectId` | ID 格式無效。 |
+| `common.methodNotAllowed` | 此路由已不再使用。 |
+| `common.rateLimited` | 請求次數過多，請稍後再試。 |
+| `purchaseConfirmation.errors.purchase.missingRequiredFields` | 缺少必填訂單欄位。 |
+| `purchaseConfirmation.errors.purchase.invalidEmail` | 電郵地址格式無效。 |
+| `purchaseConfirmation.errors.purchase.invalidPhone` | 電話號碼只能包含數字（7-15位）。 |
+| `purchaseConfirmation.errors.purchase.invalidOption` | 所選產品選項無效。 |
+| `purchaseConfirmation.errors.purchase.invalidTempId` | 訂單參考格式無效。 |
+| `purchaseConfirmation.errors.purchase.invalidShopCode` | 提供的店舗代碼無法識別。 |
+| `purchaseConfirmation.errors.purchase.orderVerificationNotFound` | 找不到訂單驗證記錄。 |
+| `purchaseConfirmation.errors.purchase.alreadyCancelled` | 該訂單驗證記錄已被取消。 |
+| `purchaseConfirmation.errors.purchase.duplicateOrder` | 該參考編號的訂單已存在。 |
+| `purchaseConfirmation.errors.email.missingFields` | 缺少必填電郵欄位。 |
+| `purchaseConfirmation.errors.email.invalidEmail` | 電郵地址格式無效。 |
+| `purchaseConfirmation.errors.email.invalidLocationURL` | 位置連結必須是有效的 HTTPS 地址。 |
 
 ---
 

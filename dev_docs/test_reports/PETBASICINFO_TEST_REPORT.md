@@ -59,7 +59,7 @@ Current status:
 
 #### Authentication & authorisation
 
-- No `Authorization` header → 401 (`others.unauthorized`)
+- No `Authorization` header → 401 (`common.unauthorized`)
 - Expired JWT → 401
 - Garbage Bearer token → 401
 - Token without `Bearer` prefix → 401
@@ -117,9 +117,9 @@ AWS Console -> CloudWatch -> Log Groups -> /aws/lambda/PetBasicInfoFunction
 
 | errorKey | Default message (zh) |
 | --- | --- |
-| `others.unauthorized` | 未授權 |
-| `others.internalError` | 內部伺服器錯誤 |
-| `others.rateLimited` | 請求過於頻繁，請稍後再試。 |
+| `common.unauthorized` | 未授權 |
+| `common.internalError` | 內部伺服器錯誤 |
+| `common.rateLimited` | 請求過於頻繁，請稍後再試。 |
 | `petBasicInfo.errors.invalidJSON` | 無效的 JSON 格式 |
 | `petBasicInfo.errors.petIdRequired` | 需要寵物 ID |
 | `petBasicInfo.errors.invalidPetIdFormat` | 無效的寵物 ID 格式 |

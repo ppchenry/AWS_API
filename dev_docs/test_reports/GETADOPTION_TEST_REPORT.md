@@ -45,8 +45,8 @@ Current status:
 #### Input validation — 400/405 responses
 
 - Invalid `adoptionId` format (not a valid MongoDB ObjectId) → `400 adoption.invalidId`
-- `page=0` → `400 adoption.invalidPage`
-- Non-numeric `page` → `400 adoption.invalidPage`
+- `page=0` → `400 getAdoption.errors.invalidPage`
+- Non-numeric `page` → `400 getAdoption.errors.invalidPage`
 - `search` string longer than 100 characters → `400 adoption.searchTooLong`
 - Removed `POST /adoption/{id}` route → `405`
 

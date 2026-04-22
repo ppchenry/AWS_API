@@ -49,8 +49,8 @@ function handleOptions(event) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         success: false,
-        errorKey: "others.originNotAllowed",
-        error: getTranslation(translations, "others.originNotAllowed"),
+        errorKey: "common.originNotAllowed",
+        error: getTranslation(translations, "common.originNotAllowed"),
         ...(event.awsRequestId ? { requestId: event.awsRequestId } : {}),
       }),
     };

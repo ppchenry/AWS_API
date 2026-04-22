@@ -227,7 +227,7 @@ describe("JWT authentication", () => {
   test("rejects request with no Authorization header", async () => {
     const res = await req("GET", `/pets/${NONEXISTENT_PET_ID}/medical-record`);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects expired JWT", async () => {
@@ -238,7 +238,7 @@ describe("JWT authentication", () => {
       expiredAuth()
     );
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects garbage Bearer token", async () => {
@@ -249,7 +249,7 @@ describe("JWT authentication", () => {
       { Authorization: "Bearer this.is.garbage" }
     );
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects token without Bearer prefix", async () => {
@@ -260,7 +260,7 @@ describe("JWT authentication", () => {
       { Authorization: makeToken({ userId: STRANGER_USER_ID }) }
     );
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects tampered JWT signature", async () => {
@@ -271,7 +271,7 @@ describe("JWT authentication", () => {
       tamperedAuth()
     );
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects alg:none JWT", async () => {
@@ -282,7 +282,7 @@ describe("JWT authentication", () => {
       noneAlgAuth()
     );
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("error shape includes success false and requestId", async () => {
@@ -309,7 +309,7 @@ describe("Guard validation", () => {
       strangerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidJSON");
+    expect(res.body.errorKey).toBe("common.invalidJSON");
   });
 
   test("rejects empty POST body", async () => {
@@ -320,7 +320,7 @@ describe("Guard validation", () => {
       strangerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   });
 
   test("rejects invalid petID format", async () => {
@@ -331,7 +331,7 @@ describe("Guard validation", () => {
       strangerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("invalidPetIdFormat");
+    expect(res.body.errorKey).toBe("petMedicalRecord.errors.invalidPetIdFormat");
   });
 
   test("rejects invalid record ID format with record-specific key", async () => {
@@ -342,14 +342,14 @@ describe("Guard validation", () => {
       strangerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("bloodTest.invalidBloodTestIdFormat");
+    expect(res.body.errorKey).toBe("petMedicalRecord.errors.bloodTest.invalidBloodTestIdFormat");
   });
 
   test.each([
-    ["/pets/not-an-id/medical-record", "invalidPetIdFormat"],
-    ["/pets/not-an-id/medication-record", "invalidPetIdFormat"],
-    ["/pets/not-an-id/deworm-record", "invalidPetIdFormat"],
-    ["/v2/pets/not-an-id/blood-test-record", "invalidPetIdFormat"],
+    ["/pets/not-an-id/medical-record", "petMedicalRecord.errors.invalidPetIdFormat"],
+    ["/pets/not-an-id/medication-record", "petMedicalRecord.errors.invalidPetIdFormat"],
+    ["/pets/not-an-id/deworm-record", "petMedicalRecord.errors.invalidPetIdFormat"],
+    ["/v2/pets/not-an-id/blood-test-record", "petMedicalRecord.errors.invalidPetIdFormat"],
   ])("GET %s rejects invalid pet id", async (path, errorKey) => {
     const res = await req("GET", path, undefined, strangerAuth());
     expect(res.status).toBe(400);
@@ -357,10 +357,10 @@ describe("Guard validation", () => {
   });
 
   test.each([
-    [`/pets/${NONEXISTENT_PET_ID}/medical-record/bad-id`, { medicalPlace: "x" }, "medicalRecord.invalidMedicalIdFormat"],
-    [`/pets/${NONEXISTENT_PET_ID}/medication-record/bad-id`, { drugName: "x" }, "medicationRecord.invalidMedicationIdFormat"],
-    [`/pets/${NONEXISTENT_PET_ID}/deworm-record/bad-id`, { frequency: 1 }, "dewormRecord.invalidDewormIdFormat"],
-    [`/v2/pets/${NONEXISTENT_PET_ID}/blood-test-record/bad-id`, { heartworm: "negative" }, "bloodTest.invalidBloodTestIdFormat"],
+    [`/pets/${NONEXISTENT_PET_ID}/medical-record/bad-id`, { medicalPlace: "x" }, "petMedicalRecord.errors.medicalRecord.invalidMedicalIdFormat"],
+    [`/pets/${NONEXISTENT_PET_ID}/medication-record/bad-id`, { drugName: "x" }, "petMedicalRecord.errors.medicationRecord.invalidMedicationIdFormat"],
+    [`/pets/${NONEXISTENT_PET_ID}/deworm-record/bad-id`, { frequency: 1 }, "petMedicalRecord.errors.dewormRecord.invalidDewormIdFormat"],
+    [`/v2/pets/${NONEXISTENT_PET_ID}/blood-test-record/bad-id`, { heartworm: "negative" }, "petMedicalRecord.errors.bloodTest.invalidBloodTestIdFormat"],
   ])("PUT %s rejects invalid record id", async (path, body, errorKey) => {
     const res = await req("PUT", path, body, strangerAuth());
     expect(res.status).toBe(400);
@@ -377,7 +377,7 @@ describe("Router and nonexistent resource behavior", () => {
       strangerAuth()
     );
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("petNotFound");
+    expect(res.body.errorKey).toBe("petMedicalRecord.errors.petNotFound");
   });
 
   test("returns 403/404 at API layer for unsupported method", async () => {
@@ -424,7 +424,7 @@ describe("Fixture-backed owner and NGO access", () => {
       strangerAuth()
     );
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.forbidden");
+    expect(res.body.errorKey).toBe("common.forbidden");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   ngoTest("matching NGO can read records on fixture pet", async () => {
@@ -447,7 +447,7 @@ describe("Fixture-backed owner and NGO access", () => {
       strangerAuth()
     );
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.forbidden");
+    expect(res.body.errorKey).toBe("common.forbidden");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   ngoTest("matching NGO can read deworm route", async () => {
@@ -476,7 +476,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
     );
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.message).toBe("medicalRecord.postSuccess");
+    expect(res.body.message).toBe("petMedicalRecord.success.medicalRecord.created");
     expect(res.body.petId).toBe(TEST_PET_ID);
     expect(typeof res.body.medicalRecordId).toBe("string");
     expect(res.body.form._id).toBe(res.body.medicalRecordId);
@@ -494,7 +494,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("medicalRecord.invalidDateFormat");
+    expect(res.body.errorKey).toBe("petMedicalRecord.errors.medicalRecord.invalidDateFormat");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   ownerTest("owner creates medical record successfully", async () => {
@@ -509,7 +509,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
     );
     expect(res.status).toBe(200);
     expect(res.body.medicalRecordId).toBeTruthy();
-    expect(res.body.message).toBe("medicalRecord.postSuccess");
+    expect(res.body.message).toBe("petMedicalRecord.success.medicalRecord.created");
     state.medicalRecordId = res.body.medicalRecordId;
   }, FIXTURE_TEST_TIMEOUT_MS);
 
@@ -521,7 +521,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   ownerTest("medical update rejects unknown fields", async () => {
@@ -542,7 +542,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("medicalRecord.medicalRecordNotFound");
+    expect(res.body.errorKey).toBe("petMedicalRecord.errors.medicalRecord.notFound");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   ownerTest("medical update persists empty-string field clears", async () => {
@@ -555,7 +555,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
     );
     expect(res.status).toBe(200);
     expect(res.body.form.medicalPlace).toBe("");
-    expect(res.body.message).toBe("medicalRecord.putSuccess");
+    expect(res.body.message).toBe("petMedicalRecord.success.medicalRecord.updated");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   ownerTest("medication create preserves explicit false allergy", async () => {
@@ -571,7 +571,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
     );
     expect(res.status).toBe(200);
     expect(res.body.form.allergy).toBe(false);
-    expect(res.body.message).toBe("medicationRecord.postSuccess");
+    expect(res.body.message).toBe("petMedicalRecord.success.medicationRecord.created");
     state.medicationRecordId = res.body.medicationRecordId;
   }, FIXTURE_TEST_TIMEOUT_MS);
 
@@ -586,7 +586,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("medicationRecord.invalidDateFormat");
+    expect(res.body.errorKey).toBe("petMedicalRecord.errors.medicationRecord.invalidDateFormat");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   ownerTest("medication update rejects unknown fields", async () => {
@@ -607,7 +607,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("medicationRecord.medicationRecordNotFound");
+    expect(res.body.errorKey).toBe("petMedicalRecord.errors.medicationRecord.notFound");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   ownerTest("owner creates deworm record successfully", async () => {
@@ -623,7 +623,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
     );
     expect(res.status).toBe(200);
     expect(res.body.dewormRecordId).toBeTruthy();
-    expect(res.body.message).toBe("dewormRecord.postSuccess");
+    expect(res.body.message).toBe("petMedicalRecord.success.dewormRecord.created");
     expect(res.body.form.petId).toBe(TEST_PET_ID);
     state.dewormRecordId = res.body.dewormRecordId;
   }, FIXTURE_TEST_TIMEOUT_MS);
@@ -639,7 +639,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("dewormRecord.invalidDateFormat");
+    expect(res.body.errorKey).toBe("petMedicalRecord.errors.dewormRecord.invalidDateFormat");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   ownerTest("deworm update returns 404 on nonexistent record", async () => {
@@ -650,7 +650,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("dewormRecord.dewormRecordNotFound");
+    expect(res.body.errorKey).toBe("petMedicalRecord.errors.dewormRecord.notFound");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   ownerTest("deworm update persists frequency 0 and notification false", async () => {
@@ -667,7 +667,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
     expect(res.status).toBe(200);
     expect(res.body.form.frequency).toBe(0);
     expect(res.body.form.notification).toBe(false);
-    expect(res.body.message).toBe("dewormRecord.putSuccess");
+    expect(res.body.message).toBe("petMedicalRecord.success.dewormRecord.updated");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   ownerTest("owner creates blood-test record successfully", async () => {
@@ -682,7 +682,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
     );
     expect(res.status).toBe(200);
     expect(res.body.bloodTestRecordId).toBeTruthy();
-    expect(res.body.message).toBe("bloodTest.postSuccess");
+    expect(res.body.message).toBe("petMedicalRecord.success.bloodTest.created");
     state.bloodTestRecordId = res.body.bloodTestRecordId;
   }, FIXTURE_TEST_TIMEOUT_MS);
 
@@ -697,7 +697,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("bloodTest.invalidDateFormat");
+    expect(res.body.errorKey).toBe("petMedicalRecord.errors.bloodTest.invalidDateFormat");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   ownerTest("blood-test update rejects unknown fields", async () => {
@@ -718,7 +718,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("bloodTest.bloodTestRecordNotFound");
+    expect(res.body.errorKey).toBe("petMedicalRecord.errors.bloodTest.notFound");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   ownerTest("blood-test list returns stable success shape", async () => {
@@ -730,7 +730,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
     );
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.message).toBe("bloodTest.getSuccess");
+    expect(res.body.message).toBe("petMedicalRecord.success.bloodTest.getSuccess");
     expect(Array.isArray(res.body.form.blood_test)).toBe(true);
     expect(res.body.petId).toBe(TEST_PET_ID);
   }, FIXTURE_TEST_TIMEOUT_MS);
@@ -743,7 +743,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("medicalRecord.medicalRecordNotFound");
+    expect(res.body.errorKey).toBe("petMedicalRecord.errors.medicalRecord.notFound");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   ownerTest("medication delete returns 404 on record mismatch", async () => {
@@ -754,7 +754,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("medicationRecord.medicationRecordNotFound");
+    expect(res.body.errorKey).toBe("petMedicalRecord.errors.medicationRecord.notFound");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   ownerTest("deworm delete returns 404 on record mismatch", async () => {
@@ -765,7 +765,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("dewormRecord.dewormRecordNotFound");
+    expect(res.body.errorKey).toBe("petMedicalRecord.errors.dewormRecord.notFound");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   ownerTest("blood-test delete returns 404 on record mismatch", async () => {
@@ -776,7 +776,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(404);
-    expect(res.body.errorKey).toBe("bloodTest.bloodTestRecordNotFound");
+    expect(res.body.errorKey).toBe("petMedicalRecord.errors.bloodTest.notFound");
   }, FIXTURE_TEST_TIMEOUT_MS);
 
   ownerTest("owner deletes created medical record successfully", async () => {
@@ -788,7 +788,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(200);
-    expect(res.body.message).toBe("medicalRecord.deleteSuccess");
+    expect(res.body.message).toBe("petMedicalRecord.success.medicalRecord.deleted");
     expect(res.body.id).toBe(TEST_PET_ID);
     state.medicalRecordId = "";
   }, FIXTURE_TEST_TIMEOUT_MS);
@@ -802,7 +802,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(200);
-    expect(res.body.message).toBe("medicalRecord.deleteSuccess");
+    expect(res.body.message).toBe("petMedicalRecord.success.medicalRecord.deleted");
     expect(res.body.id).toBe(TEST_PET_ID);
     state.medicalShapeRecordId = "";
   }, FIXTURE_TEST_TIMEOUT_MS);
@@ -816,7 +816,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(200);
-    expect(res.body.message).toBe("medicationRecord.deleteSuccess");
+    expect(res.body.message).toBe("petMedicalRecord.success.medicationRecord.deleted");
     expect(res.body.id).toBe(TEST_PET_ID);
     state.medicationRecordId = "";
   }, FIXTURE_TEST_TIMEOUT_MS);
@@ -830,7 +830,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(200);
-    expect(res.body.message).toBe("dewormRecord.deleteSuccess");
+    expect(res.body.message).toBe("petMedicalRecord.success.dewormRecord.deleted");
     expect(res.body.id).toBe(TEST_PET_ID);
     state.dewormRecordId = "";
   }, FIXTURE_TEST_TIMEOUT_MS);
@@ -844,7 +844,7 @@ describe("Fixture-backed CRUD validation and lifecycle", () => {
       ownerAuth()
     );
     expect(res.status).toBe(200);
-    expect(res.body.message).toBe("bloodTest.deleteSuccess");
+    expect(res.body.message).toBe("petMedicalRecord.success.bloodTest.deleted");
     expect(res.body.petId).toBe(TEST_PET_ID);
     expect(typeof res.body.bloodTestRecordId).toBe("string");
     state.bloodTestRecordId = "";
@@ -928,3 +928,4 @@ describe("Coverage gate", () => {
     expect(true).toBe(true);
   });
 });
+

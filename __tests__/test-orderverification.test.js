@@ -362,7 +362,7 @@ describe("OPTIONS preflight", () => {
     const body = await res.json();
     expect(res.status).toBe(403);
     expect(body.success).toBe(false);
-    expect(body.errorKey).toBe("others.originNotAllowed");
+    expect(body.errorKey).toBe("common.originNotAllowed");
   });
 });
 
@@ -372,13 +372,13 @@ describe("JWT authentication", () => {
   test("rejects missing Authorization header -> 401", async () => {
     const res = await req("GET", authPath);
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects expired JWT -> 401", async () => {
     const res = await req("GET", authPath, undefined, expiredAuth());
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects garbage Bearer token -> 401", async () => {
@@ -386,14 +386,14 @@ describe("JWT authentication", () => {
       Authorization: "Bearer this.is.garbage",
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects token without Bearer prefix -> 401", async () => {
     const token = makeToken({ userId: OWNER_USER_ID, userEmail: OWNER_EMAIL });
     const res = await req("GET", authPath, undefined, { Authorization: token });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects tampered JWT signature -> 401", async () => {
@@ -404,7 +404,7 @@ describe("JWT authentication", () => {
       Authorization: `Bearer ${tampered}`,
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects alg:none token -> 401", async () => {
@@ -415,7 +415,7 @@ describe("JWT authentication", () => {
       Authorization: `Bearer ${noneToken}`,
     });
     expect(res.status).toBe(401);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("error response shape includes success, errorKey, error, requestId", async () => {
@@ -439,13 +439,13 @@ describe("Request guard and router", () => {
   test("rejects malformed JSON on PUT /v2/orderVerification/{tagId} -> 400", async () => {
     const res = await rawReq("PUT", `/v2/orderVerification/${state.tagId}`, '{"petName":"broken"', adminAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.invalidJSON");
+    expect(res.body.errorKey).toBe("common.invalidJSON");
   });
 
   test("rejects empty JSON body on PUT /v2/orderVerification/{tagId} -> 400", async () => {
     const res = await req("PUT", `/v2/orderVerification/${state.tagId}`, {}, adminAuth());
     expect(res.status).toBe(400);
-    expect(res.body.errorKey).toBe("others.missingParams");
+    expect(res.body.errorKey).toBe("common.missingParams");
   });
 
   test("rejects invalid WhatsApp link ObjectId before DB lookup -> 400", async () => {
@@ -471,7 +471,7 @@ describe("Request guard and router", () => {
       body: JSON.parse(response.body),
     };
     expect(res.status).toBe(405);
-    expect(res.body.errorKey).toBe("others.methodNotAllowed");
+    expect(res.body.errorKey).toBe("common.methodNotAllowed");
   });
 });
 
@@ -479,7 +479,7 @@ describe("GET /v2/orderVerification/getAllOrders", () => {
   dbTest("rejects a non-admin authenticated user -> 403", async () => {
     const res = await req("GET", "/v2/orderVerification/getAllOrders", undefined, ownerAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   dbTest("returns seeded orders with admin token", async () => {
@@ -589,7 +589,7 @@ describe("GET /v2/orderVerification/supplier/{orderId}", () => {
   dbTest("rejects a different user by ownership check -> 403", async () => {
     const res = await req("GET", `/v2/orderVerification/supplier/${state.orderTempId}`, undefined, otherUserAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   dbTest("returns 404 for unknown supplier identifier", async () => {
@@ -612,7 +612,7 @@ describe("PUT /v2/orderVerification/supplier/{orderId}", () => {
     });
     const body = await res.json();
     expect(res.status).toBe(400);
-    expect(body.errorKey).toBe("others.missingParams");
+    expect(body.errorKey).toBe("common.missingParams");
   });
 
   dbTest("updates supplier-editable fields for the linked owner", async () => {
@@ -648,7 +648,7 @@ describe("PUT /v2/orderVerification/supplier/{orderId}", () => {
       petName: "ShouldNotUpdate",
     }, otherUserAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 });
 
@@ -663,7 +663,7 @@ describe("GET /v2/orderVerification/ordersInfo/{tempId}", () => {
   dbTest("rejects a different user by ownership check -> 403", async () => {
     const res = await req("GET", `/v2/orderVerification/ordersInfo/${state.orderTempId}`, undefined, otherUserAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   dbTest("returns 404 for non-existent tempId", async () => {
@@ -685,7 +685,7 @@ describe("GET /v2/orderVerification/whatsapp-order-link/{_id}", () => {
   dbTest("rejects a different user by ownership check -> 403", async () => {
     const res = await req("GET", `/v2/orderVerification/whatsapp-order-link/${state.verificationId}`, undefined, otherUserAuth());
     expect(res.status).toBe(403);
-    expect(res.body.errorKey).toBe("others.unauthorized");
+    expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   dbTest("returns 404 for a valid but non-existent ObjectId", async () => {
@@ -745,7 +745,7 @@ describe("Traceability and failure handling", () => {
       const body = JSON.parse(response.body);
       expect(response.statusCode).toBe(500);
       expect(body.success).toBe(false);
-      expect(body.errorKey).toBe("others.internalError");
+      expect(body.errorKey).toBe("common.internalError");
       expect(body.requestId).toBe("unit-500-request");
 
       const logEntry = consoleErrorSpy.mock.calls

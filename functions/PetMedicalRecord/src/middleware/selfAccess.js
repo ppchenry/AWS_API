@@ -49,7 +49,7 @@ async function loadAuthorizedPet({ event, petId, options = {} }) {
   if (!pet) {
     return {
       isValid: false,
-      error: createErrorResponse(404, "petNotFound", event),
+      error: createErrorResponse(404, "petMedicalRecord.errors.petNotFound", event),
     };
   }
 
@@ -66,7 +66,7 @@ async function loadAuthorizedPet({ event, petId, options = {} }) {
   if (!isOwner && !isNgo) {
     return {
       isValid: false,
-      error: createErrorResponse(403, "others.forbidden", event),
+      error: createErrorResponse(403, "common.forbidden", event),
     };
   }
 

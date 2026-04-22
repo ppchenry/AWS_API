@@ -1,5 +1,5 @@
 {
-  "others": {
+  "common": {
     "internalError": "內部伺服器錯誤",
     "invalidJSON": "JSON 格式無效",
     "invalidPathParam": "路徑參數無效",

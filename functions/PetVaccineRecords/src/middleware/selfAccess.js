@@ -21,14 +21,14 @@ async function loadAuthorizedPet({ event, petId, options = {} }) {
   if (!pet) {
     return {
       isValid: false,
-      error: createErrorResponse(404, "petNotFound", event),
+      error: createErrorResponse(404, "petVaccineRecords.errors.petNotFound", event),
     };
   }
 
   if (pet.deleted === true) {
     return {
       isValid: false,
-      error: createErrorResponse(410, "petDeleted", event),
+      error: createErrorResponse(410, "petVaccineRecords.errors.petDeleted", event),
     };
   }
 
@@ -45,7 +45,7 @@ async function loadAuthorizedPet({ event, petId, options = {} }) {
   if (!isOwner && !isNgo) {
     return {
       isValid: false,
-      error: createErrorResponse(403, "others.forbidden", event),
+      error: createErrorResponse(403, "common.forbidden", event),
     };
   }
 

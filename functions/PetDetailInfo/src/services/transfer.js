@@ -20,7 +20,7 @@ async function createTransfer({ event, body }) {
 
     // Validate date format if provided
     if (data.regDate && !isValidDateFormat(data.regDate)) {
-      return createErrorResponse(400, "transferPath.invalidDateFormat", event);
+      return createErrorResponse(400, "petDetailInfo.errors.transferPath.invalidDateFormat", event);
     }
 
     const transferRecordId = new mongoose.Types.ObjectId();
@@ -39,7 +39,7 @@ async function createTransfer({ event, body }) {
       { $push: { transfer: newTransferRecord } }
     );
     if (result.matchedCount === 0) {
-      return createErrorResponse(404, "petNotFound", event);
+      return createErrorResponse(404, "petDetailInfo.errors.petNotFound", event);
     }
 
     return createSuccessResponse(200, event, {
@@ -49,7 +49,7 @@ async function createTransfer({ event, body }) {
     });
   } catch (error) {
     logError("Failed to create transfer record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -69,7 +69,7 @@ async function updateTransfer({ event, body }) {
 
     // Validate date format if provided
     if (data.regDate && !isValidDateFormat(data.regDate)) {
-      return createErrorResponse(400, "transferPath.invalidDateFormat", event);
+      return createErrorResponse(400, "petDetailInfo.errors.transferPath.invalidDateFormat", event);
     }
 
     // Verify the transfer sub-document exists on this pet
@@ -78,7 +78,7 @@ async function updateTransfer({ event, body }) {
     ).select("_id").lean();
 
     if (!pet) {
-      return createErrorResponse(404, "transferPath.transferNotFound", event);
+      return createErrorResponse(404, "petDetailInfo.errors.transferPath.notFound", event);
     }
 
     // Build positional update
@@ -90,7 +90,7 @@ async function updateTransfer({ event, body }) {
     if (data.transferRemark !== undefined) updateFields["transfer.$.transferRemark"] = data.transferRemark;
 
     if (Object.keys(updateFields).length === 0) {
-      return createErrorResponse(400, "others.noFieldsToUpdate", event);
+      return createErrorResponse(400, "common.noFieldsToUpdate", event);
     }
 
     // Include deleted:false in write filter
@@ -99,7 +99,7 @@ async function updateTransfer({ event, body }) {
       { $set: updateFields }
     );
     if (result.matchedCount === 0) {
-      return createErrorResponse(404, "transferPath.transferNotFound", event);
+      return createErrorResponse(404, "petDetailInfo.errors.transferPath.notFound", event);
     }
 
     return createSuccessResponse(200, event, {
@@ -109,7 +109,7 @@ async function updateTransfer({ event, body }) {
     });
   } catch (error) {
     logError("Failed to update transfer record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
@@ -126,7 +126,7 @@ async function deleteTransfer({ event }) {
       { $pull: { transfer: { _id: transferId } } }
     );
     if (result.matchedCount === 0) {
-      return createErrorResponse(404, "transferPath.transferNotFound", event);
+      return createErrorResponse(404, "petDetailInfo.errors.transferPath.notFound", event);
     }
 
     return createSuccessResponse(200, event, {
@@ -135,7 +135,7 @@ async function deleteTransfer({ event }) {
     });
   } catch (error) {
     logError("Failed to delete transfer record", { scope, event, error });
-    return createErrorResponse(500, "others.internalError", event);
+    return createErrorResponse(500, "common.internalError", event);
   }
 }
 
