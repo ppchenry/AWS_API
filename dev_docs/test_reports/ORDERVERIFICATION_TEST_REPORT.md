@@ -24,7 +24,7 @@ Current status:
 - Handler-level failure coverage proves `common.internalError` responses include `requestId` and emit structured JSON logs.
 - DB-backed tests no longer false-pass on early return when MongoDB setup fails; a configured but unreachable DB now fails the suite.
 - WhatsApp notification dispatch is only tested for graceful non-dispatch in this routine suite (`notificationDispatched: false` when the test environment does not provide the outbound token). Live provider delivery is not exercised here.
-- `functions/OrderVerification/API.md` and `functions/OrderVerification/CHANGELOG.md` have been reconciled with the tested route map, request bodies, ownership/RBAC behavior, sanitized response shape, notification behavior, and stable error keys.
+- `dev_docs/api_docs/PURCHASE_ORDER_API.md` and `functions/OrderVerification/CHANGELOG.md` have been reconciled with the tested route map, request bodies, ownership/RBAC behavior, sanitized response shape, notification behavior, and stable error keys.
 
 ### 1.1 Endpoint Coverage
 
@@ -226,7 +226,7 @@ Time:        67.989 s
 
 ## 5. Documentation Cross-References
 
-- API contract: `functions/OrderVerification/API.md`
+- API contract: `dev_docs/api_docs/PURCHASE_ORDER_API.md`
 - Refactor changelog: `functions/OrderVerification/CHANGELOG.md`
 - Monorepo refactor reports: `dev_docs/refactor_reports/EN_REFACTOR_REPORT.md` and `dev_docs/refactor_reports/CN_REFACTOR_REPORT.md`
 - Refactor inventory status: `dev_docs/LAMBDA_REFACTOR_INVENTORY.md`

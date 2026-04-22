@@ -21,7 +21,7 @@ Current status:
 - Create-order abuse throttling is covered and returns `429` after repeated attempts from the same client IP.
 - The focused unit suite is fully green and covers the major service-failure branches that are not practical to force through the live integration path.
 - Five optional tests are intentionally skipped when the required env toggles or live fixture values are not enabled.
-- `functions/SFExpressRoutes/API.md` and `functions/SFExpressRoutes/CHANGELOG.md` have been reconciled with the tested route map, validation behavior, rate limits, ownership checks, and SF-specific error keys.
+- `dev_docs/api_docs/SF_EXPRESS_API.md` and `functions/SFExpressRoutes/CHANGELOG.md` have been reconciled with the tested route map, validation behavior, rate limits, ownership checks, and SF-specific error keys.
 
 ### 1.1 Endpoint Coverage
 
@@ -243,7 +243,7 @@ The following tests were skipped by design because their enabling env toggles or
 
 ## 5. Documentation Cross-References
 
-- API contract: `functions/SFExpressRoutes/API.md`
+- API contract: `dev_docs/api_docs/SF_EXPRESS_API.md`
 - Refactor changelog: `functions/SFExpressRoutes/CHANGELOG.md`
 - Monorepo refactor reports: `dev_docs/refactor_reports/EN_REFACTOR_REPORT.md` and `dev_docs/refactor_reports/CN_REFACTOR_REPORT.md`
 - Refactor inventory status: `dev_docs/LAMBDA_REFACTOR_INVENTORY.md`
