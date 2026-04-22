@@ -1,4 +1,13 @@
 {
+  "others": {
+    "unauthorized": "未授權",
+    "forbidden": "禁止存取",
+    "internalError": "內部伺服器錯誤",
+    "methodNotAllowed": "不允許的方法",
+    "originNotAllowed": "來源不被允許",
+    "invalidJSON": "無效的 JSON 格式",
+    "missingParams": "缺少必要參數"
+  },
   "common": {
     "invalidJSON": "無效的 JSON 格式"
   },
@@ -16,6 +25,8 @@
     "vaccineRecordNotFound": "未找到疫苗記錄",
     "putSuccess": "寵物疫苗記錄更新成功",
     "deleteSuccess": "寵物疫苗記錄刪除成功",
-    "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式"
+    "invalidDateFormat": "無效的日期格式，應為 YYYY-MM-DD 或 DD/MM/YYYY 格式",
+    "noFieldsToUpdate": "未提供任何要更新的欄位",
+    "invalidInput": "疫苗紀錄輸入無效"
   }
 }

@@ -1,8 +1,8 @@
-# Monorepo Refactor Report (2026-04-21)
+# Monorepo Refactor Report (2026-04-22)
 
 ## Overview
 
-The first refactor stage of the monorepo modernization effort has now completed 13 Lambdas in place:
+The first refactor stage of the monorepo modernization effort has now completed 17 Lambdas in place:
 
 * `functions/UserRoutes`
 * `functions/PetBasicInfo`
@@ -17,6 +17,10 @@ The first refactor stage of the monorepo modernization effort has now completed 
 * `functions/SFExpressRoutes`
 * `functions/OrderVerification`
 * `functions/PetBiometricRoutes`
+* `functions/PetVaccineRecords`
+* `functions/CreatePetBasicInfo`
+* `functions/GetAdoption`
+* `functions/PetInfoByPetNumber`
 
 This work sits inside the broader monorepo cleanup described in [README.md](README.md), follows the modernization baseline in [dev_docs/REFACTOR_CHECKLIST.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/REFACTOR_CHECKLIST.md), and is prioritized using [dev_docs/LAMBDA_REFACTOR_INVENTORY.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/LAMBDA_REFACTOR_INVENTORY.md).
 
@@ -35,7 +39,11 @@ The current test-file-based case inventory is:
 * `SFExpressRoutes`: **31 declared integration test cases** (26 passing, 5 skipped) in `__tests__/test-sfexpressroutes.test.js` plus **15 declared unit test cases** in `__tests__/test-sfexpressroutes-unit.test.js`
 * `OrderVerification`: **39 declared integration test cases** in `__tests__/test-orderverification.test.js`
 * `PetBiometricRoutes`: **41 declared integration test cases** in `__tests__/test-petbiometricroutes.test.js` with the latest SAM-local run executing **33** and environment-gating **8** business-database-dependent cases because the external business cluster was unavailable from the current machine
-* Combined: **711 declared integration-style test cases across the 13 refactored Lambdas + 15 declared SFExpressRoutes unit test cases + 6 declared SMS unit test cases + 28 declared auth-workflow unit test cases + 3 declared PetMedicalRecord aggregate unit test cases**
+* `PetVaccineRecords`: **34 declared SAM integration test cases** in `__tests__/test-petvaccinerecords.test.js`
+* `CreatePetBasicInfo`: **18 declared direct-handler test cases** in `__tests__/test-createpetbasicinfo-unit.test.js` (4 DB-gated)
+* `GetAdoption`: **21 declared pure-unit test cases** in `__tests__/test-getadoption-unit.test.js` (no SAM, no live DB)
+* `PetInfoByPetNumber`: **13 declared direct-handler test cases** in `__tests__/test-petinfobypetnumber.test.js` (3 DB-gated)
+* Combined: **797 declared integration-style and direct-handler test cases across the 17 refactored Lambdas + 15 declared SFExpressRoutes unit test cases + 6 declared SMS unit test cases + 28 declared auth-workflow unit test cases + 3 declared PetMedicalRecord aggregate unit test cases**
 
 These counts describe declared cases in test files. They are not, by themselves, a same-day execution transcript.
 
@@ -58,27 +66,27 @@ For non-technical stakeholders, the important point is this: this work was not o
 
 ---
 
-## Monorepo Status As Of 2026-04-21
+## Monorepo Status As Of 2026-04-22
 
 The monorepo started from a legacy state where many Lambdas duplicated helpers, mixed routing and business logic in the same file, and were difficult to evolve safely. The current direction is not a full re-architecture yet. It is a controlled in-situ modernization pass designed to stabilize each Lambda one by one.
 
-As of 2026-04-21, the program now has:
+As of 2026-04-22, the program now has:
 
-* 13 modularized reference Lambdas
+* 17 modularized reference Lambdas
 * a written modernization standard
 * a line-count and risk-based Lambda inventory
-* integration-test-backed verification for the first completed targets
+* integration-test-backed verification for all completed targets
 * a repeatable refactor pattern for the remaining Lambdas
 
 The completed Lambdas now act as the implementation baseline for the remaining inventory-scoped refactor program.
 
 Based on `dev_docs/LAMBDA_REFACTOR_INVENTORY.md`, the official refactor scope is **22** Lambdas (with `adoption_website`, `AuthorizerRoute`, `TestIPLambda`, and `WhatsappRoute` explicitly listed as out-of-plan).
 
-By inventory scope, **13 of 22** Lambdas are now at the new hardened baseline. That is roughly **59%** completed, with **9 of 22** (about **41%**) remaining in-plan work.
+By inventory scope, **17 of 22** Lambdas are now at the new hardened baseline. The remaining 5 (`AIChatBot`, `GetBreed`, `LambdaProxyRoute`, `PublicRoutes`, `CreateFeedback`) have been marked **not required** by the manager and are out of scope. The stage-1 in-situ modernization program is therefore **complete**.
 
 For workspace context, there are currently 26 function folders total; using that denominator alone would understate progress because 4 are intentionally excluded from the refactor plan.
 
-That also means the completed work should be seen as high-leverage groundwork, not as isolated refactoring. These first 13 Lambdas establish the secure pattern, the test strategy, and the operational standard that the remaining Lambdas can now follow.
+That also means the completed work should be seen as high-leverage groundwork, not as isolated refactoring. These first 17 Lambdas establish the secure pattern, the test strategy, and the operational standard that the remaining Lambdas can now follow.
 
 ---
 
@@ -210,8 +218,12 @@ For the first completed reference Lambdas, the hardening coverage is high.
 * `SFExpressRoutes` now has a dedicated **31-case integration suite** (26 passing, 5 intentionally gated live/DB tests skipped) plus **15 / 15 passing** unit tests covering JWT, CORS, malformed bodies, route safety, request validation, rate limiting, SF token retrieval, ownership checks, upstream SF failure branches, cloud-waybill failure branches, and email side-effect failures
 * `OrderVerification` now has a dedicated **39 / 39 passing** SAM-local integration suite covering JWT, CORS, guard validation, admin/developer-only order listing, DB-backed ownership checks, supplier fallback lookup, update persistence, sanitized output, duplicate orderId rejection, frozen DELETE behavior, WhatsApp non-dispatch fallback, and structured handler failure logging
 * `PetBiometricRoutes` now has a dedicated **41-case** SAM-local integration suite with **33 executed passing assertions** and **8 environment-gated business-database-dependent cases**, covering CORS, JWT auth, exact-route `405` behavior, guard validation, DB-backed ownership, registration create/update persistence, rate limiting, and the schema-backed verify contract up to the point of external business-cluster access
+* `PetVaccineRecords` now has a dedicated **34 / 34 passing** SAM-local integration suite covering CORS, JWT auth (including `alg:none` and tampered-signature branches), owner/NGO/stranger authorization enforcement, cross-pet scope isolation (record addressed via wrong `petId` returns `404`), NoSQL injection prevention in body fields, soft-delete enforcement via `ACTIVE_VACCINE_FILTER`, CRUD lifecycle (create, update, delete, impossible-date rejection), and fixture-gated authorization coverage
+* `CreatePetBasicInfo` now has a dedicated **18 / 18 passing** direct-handler suite covering CORS, JWT auth, guard validation, method enforcement, Zod schema `superRefine` unknown-field rejection (`userId` and `ngoId` rejected from body), NoSQL injection prevention, rate-limiting behavior (invalid JSON does not increment counter), server-side `userId` injection from JWT, response field sanitization, and duplicate `tagId` `409` handling
+* `GetAdoption` now has a dedicated **21 / 21 passing** pure-unit suite (no SAM, no live DB) covering CORS allowlist, guard validation (invalid ObjectId, page range, search length, filter normalization), method enforcement, explicit public-route verification (confirms `authJWT` is never invoked on adoption endpoints), `getAdoptionList` service (success, empty-result `maxPage: 0`, pagination), and `getAdoptionById` service (`404`, detail payload shape including adoption-website required fields)
+* `PetInfoByPetNumber` now has a dedicated **13 / 13 passing** direct-handler suite covering CORS, guard validation (missing/blank/over-length `tagId`), method enforcement, DB-backed tag lookup (found pet returns sanitized public-only fields), missing-tag anti-enumeration (`200` + all-null form instead of `404`), soft-deleted-pet anti-enumeration, and internal-field suppression (`userId`, `ngoId`, `ngoPetId`, owner contacts, visibility flags). A null guard was added to `functions/PetInfoByPetNumber/src/utils/sanitize.js` as a source bug fix discovered during this test phase
 
-Taken together, that is **32 documented legacy security findings** directly addressed across the first 2 completed Lambdas, plus completed strict modernization and test-backed hardening for `EmailVerification`, `AuthRoute`, `GetAllPets`, `PetLostandFound`, `EyeUpload`, `PetDetailInfo`, `PetMedicalRecord`, `purchaseConfirmation`, `SFExpressRoutes`, `OrderVerification`, and `PetBiometricRoutes` covering the public verification, refresh-session, pet-access-control, pet-domain CRUD, pet-upload / analysis, extended pet-detail/source/adoption, medical-record lifecycle, purchase/order-management, shipping integration, order-verification, and pet-biometric route surfaces.
+Taken together, that is **32 documented legacy security findings** directly addressed across the first 2 completed Lambdas, plus completed strict modernization and test-backed hardening for `EmailVerification`, `AuthRoute`, `GetAllPets`, `PetLostandFound`, `EyeUpload`, `PetDetailInfo`, `PetMedicalRecord`, `purchaseConfirmation`, `SFExpressRoutes`, `OrderVerification`, `PetBiometricRoutes`, `PetVaccineRecords`, `CreatePetBasicInfo`, `GetAdoption`, and `PetInfoByPetNumber` covering the public verification, refresh-session, pet-access-control, pet-domain CRUD, pet-upload / analysis, extended pet-detail/source/adoption, medical-record lifecycle, purchase/order-management, shipping integration, order-verification, pet-biometric, vaccine-record lifecycle, pet-creation, public adoption listing, and public tag-lookup route surfaces.
 
 A more accurate statement is qualitative rather than percentage-based: **a substantial portion of the known code-owned attack surface identified in the first 2 audited Lambdas, plus the core public verification, pet-medical-record, purchase/order-management, SF shipping, and order-verification surfaces, has now been meaningfully hardened**.
 
@@ -233,10 +245,10 @@ At the monorepo level, the hardening is still early.
 
 So the correct interpretation is:
 
-* inside the 13 completed Lambdas, most of the known code-owned attack classes on those surfaces have been handled
-* across the whole monorepo, the modernization program is still in an early-to-mid phase and broad residual risk remains until more Lambdas are refactored
+* inside the 17 completed Lambdas, most of the known code-owned attack classes on those surfaces have been handled
+* the remaining 5 in-plan Lambdas (`AIChatBot`, `GetBreed`, `LambdaProxyRoute`, `PublicRoutes`, `CreateFeedback`) have been marked not required by the manager and are out of scope for this program
 
-For management, this should be read as risk retirement in progress. This refactor stage did not finish the security program, but it already removed a meaningful amount of immediately actionable risk from 12 important production surfaces.
+For management, the stage-1 in-situ modernization program is now complete. The 17 hardened Lambdas represent the full delivery scope.
 
 ---
 

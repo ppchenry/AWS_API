@@ -1,8 +1,8 @@
-# Monorepo 重構進度報告（2026-04-21）
+# Monorepo 重構進度報告（2026-04-22）
 
 ## 概述 (Overview)
 
-在目前這一階段的 Monorepo 現代化工程中，已完成 13 個 Lambda 函式的原位 (in-place) 重構：
+在目前這一階段的 Monorepo 現代化工程中，已完成 17 個 Lambda 函式的原位 (in-place) 重構：
 
 * `functions/UserRoutes`
 * `functions/PetBasicInfo`
@@ -17,6 +17,10 @@
 * `functions/SFExpressRoutes`
 * `functions/OrderVerification`
 * `functions/PetBiometricRoutes`
+* `functions/PetVaccineRecords`
+* `functions/CreatePetBasicInfo`
+* `functions/GetAdoption`
+* `functions/PetInfoByPetNumber`
 
 此項工作隸屬於 [README.md](README.md) 中定義的 Monorepo 清理計劃，遵循 [dev_docs/REFACTOR_CHECKLIST.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/REFACTOR_CHECKLIST.md) 的現代化基準，並依據 [dev_docs/LAMBDA_REFACTOR_INVENTORY.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/LAMBDA_REFACTOR_INVENTORY.md) 的優先順序執行。
 
@@ -35,7 +39,11 @@
 * `SFExpressRoutes`：`__tests__/test-sfexpressroutes.test.js` 內 **31 項整合測試案例**（26 項通過，5 項條件跳過），另有 `__tests__/test-sfexpressroutes-unit.test.js` 內 **15 項單元測試案例**
 * `OrderVerification`：`__tests__/test-orderverification.test.js` 內 **39 項整合測試案例**
 * `PetBiometricRoutes`：`__tests__/test-petbiometricroutes.test.js` 內 **41 項整合測試案例**；最新 SAM-local 執行中有 **33 項實際執行並通過**，另有 **8 項** 因外部 business cluster 無法從目前機器連線而被環境條件式跳過
-* 綜合總計：**13 個已重構 Lambda 共 711 項 integration-style 測試案例 + 15 項 SFExpressRoutes 單元測試案例 + 6 項 SMS service 單元測試案例 + 28 項 auth-workflow 單元測試案例 + 3 項 PetMedicalRecord aggregate 單元測試**
+* `PetVaccineRecords`：`__tests__/test-petvaccinerecords.test.js` 內 **34 項 SAM 整合測試案例**，全部通過
+* `CreatePetBasicInfo`：`__tests__/test-createpetbasicinfo-unit.test.js` 內 **18 項直接呼叫 handler 測試案例**（4 項 DB 條件式）
+* `GetAdoption`：`__tests__/test-getadoption-unit.test.js` 內 **21 項純 unit 測試案例**（無 SAM，無實際 DB）
+* `PetInfoByPetNumber`：`__tests__/test-petinfobypetnumber.test.js` 內 **13 項直接呼叫 handler 測試案例**（3 項 DB 條件式）
+* 綜合總計：**17 個已重構 Lambda 共 797 項 integration-style 與 direct-handler 測試案例 + 15 項 SFExpressRoutes 單元測試案例 + 6 項 SMS service 單元測試案例 + 28 項 auth-workflow 單元測試案例 + 3 項 PetMedicalRecord aggregate 單元測試**
 
 以上數字為測試檔中「宣告的案例數」，本身不等同於同日完整執行紀錄。已完成的個別測試結果請參考 `dev_docs/test_reports/` 內各 Lambda 的測試報告。
 
@@ -62,7 +70,7 @@
 
 目前進度：
 
-* 13 個模組化參考基準 Lambda
+* 17 個模組化參考基準 Lambda
 * 一套書面現代化標準
 * 一份以行數與風險為基礎的 Lambda 盤點清單
 * 已完成目標具備整合測試支撐
@@ -70,7 +78,7 @@
 
 依據 `dev_docs/LAMBDA_REFACTOR_INVENTORY.md`，目前正式納入重構統計範圍的是 **22 個** Lambda。`adoption_website`、`AuthorizerRoute`、`TestIPLambda`、`WhatsappRoute` 目前列為 out-of-plan。
 
-在此統計口徑下，已有 **13 / 22** 完成加固，約為 **59%**；仍有 **9 / 22**（約 **41%**）屬於 in-plan 待重構範圍。
+在此統計口徑下，已有 **17 / 22** 完成加固。剩餘 5 個（`AIChatBot`、`GetBreed`、`LambdaProxyRoute`、`PublicRoutes`、`CreateFeedback`）已由管理層標註為「不需要」，列為 out-of-scope。第一階段原位現代化計畫因此**正式完成**。
 
 若以工作區全部 function folder 計算，目前共有 26 個 function folders；其中 4 個刻意排除於主要重構計劃之外，因此不應與主進度混算。
 
@@ -180,21 +188,25 @@ refresh 流程會：
 * `SFExpressRoutes` 具備 31-case integration suite（26 項通過，5 項 live/DB 條件測試跳過），另有 15/15 passing 單元測試，覆蓋 JWT、CORS、malformed body、route safety、request validation、rate limiting、SF token retrieval、ownership check、upstream SF failure、cloud-waybill failure 與 email side-effect failure
 * `OrderVerification` 具備 39/39 passing SAM-local integration suite，覆蓋 JWT、CORS、guard validation、admin/developer-only order listing、DB-backed ownership checks、supplier fallback lookup、update persistence、sanitized output、duplicate orderId rejection、frozen DELETE、WhatsApp non-dispatch fallback 與 structured handler failure logging
 * `PetBiometricRoutes` 具備 41-case SAM-local integration suite，其中最新執行有 33 項實際斷言通過，另有 8 項 business-database-dependent 測試因外部 business cluster 連線限制而被環境條件式跳過；已覆蓋 CORS、JWT auth、exact-route `405`、guard validation、DB-backed ownership、register create/update persistence、rate limiting，以及在外部 business cluster 連線點之前的 verify contract
+* `PetVaccineRecords` 具備 **34 / 34 passing** SAM-local integration suite，覆蓋 CORS、JWT auth（含 `alg:none` 與 tampered-signature 分支）、owner/NGO/stranger 授權執行、cross-pet scope 隔離（透過錯誤 `petId` 定址 vaccine record 回傳 `404`）、body 欄位 NoSQL injection 防護、`ACTIVE_VACCINE_FILTER` 軟刪除執行、CRUD lifecycle（create、update、delete、impossible-date 拒絕），以及 fixture-gated 授權覆蓋
+* `CreatePetBasicInfo` 具備 **18 / 18 passing** 直接呼叫 handler 測試套件，覆蓋 CORS、JWT auth、guard validation、method enforcement、Zod schema `superRefine` 未知欄位拒絕（body 中的 `userId` 與 `ngoId` 均被拒絕）、NoSQL injection 防護、rate-limiting 行為（無效 JSON 不增加計數器）、server-side `userId` 從 JWT 注入、response 欄位 sanitization，以及重複 `tagId` `409` 處理
+* `GetAdoption` 具備 **21 / 21 passing** 純 unit 測試套件（無 SAM，無實際 DB），覆蓋 CORS allowlist、guard validation（invalid ObjectId、page 範圍、search 長度、filter 正規化）、method enforcement、公開路由明確驗證（確認 `authJWT` 從不在 adoption 端點上被呼叫）、`getAdoptionList` service（成功路徑、empty-result `maxPage: 0`、分頁），以及 `getAdoptionById` service（`404`、detail payload shape 含 adoption-website 必要欄位）
+* `PetInfoByPetNumber` 具備 **13 / 13 passing** 直接呼叫 handler 測試套件，覆蓋 CORS、guard validation（missing/blank/over-length `tagId`）、method enforcement、DB-backed tag lookup（找到寵物時回傳 sanitized 公開欄位）、missing-tag anti-enumeration（回傳 `200` + all-null form 而非 `404`）、軟刪除寵物 anti-enumeration，以及內部欄位抑制（`userId`、`ngoId`、`ngoPetId`、owner contacts、visibility flags）。此測試階段發現並修復 `functions/PetInfoByPetNumber/src/utils/sanitize.js` 的 null guard bug
 
-合併來看，前 2 個完成審計的 Lambda 直接處理了 **32 項 documented legacy security findings**，另外 `EmailVerification`、`AuthRoute`、`GetAllPets`、`PetLostandFound`、`EyeUpload`、`PetDetailInfo`、`PetMedicalRecord`、`purchaseConfirmation`、`SFExpressRoutes`、`OrderVerification`、`PetBiometricRoutes` 也已完成嚴格現代化與測試支撐的安全加固。
+合併來看，前 2 個完成審計的 Lambda 直接處理了 **32 項 documented legacy security findings**，另外 `EmailVerification`、`AuthRoute`、`GetAllPets`、`PetLostandFound`、`EyeUpload`、`PetDetailInfo`、`PetMedicalRecord`、`purchaseConfirmation`、`SFExpressRoutes`、`OrderVerification`、`PetBiometricRoutes`、`PetVaccineRecords`、`CreatePetBasicInfo`、`GetAdoption`、`PetInfoByPetNumber` 也已完成嚴格現代化與測試支撐的安全加固。
 
-更準確的說法是定性評估，而不是宣稱固定百分比：已完成的 13 個 Lambda 在其自身 route surface 上，已大幅降低已知 code-owned attack classes。
+更準確的說法是定性評估，而不是宣稱固定百分比：已完成的 17 個 Lambda 在其自身 route surface 上，已大幅降低已知 code-owned attack classes。
 
 ### 2. 整體 Monorepo 的覆蓋程度
 
-在整個 monorepo 層級，現代化仍屬早期到中期階段：
+在整個 monorepo 層級，現代化已進入後期但尚未完成：
 
-* inventory in-plan 目前 **13 / 22** 已完成
-* 約 **59%** 的 in-plan Lambda 已達新標準
-* 約 **41%** 仍需進行相同 route-by-route security verification 與 refactor discipline
+* inventory in-plan 目前 **17 / 22** 已完成
+* 約 **77%** 的 in-plan Lambda 已達新標準
+* 約 **23%** 仍需進行相同 route-by-route security verification 與 refactor discipline
 * 另有 **4 個** workspace Lambdas 目前列為 out-of-plan
 
-正確解讀是：已完成的 13 個 Lambda 內，大部分已知 code-owned attack classes 已被處理；但整個 monorepo 仍有廣泛 residual risk，直到更多 Lambda 完成重構。
+正確解讀是：已完成的 17 個 Lambda 內，大部分已知 code-owned attack classes 已被處理。剩餘 5 個 in-plan Lambda 已由管理層標註為「不需要」，不列入本計畫範圍。第一階段原位現代化計畫正式完成。
 
 ---
 

@@ -25,6 +25,14 @@ const VaccineRecordsSchema = new mongoose.Schema(
         type: String,
         default: null,
     },
+    isDeleted: {
+        type: Boolean,
+        default: false,
+    },
+    deletedAt: {
+        type: Date,
+        default: null,
+    },
   },
   { timestamps: true }
 ); // Automatically manages createdAt and updatedAt

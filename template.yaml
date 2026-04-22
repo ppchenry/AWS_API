@@ -328,145 +328,145 @@ Resources:
   #         TEST_NGO_ID: ""
   #         NODE_ENV: "development"
 
-  PetMedicalRecordFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 60
-      MemorySize: 512
-      CodeUri: functions/PetMedicalRecord/
-      Handler: index.handler
-      Runtime: nodejs22.x
-      Events:
-        MedicalRecordOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medical-record
-            Method: OPTIONS
-        MedicalRecordIdOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medical-record/{medicalID}
-            Method: OPTIONS
-        MedicationRecordOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medication-record
-            Method: OPTIONS
-        MedicationRecordIdOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medication-record/{medicationID}
-            Method: OPTIONS
-        DewormRecordOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/deworm-record
-            Method: OPTIONS
-        DewormRecordIdOptions:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/deworm-record/{dewormID}
-            Method: OPTIONS
-        BloodTestRecordOptions:
-          Type: Api
-          Properties:
-            Path: /v2/pets/{petID}/blood-test-record
-            Method: OPTIONS
-        BloodTestRecordIdOptions:
-          Type: Api
-          Properties:
-            Path: /v2/pets/{petID}/blood-test-record/{bloodTestID}
-            Method: OPTIONS
-        MedicalRecordGet:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medical-record
-            Method: GET
-        MedicalRecordPost:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medical-record
-            Method: POST
-        MedicalRecordPut:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medical-record/{medicalID}
-            Method: PUT
-        MedicalRecordDelete:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medical-record/{medicalID}
-            Method: DELETE
-        MedicationRecordGet:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medication-record
-            Method: GET
-        MedicationRecordPost:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medication-record
-            Method: POST
-        MedicationRecordPut:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medication-record/{medicationID}
-            Method: PUT
-        MedicationRecordDelete:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/medication-record/{medicationID}
-            Method: DELETE
-        DewormRecordGet:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/deworm-record
-            Method: GET
-        DewormRecordPost:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/deworm-record
-            Method: POST
-        DewormRecordPut:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/deworm-record/{dewormID}
-            Method: PUT
-        DewormRecordDelete:
-          Type: Api
-          Properties:
-            Path: /pets/{petID}/deworm-record/{dewormID}
-            Method: DELETE
-        BloodTestRecordGet:
-          Type: Api
-          Properties:
-            Path: /v2/pets/{petID}/blood-test-record
-            Method: GET
-        BloodTestRecordPost:
-          Type: Api
-          Properties:
-            Path: /v2/pets/{petID}/blood-test-record
-            Method: POST
-        BloodTestRecordPut:
-          Type: Api
-          Properties:
-            Path: /v2/pets/{petID}/blood-test-record/{bloodTestID}
-            Method: PUT
-        BloodTestRecordDelete:
-          Type: Api
-          Properties:
-            Path: /v2/pets/{petID}/blood-test-record/{bloodTestID}
-            Method: DELETE
-      Environment:
-        Variables:
-          MONGODB_URI: ""
-          JWT_SECRET: ""
-          JWT_BYPASS: ""
-          ALLOWED_ORIGINS: ""
-          TEST_PET_ID: ""
-          TEST_OWNER_USER_ID: ""
-          TEST_NGO_ID: ""
-          NODE_ENV: "development"
+  # PetMedicalRecordFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Timeout: 60
+  #     MemorySize: 512
+  #     CodeUri: functions/PetMedicalRecord/
+  #     Handler: index.handler
+  #     Runtime: nodejs22.x
+  #     Events:
+  #       MedicalRecordOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medical-record
+  #           Method: OPTIONS
+  #       MedicalRecordIdOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medical-record/{medicalID}
+  #           Method: OPTIONS
+  #       MedicationRecordOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medication-record
+  #           Method: OPTIONS
+  #       MedicationRecordIdOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medication-record/{medicationID}
+  #           Method: OPTIONS
+  #       DewormRecordOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/deworm-record
+  #           Method: OPTIONS
+  #       DewormRecordIdOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/deworm-record/{dewormID}
+  #           Method: OPTIONS
+  #       BloodTestRecordOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/pets/{petID}/blood-test-record
+  #           Method: OPTIONS
+  #       BloodTestRecordIdOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/pets/{petID}/blood-test-record/{bloodTestID}
+  #           Method: OPTIONS
+  #       MedicalRecordGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medical-record
+  #           Method: GET
+  #       MedicalRecordPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medical-record
+  #           Method: POST
+  #       MedicalRecordPut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medical-record/{medicalID}
+  #           Method: PUT
+  #       MedicalRecordDelete:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medical-record/{medicalID}
+  #           Method: DELETE
+  #       MedicationRecordGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medication-record
+  #           Method: GET
+  #       MedicationRecordPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medication-record
+  #           Method: POST
+  #       MedicationRecordPut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medication-record/{medicationID}
+  #           Method: PUT
+  #       MedicationRecordDelete:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/medication-record/{medicationID}
+  #           Method: DELETE
+  #       DewormRecordGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/deworm-record
+  #           Method: GET
+  #       DewormRecordPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/deworm-record
+  #           Method: POST
+  #       DewormRecordPut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/deworm-record/{dewormID}
+  #           Method: PUT
+  #       DewormRecordDelete:
+  #         Type: Api
+  #         Properties:
+  #           Path: /pets/{petID}/deworm-record/{dewormID}
+  #           Method: DELETE
+  #       BloodTestRecordGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/pets/{petID}/blood-test-record
+  #           Method: GET
+  #       BloodTestRecordPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/pets/{petID}/blood-test-record
+  #           Method: POST
+  #       BloodTestRecordPut:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/pets/{petID}/blood-test-record/{bloodTestID}
+  #           Method: PUT
+  #       BloodTestRecordDelete:
+  #         Type: Api
+  #         Properties:
+  #           Path: /v2/pets/{petID}/blood-test-record/{bloodTestID}
+  #           Method: DELETE
+  #     Environment:
+  #       Variables:
+  #         MONGODB_URI: ""
+  #         JWT_SECRET: ""
+  #         JWT_BYPASS: ""
+  #         ALLOWED_ORIGINS: ""
+  #         TEST_PET_ID: ""
+  #         TEST_OWNER_USER_ID: ""
+  #         TEST_NGO_ID: ""
+  #         NODE_ENV: "development"
 
   # SFExpressRoutesFunction: 
   #   Type: AWS::Serverless::Function
@@ -1143,44 +1143,125 @@ Resources:
   #         ALLOWED_ORIGINS: ""
   #         NODE_ENV: "development"
   
-  PetBiometricRoutesFunction:
+  # PetBiometricRoutesFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Timeout: 60
+  #     MemorySize: 512
+  #     CodeUri: functions/PetBiometricRoutes/
+  #     Handler: index.handler
+  #     Runtime: nodejs22.x
+  #     Events:
+  #       PetBiometricsGet:
+  #         Type: Api
+  #         Properties:
+  #           Path: /petBiometrics/{petId}
+  #           Method: GET
+  #       PetBiometricsOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /petBiometrics/{petId}
+  #           Method: OPTIONS
+  #       PetBiometricsRegisterPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /petBiometrics/register
+  #           Method: POST
+  #       PetBiometricsRegisterOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /petBiometrics/register
+  #           Method: OPTIONS
+  #       PetBiometricsVerifyPetPost:
+  #         Type: Api
+  #         Properties:
+  #           Path: /petBiometrics/verifyPet
+  #           Method: POST
+  #       PetBiometricsVerifyPetOptions:
+  #         Type: Api
+  #         Properties:
+  #           Path: /petBiometrics/verifyPet
+  #           Method: OPTIONS
+  #     Environment:
+  #       Variables:
+  #         JWT_SECRET: ""
+  #         JWT_BYPASS: ""
+  #         ALLOWED_ORIGINS: ""
+  #         MONGODB_URI: ""
+  #         BUSINESS_MONGODB_URI: ""
+  #         FACEID_API: ""
+  #         AWS_BUCKET_NAME: ""
+  #         AWS_BUCKET_BASE_URL: ""
+  #         AWS_BUCKET_REGION: ""
+  #         AWSACCESSID: ""
+  #         AWSSECRETKEY: ""
+  #         NODE_ENV: "development"
+
+  CreatePetBasicInfoFunction:
     Type: AWS::Serverless::Function
     Properties:
       Timeout: 60
       MemorySize: 512
-      CodeUri: functions/PetBiometricRoutes/
+      CodeUri: functions/CreatePetBasicInfo/
       Handler: index.handler
       Runtime: nodejs22.x
       Events:
-        PetBiometricsGet:
+        CreatePetBasicInfoPost:
           Type: Api
           Properties:
-            Path: /petBiometrics/{petId}
+            Path: /pets/create-pet-basic-info
+            Method: POST
+        CreatePetBasicInfoOptions:
+          Type: Api
+          Properties:
+            Path: /pets/create-pet-basic-info
+            Method: OPTIONS
+      Environment:
+        Variables:
+          MONGODB_URI: ""
+          JWT_SECRET: ""
+          JWT_BYPASS: ""
+          ALLOWED_ORIGINS: ""
+          NODE_ENV: "development"
+
+  PetVaccineRecordsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 60
+      MemorySize: 512
+      CodeUri: functions/PetVaccineRecords/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Events:
+        PetVaccineRecordsGet:
+          Type: Api
+          Properties:
+            Path: /pets/{petID}/vaccine-record
             Method: GET
-        PetBiometricsOptions:
+        PetVaccineRecordsPost:
           Type: Api
           Properties:
-            Path: /petBiometrics/{petId}
-            Method: OPTIONS
-        PetBiometricsRegisterPost:
-          Type: Api
-          Properties:
-            Path: /petBiometrics/register
+            Path: /pets/{petID}/vaccine-record
             Method: POST
-        PetBiometricsRegisterOptions:
+        PetVaccineRecordsOptions:
           Type: Api
           Properties:
-            Path: /petBiometrics/register
+            Path: /pets/{petID}/vaccine-record
             Method: OPTIONS
-        PetBiometricsVerifyPetPost:
+        PetVaccineRecordDelete:
           Type: Api
           Properties:
-            Path: /petBiometrics/verifyPet
-            Method: POST
-        PetBiometricsVerifyPetOptions:
+            Path: /pets/{petID}/vaccine-record/{vaccineID}
+            Method: DELETE
+        PetVaccineRecordPut:
           Type: Api
           Properties:
-            Path: /petBiometrics/verifyPet
+            Path: /pets/{petID}/vaccine-record/{vaccineID}
+            Method: PUT
+        PetVaccineRecordIdOptions:
+          Type: Api
+          Properties:
+            Path: /pets/{petID}/vaccine-record/{vaccineID}
             Method: OPTIONS
       Environment:
         Variables:
@@ -1188,11 +1269,71 @@ Resources:
           JWT_BYPASS: ""
           ALLOWED_ORIGINS: ""
           MONGODB_URI: ""
-          BUSINESS_MONGODB_URI: ""
-          FACEID_API: ""
-          AWS_BUCKET_NAME: ""
-          AWS_BUCKET_BASE_URL: ""
-          AWS_BUCKET_REGION: ""
-          AWSACCESSID: ""
-          AWSSECRETKEY: ""
+          TEST_PET_ID: ""
+          TEST_OWNER_USER_ID: ""
+          TEST_NGO_ID: ""
+          NODE_ENV: "development"
+
+  GetAdoptionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 60
+      MemorySize: 512
+      CodeUri: functions/GetAdoption/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Events:
+        GetAdoptionListGet:
+          Type: Api
+          Properties:
+            Path: /adoption
+            Method: GET
+        GetAdoptionListOptions:
+          Type: Api
+          Properties:
+            Path: /adoption
+            Method: OPTIONS
+        GetAdoptionByIdGet:
+          Type: Api
+          Properties:
+            Path: /adoption/{id}
+            Method: GET
+        GetAdoptionByIdOptions:
+          Type: Api
+          Properties:
+            Path: /adoption/{id}
+            Method: OPTIONS
+      Environment:
+        Variables:
+          JWT_SECRET: ""
+          JWT_BYPASS: ""
+          ALLOWED_ORIGINS: ""
+          NEW_MONGODB_URI: ""
+          NODE_ENV: "development"
+
+  PetInfoByPetNumber:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 60
+      MemorySize: 512
+      CodeUri: functions/PetInfoByPetNumber/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Events:
+        PetInfoByPetNumberGet:
+          Type: Api
+          Properties:
+            Path: /pets/getPetInfobyTagId/{tagId}
+            Method: GET
+        PetInfoByPetNumberOptions:
+          Type: Api
+          Properties:
+            Path: /pets/getPetInfobyTagId/{tagId}
+            Method: OPTIONS
+      Environment:
+        Variables:
+          JWT_SECRET: ""
+          JWT_BYPASS: ""
+          ALLOWED_ORIGINS: ""
+          MONGODB_URI: ""
           NODE_ENV: "development"
