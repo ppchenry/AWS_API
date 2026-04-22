@@ -1,5 +1,5 @@
 - [ ] standardize and optimize all locale keys
-- [ ] add logs with logger
+- [x] add logs with logger
 - [ ] deploy all refactored lambdas onto dev and run Postman verification for each deployed route set
 - [x] write domain based api docs
 
