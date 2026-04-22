@@ -78,7 +78,7 @@ As of 2026-04-22, the program now has:
 * integration-test-backed verification for all completed targets
 * a repeatable refactor pattern for the remaining Lambdas
 
-The completed Lambdas now act as the implementation baseline for the remaining inventory-scoped refactor program.
+The completed 17 Lambdas are the full delivery scope for this stage. The remaining 5 in-plan Lambdas were marked not required by management and are out of scope.
 
 Based on `dev_docs/LAMBDA_REFACTOR_INVENTORY.md`, the official refactor scope is **22** Lambdas (with `adoption_website`, `AuthorizerRoute`, `TestIPLambda`, and `WhatsappRoute` explicitly listed as out-of-plan).
 
@@ -236,12 +236,12 @@ This is intentionally conservative and not stated as a hard 100%, because some r
 
 ### 2. Coverage across the whole monorepo
 
-At the monorepo level, the hardening is still early.
+At the monorepo level, the stage-1 in-situ modernization is complete.
 
-* **13 of 22** inventory-scoped Lambdas have been modernized to the new baseline
-* that means roughly **59%** of the in-plan Lambda fleet has received this full hardening treatment so far
-* roughly **41%** of in-plan Lambdas still require the same route-by-route security verification and refactor discipline
-* plus **4 workspace Lambdas** are currently tracked as intentionally out-of-plan in the inventory
+* **17 of 22** inventory-scoped Lambdas have been modernized to the new baseline
+* that means **77%** of the in-plan Lambda fleet has received this full hardening treatment
+* the remaining **23%** (5 Lambdas) were marked not required by management and are out of scope
+* plus **4 workspace Lambdas** are tracked as intentionally out-of-plan in the inventory
 
 So the correct interpretation is:
 
@@ -559,7 +559,7 @@ This is why the work may feel slower than surface-level coding changes: secure m
 
 ## Conclusion
 
-As of 2026-04-21, the monorepo refactor effort has produced 13 strong reference implementations, 711 declared integration-style test cases across those refactored Lambdas plus 15 declared SFExpressRoutes unit test cases, 6 declared SMS unit test cases, 28 declared auth-workflow unit test cases, and 3 declared PetMedicalRecord aggregate unit test cases, and a verified pattern for continuing the remaining Lambda modernization work.
+As of 2026-04-22, the monorepo refactor effort has produced 17 strong reference implementations and 797 declared integration-style and direct-handler test cases across those refactored Lambdas plus 15 declared SFExpressRoutes unit test cases, 6 declared SMS unit test cases, 28 declared auth-workflow unit test cases, and 3 declared PetMedicalRecord aggregate unit test cases. This stage of in-place modernization is now complete.
 
 The completed refactors show clear improvement across:
 
@@ -573,7 +573,7 @@ Most importantly, they demonstrate why in-situ modernization is the right first 
 
 This is not the end-state architecture yet, but it is the correct and necessary foundation for getting there safely.
 
-If the objective is to protect the business while continuing to ship, this 2026-04-21 report should be evaluated as early security risk reduction with compounding engineering payoff, not as cosmetic refactoring.
+If the objective is to protect the business while continuing to ship, this 2026-04-22 report should be evaluated as early security risk reduction with compounding engineering payoff, not as cosmetic refactoring.
 
 ---
 

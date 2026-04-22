@@ -58,11 +58,11 @@
 * `EmailVerification` 負責公開的 Email 身分證明流程，使用 **3-branch verify**：(1) 已認證使用者 → 綁定 email 到帳號，(2) 新使用者 → `{ verified: true, isNewUser: true }`，(3) 已註冊使用者 → 自動登入並發行 token
 * `AuthRoute` 負責 refresh token 輪替與短效 access token 更新
 
-核心進展是安全性加固。這一階段的工作並非單純的程式碼整潔化，而是在 13 個已重構的高價值 Lambda 介面上，實質降低已知受攻擊風險。這些風險包含未經授權的資料存取、帳戶或寵物刪除、帳號奪取、敏感資料外洩、暴力破解、水平越權與授權繞過。
+核心進展是安全性加固。這一階段的工作並非單純的程式碼整潔化，而是在 17 個已重構的高價值 Lambda 介面上，實質降低已知受攻擊風險。這些風險包含未經授權的資料存取、帳戶或寵物刪除、帳號奪取、敏感資料外洩、暴力破解、水平越權與授權繞過。
 
 ---
 
-## 截至 2026-04-21 的 Monorepo 現況 (Status)
+## 截至 2026-04-22 的 Monorepo 現況 (Status)
 
 專案初期處於 legacy 狀態，Lambda 之間存在大量重複 helper、混合 routing 與 business logic 的單體檔案，以及難以安全演進的隱性合約。
 
@@ -199,12 +199,12 @@ refresh 流程會：
 
 ### 2. 整體 Monorepo 的覆蓋程度
 
-在整個 monorepo 層級，現代化已進入後期但尚未完成：
+在整個 monorepo 層級，第一階段原位現代化已完成：
 
-* inventory in-plan 目前 **17 / 22** 已完成
-* 約 **77%** 的 in-plan Lambda 已達新標準
-* 約 **23%** 仍需進行相同 route-by-route security verification 與 refactor discipline
-* 另有 **4 個** workspace Lambdas 目前列為 out-of-plan
+* inventory in-plan **17 / 22** 已完成
+* **77%** 的 in-plan Lambda 已達新標準
+* 剩餘 **23%**（5 個 Lambda）已由管理層標註為「不需要」，列為 out-of-scope
+* 另有 **4 個** workspace Lambdas 列為 out-of-plan
 
 正確解讀是：已完成的 17 個 Lambda 內，大部分已知 code-owned attack classes 已被處理。剩餘 5 個 in-plan Lambda 已由管理層標註為「不需要」，不列入本計畫範圍。第一階段原位現代化計畫正式完成。
 
@@ -326,7 +326,7 @@ refresh 流程會：
 
 ## 結語
 
-截至 2026-04-21，Monorepo 重構工作已產出 13 個可作為基準的參考實作，並累積 **711 項 integration-style 測試案例 + 15 項 SFExpressRoutes 單元測試案例 + 6 項 SMS service 單元測試案例 + 28 項 auth-workflow 單元測試案例 + 3 項 PetMedicalRecord aggregate 單元測試**（依 `__tests__` 測試檔統計）。
+截至 2026-04-22，Monorepo 重構工作已產出 17 個可作為基準的參考實作，並累積 **797 項 integration-style 與 direct-handler 測試案例 + 15 項 SFExpressRoutes 單元測試案例 + 6 項 SMS service 單元測試案例 + 28 項 auth-workflow 單元測試案例 + 3 項 PetMedicalRecord aggregate 單元測試**（依 `__tests__` 測試檔統計）。第一階段原位現代化計畫正式完成。
 
 已完成 refactor 顯示出明確改善：
 
@@ -336,7 +336,7 @@ refresh 流程會：
 * 擴展性
 * 穩定性
 
-這不是最終架構，但它是通往最終架構前必要且正確的基礎。如果目標是在持續交付的同時保護業務，這份 2026-04-21 報告應被視為早期安全風險退場與工程複利累積，而非 cosmetic refactoring。
+這不是最終架構，但它是通往最終架構前必要且正確的基礎。如果目標是在持續交付的同時保護業務，這份 2026-04-22 報告應被視為早期安全風險退場與工程複利累積，而非 cosmetic refactoring。
 
 ---
 
