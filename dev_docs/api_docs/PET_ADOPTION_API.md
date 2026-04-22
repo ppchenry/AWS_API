@@ -30,11 +30,11 @@ Common error rows:
 
 | Status | errorKey | Cause |
 | --- | --- | --- |
-| 400 | `getAdoption.errors.missingPetId` / `getAdoption.errors.invalidPetIdFormat` | Path `petID` invalid |
+| 400 | `petDetailInfo.errors.missingPetId` / `petDetailInfo.errors.invalidPetIdFormat` | Path `petID` invalid |
 | 400 | `petDetailInfo.errors.petAdoption.invalidAdoptionIdFormat` | `adoptionId` invalid ObjectId |
 | 401 | `common.unauthorized` | Missing / invalid JWT |
 | 403 | `common.forbidden` | Not pet owner |
-| 404 | `getAdoption.errors.petNotFound` | Pet missing or deleted |
+| 404 | `petDetailInfo.errors.petNotFound` | Pet missing or deleted |
 | 500 | `common.internalError` | |
 
 ---

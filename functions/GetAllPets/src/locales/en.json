@@ -1,6 +1,11 @@
 {
   "common": {
-    "invalidJSON": "Invalid JSON format"
+    "internalError": "Internal server error",
+    "invalidJSON": "Invalid JSON format",
+    "methodNotAllowed": "Method Not Allowed",
+    "missingParams": "Missing required parameters",
+    "rateLimited": "Too many requests. Please try again later.",
+    "unauthorized": "Unauthorized"
   },
   "getAllPets": {
     "errors": {

@@ -1,29 +1,29 @@
 {
     "emailVerification":  {
-                              "errors":  {
-                                             "codeNotMatch":  "é©—è­‰ç¢¼ä¸åŒ¹é…ï¼Œè«‹é‡è©¦",
-                                             "codeExpired":  "é©—è­‰ç¢¼å·²éŽæœŸã€‚",
-                                             "notExist":  "é›»éƒµæˆ–é©—è­‰ç¢¼ä¸å­˜åœ¨",
-                                             "missingEmailParams":  "ç¼ºå°‘é›»éƒµ",
-                                             "invalidEmailFormat":  "é›»å­éƒµä»¶æ ¼å¼ç„¡æ•ˆ",
-                                             "invalidResetCodeFormat":  "é©—è­‰ç¢¼æ ¼å¼ç„¡æ•ˆï¼Œå¿…é ˆç‚º 6 ä½æ•¸å­—",
-                                             "emailServiceUnavailable":  "é›»å­éƒµä»¶æœå‹™æš«æ™‚ç„¡æ³•ä½¿ç”¨",
-                                             "verificationFailed":  "é©—è­‰å¤±æ•—ã€‚è«‹æª¢æŸ¥æ‚¨çš„é›»å­éƒµä»¶å’Œé©—è­‰ç¢¼ï¼Œç„¶å¾Œé‡è©¦ã€‚",
-                                             "accountDeleted":  "å¸³æˆ¶å·²è¢«åˆªé™¤",
-                                             "noCodeFound":  "æœªæ‰¾åˆ°é©—è­‰ç¢¼ï¼Œè«‹å…ˆç”Ÿæˆé©—è­‰ç¢¼",
-                                             "emailAlreadyLinked":  "此電子郵件已綁定到其他帳戶。"
-                                         },
-                              "success":  {
-                                              "generateSuccessful":  "é©—è­‰ç¢¼ç”ŸæˆæˆåŠŸ",
-                                              "verifySuccessful":  "å¸³æˆ¶é©—è­‰ç¢¼æˆåŠŸ"
-                                          }
-                          },
+        "errors":  {
+            "codeNotMatch":  "驗證碼不匹配，請重試",
+            "codeExpired":  "驗證碼已過期。",
+            "notExist":  "電郵或驗證碼不存在",
+            "missingEmailParams":  "缺少電郵",
+            "invalidEmailFormat":  "電子郵件格式無效",
+            "invalidResetCodeFormat":  "驗證碼格式無效，必須為 6 位數字",
+            "emailServiceUnavailable":  "電子郵件服務暫時無法使用",
+            "verificationFailed":  "驗證失敗。請檢查您的電子郵件和驗證碼，然後重試。",
+            "accountDeleted":  "帳戶已被刪除",
+            "noCodeFound":  "未找到驗證碼，請先生成驗證碼",
+            "emailAlreadyLinked":  "此電子郵件已綁定到其他帳戶。"
+        },
+        "success":  {
+            "generateSuccessful":  "驗證碼生成成功",
+            "verifySuccessful":  "帳戶驗證碼成功"
+        }
+    },
     "common":  {
-                   "internalError":  "ç™¼ç”Ÿå…§éƒ¨éŒ¯èª¤",
-                   "invalidJSON":  "ç„¡æ•ˆçš„ JSON æ ¼å¼",
-                   "missingParams":  "ç¼ºå°‘å¿…è¦åƒæ•¸",
-                   "methodNotAllowed":  "æ–¹æ³•ä¸å…è¨±",
-                   "unauthorized":  "æœªæŽˆæ¬Š",
-                   "rateLimited":  "è«‹æ±‚éŽå¤šï¼Œè«‹ç¨å¾Œå†è©¦"
-               }
+        "internalError":  "發生內部錯誤",
+        "invalidJSON":  "無效的 JSON 格式",
+        "missingParams":  "缺少必要參數",
+        "methodNotAllowed":  "方法不允許",
+        "unauthorized":  "未授權",
+        "rateLimited":  "請求過多，請稍後再試"
+    }
 }

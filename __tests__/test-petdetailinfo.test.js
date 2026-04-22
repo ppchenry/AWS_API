@@ -603,7 +603,7 @@ describe("NGO Transfer", () => {
       UserContact: "+85291234567",
     }, ownerAuth());
     expect(r.status).toBe(403);
-    expect(r.body.errorKey).toBe("common.ngoOnly");
+    expect(r.body.errorKey).toBe("common.forbidden");
   });
 
   ngoTest("NGO token with invalid email format -> 400", async () => {

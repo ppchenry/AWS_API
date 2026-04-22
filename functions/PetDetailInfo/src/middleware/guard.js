@@ -16,7 +16,7 @@ async function validatePetDetailRequest({ event }) {
     if (!callerRole || callerRole.toLowerCase() !== "ngo") {
       return {
         isValid: false,
-        error: createErrorResponse(403, "common.ngoOnly", event),
+        error: createErrorResponse(403, "common.forbidden", event),
       };
     }
   }

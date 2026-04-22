@@ -1,7 +1,12 @@
 {
   "common": {
+    "forbidden": "Forbidden",
+    "internalError": "Internal server error",
     "invalidJSON": "Invalid JSON format",
-    "methodNotAllowed": "Method Not Allowed"
+    "methodNotAllowed": "Method Not Allowed",
+    "missingParams": "Missing required parameters",
+    "noFieldsToUpdate": "No fields provided to update",
+    "unauthorized": "Unauthorized"
   },
   "petDetailInfo": {
     "errors": {

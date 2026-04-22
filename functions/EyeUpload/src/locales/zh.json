@@ -12,6 +12,7 @@
     "errors": {
       "petIdRequired": "需要寵物 ID",
       "noFilesUploaded": "未上傳任何檔案",
+      "tooManyFiles": "每次請求僅允許上傳一個檔案",
       "invalidImageFormat": "檔案必須為 JPEG 或 PNG 格式",
       "fileTooLarge": "圖片檔案過大（最大 30MB）",
       "fileTooSmall": "圖片檔案為空",

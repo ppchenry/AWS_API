@@ -95,7 +95,7 @@
 **發現 H13 — NGO 專屬操作缺乏 RBAC 控管**
 
 * **現代化前：** NGO 轉移行為若僅實作於服務邏輯內，路由分支的邊界容易在後續修改中漂移。
-* **現代化後：** `guard.js` 包含 `NGO_ONLY_RESOURCES`，在 DB 連線與所有權/服務邏輯執行前，以 `403 others.ngoOnly` 拒絕非 NGO 的有效 token。
+* **現代化後：** `guard.js` 包含 `NGO_ONLY_RESOURCES`，在 DB 連線與所有權/服務邏輯執行前，以 `403 common.forbidden` 拒絕非 NGO 的有效 token。
 
 ---
 
