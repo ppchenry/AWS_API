@@ -14,7 +14,7 @@ Pet-scoped endpoints resolve access via:
 - **NGO**: `pet.ngoId === event.ngoId` (caller's role is `ngo`)
 - **Privileged** (`admin` / `developer`): bypasses both checks
 
-Unauthorized access returns `403 others.unauthorized` or `403 others.forbidden` (varies by Lambda). `404` is returned for soft-deleted pets to avoid leaking existence.
+Unauthorized access returns `403 common.unauthorized` or `403 common.forbidden` (varies by Lambda). `404` is returned for soft-deleted pets to avoid leaking existence.
 
 ## Endpoints
 

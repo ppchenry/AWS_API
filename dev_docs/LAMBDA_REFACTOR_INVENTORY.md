@@ -15,18 +15,7 @@ It is not a perfect measure. Final priority should still consider route count, a
 
 ## AWS Lambda Dev Deployment Status
 
-Modularized status does not mean the Lambda has already been deployed to the AWS Lambda Dev server for Postman testing.
-
-Only the following refactored Lambdas have been deployed on the AWS Lambda Dev server for Postman testing so far:
-
-- `UserRoutes`
-- `GetAllPets`
-- `PetBasicInfo`
-- `EmailVerification`
-- `AuthRoute`
-- `EyeUpload`
-
-All other modularized Lambdas in this inventory still require AWS Lambda Dev deployment and Postman verification before they should be considered deployment-validated.
+The 17 refactored Lambdas listed below are deployed on the AWS Lambda Dev stage and covered by the current Postman happy-path smoke suite / API-doc route check. See `dev_docs/test_reports/POSTMAN_HAPPY_PATH_TEST_REPORT_2026-04-23.md`.
 
 ## Already Refactored
 
@@ -96,12 +85,12 @@ These are smaller Lambdas. They should still meet the refactor checklist for val
 | `OrderVerification` | `index.js` | 4 | yes | already modularized |
 | `PetBiometricRoutes` | `index.js` | 3 | yes | already modularized |
 | `AIChatBot` | `index.js` | 399 | no | partial separation |
-| `PetVaccineRecords` | `index.js` | 373 | no | partial separation |
-| `CreatePetBasicInfo` | `index.js` | 317 | no | partial separation |
+| `PetVaccineRecords` | `index.js` | 3 | yes | already modularized |
+| `CreatePetBasicInfo` | `index.js` | 3 | yes | already modularized |
 | `GetBreed` | `index.js` | 301 | no | partial separation |
 | `LambdaProxyRoute` | `index.js` | 248 | no | keep simple unless risk says otherwise |
-| `GetAdoption` | `index.js` | 220 | no | keep simple unless risk says otherwise |
-| `PetInfoByPetNumber` | `index.js` | 153 | no | keep simple |
+| `GetAdoption` | `index.js` | 3 | yes | already modularized |
+| `PetInfoByPetNumber` | `index.js` | 3 | yes | already modularized |
 | `PublicRoutes` | `index.js` | 133 | no | keep simple |
 | `CreateFeedback` | `index.js` | 119 | no | keep simple |
 

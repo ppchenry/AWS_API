@@ -116,7 +116,7 @@ Bank details are stripped (sanitized) before returning.
 }
 ```
 
-**Errors:** `500 others.internalError`.
+**Errors:** `500 common.internalError`.
 
 ---
 
@@ -166,7 +166,7 @@ Bank details are stripped (sanitized) before returning.
 }
 ```
 
-**Errors:** `401`/`403 others.unauthorized`, `500 others.internalError`.
+**Errors:** `401`/`403 common.unauthorized`, `500 common.internalError`.
 
 ---
 
@@ -207,7 +207,7 @@ Bank details are stripped (sanitized) before returning.
 }
 ```
 
-**Errors:** `401`/`403 others.unauthorized`, `500 others.internalError`.
+**Errors:** `401`/`403 common.unauthorized`, `500 common.internalError`.
 
 ---
 

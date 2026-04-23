@@ -214,8 +214,8 @@ These are worthwhile follow-up tests if the goal is near-exhaustive security reg
 
 ### Current Contract Note
 
-This report reflects the current register-first auth flow.
+This report reflects the verification-first auth flow.
 
 - `POST /account/generate-email-code` remains public and anti-enumeration hardened.
-- `POST /account/verify-email-code` no longer creates a user account.
-- Successful verification now requires an existing, non-deleted user and returns `userId`, `role`, `isVerified`, and `token` without a `newUser` field.
+- `POST /account/verify-email-code` does not create a user account.
+- Successful verification logs in an existing non-deleted user, links email for an authenticated caller, or returns `isNewUser: true` proof for a new user to complete `POST /account/register`.

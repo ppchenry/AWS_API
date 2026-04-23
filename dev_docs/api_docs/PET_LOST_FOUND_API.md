@@ -43,7 +43,7 @@ No query params / filters. Returns all records sorted by most recent.
 }
 ```
 
-**Errors:** `500 others.internalError`.
+**Errors:** `500 common.internalError`.
 
 ---
 

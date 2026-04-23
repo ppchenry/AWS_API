@@ -7,8 +7,9 @@ Runner: `./postman/run-dev-happy-path.sh --verbose`
 ## 1) Automated Execution Result
 
 - Public smoke suite: 6 requests, 20 assertions, 0 failed
-- Authenticated smoke suite: 54 requests, 141 assertions, 0 failed
-- Total automated run: 60 requests, 161 assertions, 0 failed
+- Authenticated smoke suite: 60 requests, 152 assertions, 0 failed
+- Total automated run: 66 requests, 172 assertions, 0 failed
+- API-doc route check: 98 documented endpoints, 0 returned 405, 0 missing gateway routes
 
 Conclusion: current Postman happy-path automation run passed fully.
 
@@ -26,10 +27,10 @@ The following auth-flow endpoints were tested manually on 2026-04-23 and passed:
 ## 3) Coverage Summary vs `dev_docs/api_docs`
 
 - Documented unique endpoints: 98
-- Auto-tested by current Postman happy-path collections: 58
+- Auto-tested by current Postman happy-path collections: 64
 - Manually tested and passed (auth flow): 6
-- Total validated now (auto + manual): 64
-- Remaining not yet automated in this happy-path suite: 34
+- Total validated now (auto + manual): 70
+- Remaining not yet automated in this happy-path suite: 28
 
 ## 4) Remaining Not Auto-Tested and Why
 
@@ -41,11 +42,11 @@ The following non-automated `GET` endpoints are intentionally left out of the cu
 
 | GET endpoint | Fixture IDs / tokens needed to automate |
 | --- | --- |
-| `GET /account/user-list` | NGO access token (`ngo` role) |
-| `GET /account/edit-ngo/{ngoId}` | `ngoId` + matching NGO access token |
-| `GET /account/edit-ngo/{ngoId}/pet-placement-options` | `ngoId` + matching NGO access token |
-| `GET /pets/pet-lost` | Optional: stable seeded lost-post IDs for deterministic assertions |
-| `GET /pets/pet-found` | Optional: stable seeded found-post IDs for deterministic assertions |
+| `GET /v2/account/user-list` | NGO access token (`ngo` role) |
+| `GET /v2/account/edit-ngo/{ngoId}` | `ngoId` + matching NGO access token |
+| `GET /v2/account/edit-ngo/{ngoId}/pet-placement-options` | `ngoId` + matching NGO access token |
+| `GET /v2/pets/pet-lost` | Optional: stable seeded lost-post IDs for deterministic assertions |
+| `GET /v2/pets/pet-found` | Optional: stable seeded found-post IDs for deterministic assertions |
 | `GET /pets/getPetInfobyTagId/{tagId}` | Stable `tagId` with known expected payload |
 
 | Endpoint | Why not auto-tested in current happy-path suite |
@@ -55,12 +56,12 @@ The following non-automated `GET` endpoints are intentionally left out of the cu
 | `DELETE /purchase/order-verification/{orderVerificationId}` | Destructive on order-verification records; not suitable for always-on smoke runs. |
 | `POST /purchase/confirmation` | Creates real purchase/order records; high data side effects and cleanup complexity. |
 | `POST /purchase/send-ptag-detection-email` | Triggers outbound email side effects; can spam real recipients. |
-| `GET /pets/pet-lost` | Public board data is noisy and non-deterministic; assertions become flaky without stable seeded fixtures. |
-| `POST /pets/pet-lost` | Creates public lost posts in shared env; persistent data side effects. |
-| `DELETE /pets/pet-lost/{petLostID}` | Destructive cleanup on shared lost-post data; requires strict ownership fixture control. |
-| `GET /pets/pet-found` | Public board data is noisy and non-deterministic; assertions become flaky without stable seeded fixtures. |
-| `POST /pets/pet-found` | Creates public found posts in shared env; persistent data side effects. |
-| `DELETE /pets/pet-found/{petFoundID}` | Destructive cleanup on shared found-post data; requires strict ownership fixture control. |
+| `GET /v2/pets/pet-lost` | Public board data is noisy and non-deterministic; assertions become flaky without stable seeded fixtures. |
+| `POST /v2/pets/pet-lost` | Creates public lost posts in shared env; persistent data side effects. |
+| `DELETE /v2/pets/pet-lost/{petLostID}` | Destructive cleanup on shared lost-post data; requires strict ownership fixture control. |
+| `GET /v2/pets/pet-found` | Public board data is noisy and non-deterministic; assertions become flaky without stable seeded fixtures. |
+| `POST /v2/pets/pet-found` | Creates public found posts in shared env; persistent data side effects. |
+| `DELETE /v2/pets/pet-found/{petFoundID}` | Destructive cleanup on shared found-post data; requires strict ownership fixture control. |
 | `POST /util/uploadImage` | Multipart file upload requires binary fixture management and S3 side-effect cleanup. |
 | `POST /util/uploadPetBreedImage` | Multipart upload with allowlist/path constraints; requires stable fixture files. |
 | `POST /pets/create-pet-basic-info-with-image` | Multi-part create + upload flow; higher flake risk and storage side effects. |
@@ -75,11 +76,11 @@ The following non-automated `GET` endpoints are intentionally left out of the cu
 | `POST /sf-express-routes/get-pickup-locations` | External SF API dependency plus variable location data. |
 | `POST /sf-express-routes/create-order` | Real logistics side effects (waybill/order generation); not smoke-safe. |
 | `POST /v2/sf-express-routes/print-cloud-waybill` | External print/email side effects; not appropriate for routine automation. |
-| `POST /account/register-ngo` | Creates new org + user state; high fixture and cleanup burden in shared env. |
-| `GET /account/user-list` | Requires dedicated NGO-role auth fixture (token not in default smoke set). |
-| `GET /account/edit-ngo/{ngoId}` | Requires stable `ngoId` fixture and matching NGO-role token. |
-| `GET /account/edit-ngo/{ngoId}/pet-placement-options` | Requires stable `ngoId` fixture and matching NGO-role token. |
-| `PUT /account/edit-ngo/{ngoId}` | Mutates NGO profile data; high side effects in shared environment. |
+| `POST /v2/account/register-ngo` | Creates new org + user state; high fixture and cleanup burden in shared env. |
+| `GET /v2/account/user-list` | Requires dedicated NGO-role auth fixture (token not in default smoke set). |
+| `GET /v2/account/edit-ngo/{ngoId}` | Requires stable `ngoId` fixture and matching NGO-role token. |
+| `GET /v2/account/edit-ngo/{ngoId}/pet-placement-options` | Requires stable `ngoId` fixture and matching NGO-role token. |
+| `PUT /v2/account/edit-ngo/{ngoId}` | Mutates NGO profile data; high side effects in shared environment. |
 | `PUT /pets/{petID}/detail-info/NGOtransfer` | Business-critical ownership transfer mutation; intentionally excluded from smoke. |
 | `POST /pets/deletePet` | Legacy delete path; coverage prioritized on canonical `DELETE /pets/{petID}` flow. |
 | `PUT /pets/updatePetEye` | Legacy/specialized update path; lower priority than canonical pet update flows. |
