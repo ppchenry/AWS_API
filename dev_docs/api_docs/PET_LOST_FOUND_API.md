@@ -10,12 +10,12 @@ Lost / found pet posts and per-user notifications. All endpoints require Bearer 
 
 | Method | Path | Content-Type | Purpose |
 | --- | --- | --- | --- |
-| GET | `/pets/pet-lost` | — | List all lost posts |
-| POST | `/pets/pet-lost` | `multipart/form-data` | Create lost post |
-| DELETE | `/pets/pet-lost/{petLostID}` | — | Delete own lost post |
-| GET | `/pets/pet-found` | — | List all found posts |
-| POST | `/pets/pet-found` | `multipart/form-data` | Create found post |
-| DELETE | `/pets/pet-found/{petFoundID}` | — | Delete own found post |
+| GET | `/v2/pets/pet-lost` | — | List all lost posts |
+| POST | `/v2/pets/pet-lost` | `multipart/form-data` | Create lost post |
+| DELETE | `/v2/pets/pet-lost/{petLostID}` | — | Delete own lost post |
+| GET | `/v2/pets/pet-found` | — | List all found posts |
+| POST | `/v2/pets/pet-found` | `multipart/form-data` | Create found post |
+| DELETE | `/v2/pets/pet-found/{petFoundID}` | — | Delete own found post |
 | GET | `/v2/account/{userId}/notifications` | — | List own notifications |
 | POST | `/v2/account/{userId}/notifications` | `application/json` | Create own notification |
 | PUT | `/v2/account/{userId}/notifications/{notificationId}` | `application/json` | Archive notification |
@@ -28,7 +28,7 @@ Lost / found pet posts and per-user notifications. All endpoints require Bearer 
 
 ---
 
-### GET /pets/pet-lost
+### GET /v2/pets/pet-lost
 
 No query params / filters. Returns all records sorted by most recent.
 
@@ -47,7 +47,7 @@ No query params / filters. Returns all records sorted by most recent.
 
 ---
 
-### POST /pets/pet-lost
+### POST /v2/pets/pet-lost
 
 `multipart/form-data`. Field name for images is `files` (may be multiple).
 
@@ -98,7 +98,7 @@ No query params / filters. Returns all records sorted by most recent.
 
 ---
 
-### DELETE /pets/pet-lost/{petLostID}
+### DELETE /v2/pets/pet-lost/{petLostID}
 
 Only the creator can delete.
 
@@ -115,7 +115,7 @@ Only the creator can delete.
 
 ---
 
-### GET /pets/pet-found
+### GET /v2/pets/pet-found
 
 **Success (200):**
 
@@ -130,7 +130,7 @@ Only the creator can delete.
 
 ---
 
-### POST /pets/pet-found
+### POST /v2/pets/pet-found
 
 `multipart/form-data`. Rate limit: 5 / 60 s per user.
 
@@ -163,7 +163,7 @@ Only the creator can delete.
 
 ---
 
-### DELETE /pets/pet-found/{petFoundID}
+### DELETE /v2/pets/pet-found/{petFoundID}
 
 **Success (200):** `{ success: true, message: "Pet found record deleted successfully" }`
 

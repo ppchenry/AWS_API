@@ -6,6 +6,7 @@
 # Usage:
 #   ./postman/run-dev-happy-path.sh
 #   ./postman/run-dev-happy-path.sh --verbose
+#   ./postman/run-dev-happy-path.sh routecheck
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -31,6 +32,7 @@ set +a
 PUBLIC_COLLECTION="$HERE/dev-happy-path.postman_collection.json"
 AUTH_COLLECTION="$HERE/dev-happy-path-auth.postman_collection.json"
 ENVFILE="$HERE/dev.postman_environment.json"
+ROUTE_CHECK_SCRIPT="$HERE/check-doc-routes-no-405.js"
 
 echo "→ base URL: $DEV_BASE_URL"
 
@@ -45,6 +47,10 @@ optional_env_vars=(
   TEST_OWNER_EMAIL
   TEST_PET_ID
   TEST_NGO_ID
+  USER_ACCESS_TOKEN
+  ADMIN_ACCESS_TOKEN
+  NGO_ACCESS_TOKEN
+  ORDER_OWNER_ACCESS_TOKEN
   PUBLIC_NGO_ID
   PUBLIC_NGO_ID_ALT
   DEV_REFRESH_TOKEN
@@ -53,6 +59,8 @@ optional_env_vars=(
   ORDER_VERIFICATION_ID
   ORDER_ID
   ORDER_TEMP_ID
+  ORDER_OWNER_USER_ID
+  ORDER_OWNER_EMAIL
   NGO_USER_ID
   NGO_USER_EMAIL
   NGO_OWNED_PET_ID
@@ -89,17 +97,35 @@ run() {
     "$@"
 }
 
-# Allow selecting a single suite: ./run-dev-happy-path.sh public | auth | all
+run_route_check() {
+  echo
+  echo "════════════════════════════════════════════════════════════════"
+  echo "  API Docs Route 405 Check"
+  echo "════════════════════════════════════════════════════════════════"
+  node "$ROUTE_CHECK_SCRIPT"
+}
+
+# Allow selecting a mode:
+#   ./run-dev-happy-path.sh public
+#   ./run-dev-happy-path.sh auth
+#   ./run-dev-happy-path.sh routecheck
+#   ./run-dev-happy-path.sh all
 MODE="${1:-all}"
 shift || true
 
 case "$MODE" in
   public) run "Public smoke" "$PUBLIC_COLLECTION" "$@" ;;
   auth)   run "Authenticated smoke" "$AUTH_COLLECTION" "$@" ;;
-  all|"") run "Public smoke" "$PUBLIC_COLLECTION" "$@" ; run "Authenticated smoke" "$AUTH_COLLECTION" "$@" ;;
+  routecheck) run_route_check ;;
+  all|"")
+    run "Public smoke" "$PUBLIC_COLLECTION" "$@"
+    run "Authenticated smoke" "$AUTH_COLLECTION" "$@"
+    run_route_check
+    ;;
   *)
     # Treat as passthrough arg (e.g. --verbose) → run all
     run "Public smoke" "$PUBLIC_COLLECTION" "$MODE" "$@"
     run "Authenticated smoke" "$AUTH_COLLECTION" "$MODE" "$@"
+    run_route_check
     ;;
 esac

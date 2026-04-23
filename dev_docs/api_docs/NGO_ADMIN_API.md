@@ -10,15 +10,15 @@ Endpoints for NGO account registration and NGO admin management. All protected e
 
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
-| POST | `/account/register-ngo` | Public | Register an NGO + admin user |
-| GET | `/account/user-list` | Bearer JWT (ngo role) | List NGO staff users |
-| GET | `/account/edit-ngo/{ngoId}` | Bearer JWT (ngo role) | Read full NGO profile |
-| PUT | `/account/edit-ngo/{ngoId}` | Bearer JWT (ngo role) | Update NGO profile (transactional) |
-| GET | `/account/edit-ngo/{ngoId}/pet-placement-options` | Bearer JWT (ngo role) | List configured pet placement options |
+| POST | `/v2/account/register-ngo` | Public | Register an NGO + admin user |
+| GET | `/v2/account/user-list` | Bearer JWT (ngo role) | List NGO staff users |
+| GET | `/v2/account/edit-ngo/{ngoId}` | Bearer JWT (ngo role) | Read full NGO profile |
+| PUT | `/v2/account/edit-ngo/{ngoId}` | Bearer JWT (ngo role) | Update NGO profile (transactional) |
+| GET | `/v2/account/edit-ngo/{ngoId}/pet-placement-options` | Bearer JWT (ngo role) | List configured pet placement options |
 
 ---
 
-### POST /account/register-ngo
+### POST /v2/account/register-ngo
 
 Creates an NGO admin user, the NGO profile, an NGO access record, and an NGO counter in one atomic transaction. On success, issues an access token and refresh cookie just like normal registration.
 
@@ -86,7 +86,7 @@ Also sets `Set-Cookie: refreshToken=<token>` (HttpOnly, Secure, SameSite=Strict)
 
 ---
 
-### GET /account/user-list
+### GET /v2/account/user-list
 
 List users managed by the caller's NGO. Paginated and searchable.
 
@@ -136,7 +136,7 @@ Page size: **50** users per page.
 
 ---
 
-### GET /account/edit-ngo/{ngoId}
+### GET /v2/account/edit-ngo/{ngoId}
 
 Return the NGO profile, linked admin user profile, access record, and counters.
 
@@ -205,7 +205,7 @@ Per-section `errors` string is set when a sub-lookup fails but the root NGO reco
 
 ---
 
-### PUT /account/edit-ngo/{ngoId}
+### PUT /v2/account/edit-ngo/{ngoId}
 
 Update any combination of the NGO's admin user, NGO profile, access record, and counters **in a single MongoDB transaction** (all-or-nothing).
 
@@ -288,7 +288,7 @@ On any sub-update failure, the entire transaction is rolled back and a `500` is 
 
 ---
 
-### GET /account/edit-ngo/{ngoId}/pet-placement-options
+### GET /v2/account/edit-ngo/{ngoId}/pet-placement-options
 
 Return the list of configured pet placement options for the NGO (used by adoption flows).
 

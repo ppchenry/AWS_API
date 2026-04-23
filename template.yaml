@@ -14,32 +14,32 @@ Resources:
         PetLostGet:
           Type: Api
           Properties:
-            Path: /pets/pet-lost
+            Path: /v2/pets/pet-lost
             Method: GET
         PetLostPost:
           Type: Api
           Properties:
-            Path: /pets/pet-lost
+            Path: /v2/pets/pet-lost
             Method: POST
         PetLostDelete:
           Type: Api
           Properties:
-            Path: /pets/pet-lost/{petLostID}
+            Path: /v2/pets/pet-lost/{petLostID}
             Method: DELETE
         PetFoundGet:
           Type: Api
           Properties:
-            Path: /pets/pet-found
+            Path: /v2/pets/pet-found
             Method: GET
         PetFoundPost:
           Type: Api
           Properties:
-            Path: /pets/pet-found
+            Path: /v2/pets/pet-found
             Method: POST
         PetFoundDelete:
           Type: Api
           Properties:
-            Path: /pets/pet-found/{petFoundID}
+            Path: /v2/pets/pet-found/{petFoundID}
             Method: DELETE
         NotificationsGet:
           Type: Api
@@ -59,22 +59,22 @@ Resources:
         PetLostOptions:
           Type: Api
           Properties:
-            Path: /pets/pet-lost
+            Path: /v2/pets/pet-lost
             Method: OPTIONS
         PetLostIdOptions:
           Type: Api
           Properties:
-            Path: /pets/pet-lost/{petLostID}
+            Path: /v2/pets/pet-lost/{petLostID}
             Method: OPTIONS
         PetFoundOptions:
           Type: Api
           Properties:
-            Path: /pets/pet-found
+            Path: /v2/pets/pet-found
             Method: OPTIONS
         PetFoundIdOptions:
           Type: Api
           Properties:
-            Path: /pets/pet-found/{petFoundID}
+            Path: /v2/pets/pet-found/{petFoundID}
             Method: OPTIONS
         NotificationsOptions:
           Type: Api
@@ -1016,25 +1016,25 @@ Resources:
         UserList:
           Type: Api
           Properties:
-            Path: /account/user-list
+            Path: /v2/account/user-list
             Method: GET
 
         EditNgoGet:
           Type: Api
           Properties:
-            Path: /account/edit-ngo/{ngoId}
+            Path: /v2/account/edit-ngo/{ngoId}
             Method: GET
 
         EditNgoPut:
           Type: Api
           Properties:
-            Path: /account/edit-ngo/{ngoId}
+            Path: /v2/account/edit-ngo/{ngoId}
             Method: PUT
 
         EditNgoPetPlacementOptionsGet:
           Type: Api
           Properties:
-            Path: /account/edit-ngo/{ngoId}/pet-placement-options
+            Path: /v2/account/edit-ngo/{ngoId}/pet-placement-options
             Method: GET
 
         AccountUserIdDelete:
@@ -1087,7 +1087,7 @@ Resources:
         RegisterNgo:
           Type: Api
           Properties:
-            Path: /account/register-ngo
+            Path: /v2/account/register-ngo
             Method: POST
 
         RegisterByEmail:

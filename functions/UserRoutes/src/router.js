@@ -40,11 +40,11 @@ const routes = {
   "PUT /account/update-password": null,
   "POST /account/update-image": lazyRoute("./services/update", "updateUserImage"),
   "POST /account/delete-user-with-email": lazyRoute("./services/user", "deleteUserByEmail"),
-  "POST /account/register-ngo": lazyRoute("./services/register", "registerNgo"),
-  "GET /account/user-list": lazyRoute("./services/ngo", "getNgoUserList"),
-  "PUT /account/edit-ngo/{ngoId}": lazyRoute("./services/ngo", "editNgo"),
-  "GET /account/edit-ngo/{ngoId}": lazyRoute("./services/ngo", "getNgoDetails"),
-  "GET /account/edit-ngo/{ngoId}/pet-placement-options": lazyRoute("./services/ngo", "getNgoPetPlacementOptions"),
+  "POST /v2/account/register-ngo": lazyRoute("./services/register", "registerNgo"),
+  "GET /v2/account/user-list": lazyRoute("./services/ngo", "getNgoUserList"),
+  "PUT /v2/account/edit-ngo/{ngoId}": lazyRoute("./services/ngo", "editNgo"),
+  "GET /v2/account/edit-ngo/{ngoId}": lazyRoute("./services/ngo", "getNgoDetails"),
+  "GET /v2/account/edit-ngo/{ngoId}/pet-placement-options": lazyRoute("./services/ngo", "getNgoPetPlacementOptions"),
 };
 
 /**

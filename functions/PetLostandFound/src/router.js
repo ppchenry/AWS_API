@@ -22,14 +22,14 @@ function lazyRoute(modulePath, exportName) {
  */
 const routes = {
   // Pet Lost
-  "GET /pets/pet-lost": lazyRoute("./services/petLost", "listPetLost"),
-  "POST /pets/pet-lost": lazyRoute("./services/petLost", "createPetLost"),
-  "DELETE /pets/pet-lost/{petLostID}": lazyRoute("./services/petLost", "deletePetLost"),
+  "GET /v2/pets/pet-lost": lazyRoute("./services/petLost", "listPetLost"),
+  "POST /v2/pets/pet-lost": lazyRoute("./services/petLost", "createPetLost"),
+  "DELETE /v2/pets/pet-lost/{petLostID}": lazyRoute("./services/petLost", "deletePetLost"),
 
   // Pet Found
-  "GET /pets/pet-found": lazyRoute("./services/petFound", "listPetFound"),
-  "POST /pets/pet-found": lazyRoute("./services/petFound", "createPetFound"),
-  "DELETE /pets/pet-found/{petFoundID}": lazyRoute("./services/petFound", "deletePetFound"),
+  "GET /v2/pets/pet-found": lazyRoute("./services/petFound", "listPetFound"),
+  "POST /v2/pets/pet-found": lazyRoute("./services/petFound", "createPetFound"),
+  "DELETE /v2/pets/pet-found/{petFoundID}": lazyRoute("./services/petFound", "deletePetFound"),
 
   // Notifications
   "GET /v2/account/{userId}/notifications": lazyRoute("./services/notifications", "listNotifications"),

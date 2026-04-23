@@ -85,7 +85,7 @@ All errors return:
 {
   "success": false,
   "errorKey": "emailVerification.errors.verificationFailed",
-  "error": "é©—è­‰å¤±æ•—",
+  "error": "驗證失敗",
   "requestId": "3b1c2d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e"
 }
 ```

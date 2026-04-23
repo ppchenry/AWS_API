@@ -458,9 +458,9 @@ describe("Not implemented routes", () => {
 
 // ─── Register NGO ───────────────────────────────────────────────────────────
 
-describe("POST /account/register-ngo", () => {
+describe("POST /v2/account/register-ngo", () => {
   test("registers a new NGO", async () => {
-    const res = await req("POST", "/account/register-ngo", {
+    const res = await req("POST", "/v2/account/register-ngo", {
       firstName: "TestNgo",
       lastName: "Admin",
       email: state.ngoEmail,
@@ -482,7 +482,7 @@ describe("POST /account/register-ngo", () => {
   });
 
   test("rejects duplicate NGO email → 409", async () => {
-    const res = await req("POST", "/account/register-ngo", {
+    const res = await req("POST", "/v2/account/register-ngo", {
       firstName: "TestNgo",
       lastName: "Admin",
       email: state.ngoEmail,
@@ -499,7 +499,7 @@ describe("POST /account/register-ngo", () => {
   });
 
   test("rejects email already registered by a normal user → 409", async () => {
-    const res = await req("POST", "/account/register-ngo", {
+    const res = await req("POST", "/v2/account/register-ngo", {
       firstName: "Existing",
       lastName: "User",
       email: state.email,
@@ -516,7 +516,7 @@ describe("POST /account/register-ngo", () => {
   });
 
   test("rejects duplicate NGO phone → 409", async () => {
-    const res = await req("POST", "/account/register-ngo", {
+    const res = await req("POST", "/v2/account/register-ngo", {
       firstName: "Phone",
       lastName: "Conflict",
       email: `dup_phone_${TEST_TS}@test.com`,
@@ -533,7 +533,7 @@ describe("POST /account/register-ngo", () => {
   });
 
   test("rejects duplicate business registration number → 409", async () => {
-    const res = await req("POST", "/account/register-ngo", {
+    const res = await req("POST", "/v2/account/register-ngo", {
       firstName: "Dup",
       lastName: "BusinessReg",
       email: `dup_br_${TEST_TS}@test.com`,
@@ -550,7 +550,7 @@ describe("POST /account/register-ngo", () => {
   });
 
   test("rejects password mismatch → 400", async () => {
-    const res = await req("POST", "/account/register-ngo", {
+    const res = await req("POST", "/v2/account/register-ngo", {
       firstName: "TestNgo",
       lastName: "Admin",
       email: `mismatch_${TEST_TS}@test.com`,
@@ -567,7 +567,7 @@ describe("POST /account/register-ngo", () => {
   });
 
   test("rejects missing required fields → 400", async () => {
-    const res = await req("POST", "/account/register-ngo", {
+    const res = await req("POST", "/v2/account/register-ngo", {
       firstName: "TestNgo",
       password: "Test1234!",
       confirmPassword: "Test1234!",
@@ -577,7 +577,7 @@ describe("POST /account/register-ngo", () => {
   });
 
   test("rejects invalid phone format → 400", async () => {
-    const res = await req("POST", "/account/register-ngo", {
+    const res = await req("POST", "/v2/account/register-ngo", {
       firstName: "TestNgo",
       lastName: "Admin",
       email: `badphone_${TEST_TS}@test.com`,
@@ -594,7 +594,7 @@ describe("POST /account/register-ngo", () => {
   });
 
   test("rejects NoSQL injection object in NGO email field → 400", async () => {
-    const res = await req("POST", "/account/register-ngo", {
+    const res = await req("POST", "/v2/account/register-ngo", {
       firstName: "Nosql",
       lastName: "Ngo",
       email: { $gt: "" },
@@ -614,7 +614,7 @@ describe("POST /account/register-ngo", () => {
     const headers = { "x-forwarded-for": `198.51.103.${(TEST_TS % 200) + 1}` };
 
     for (let attempt = 0; attempt < 8; attempt += 1) {
-      const res = await req("POST", "/account/register-ngo", {
+      const res = await req("POST", "/v2/account/register-ngo", {
         firstName: "BurstNgo",
         lastName: `Admin${attempt}`,
         email: `burst_ngo_${TEST_TS}_${attempt}@test.com`,
@@ -629,7 +629,7 @@ describe("POST /account/register-ngo", () => {
       expect(res.status).toBe(201);
     }
 
-    const blocked = await req("POST", "/account/register-ngo", {
+    const blocked = await req("POST", "/v2/account/register-ngo", {
       firstName: "BurstNgo",
       lastName: "Blocked",
       email: `burst_ngo_${TEST_TS}_blocked@test.com`,
@@ -675,26 +675,26 @@ describe("POST /account/login (NGO)", () => {
 // ─── NGO User List ────────────────────────────────────────────────────────────
 // Placed after NGO login so ngoToken is guaranteed to be populated.
 
-describe("GET /account/user-list", () => {
+describe("GET /v2/account/user-list", () => {
   test("returns user list for NGO user → 200", async () => {
-    const res = await req("GET", "/account/user-list", undefined, ngoAuth());
+    const res = await req("GET", "/v2/account/user-list", undefined, ngoAuth());
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body?.userList)).toBe(true);
   });
 
   test("accepts page and search query params → 200", async () => {
-    const res = await req("GET", "/account/user-list?page=1&search=test", undefined, ngoAuth());
+    const res = await req("GET", "/v2/account/user-list?page=1&search=test", undefined, ngoAuth());
     expect(res.status).toBe(200);
   });
 
   test("rejects regular user token → 403", async () => {
-    const res = await req("GET", "/account/user-list", undefined, auth());
+    const res = await req("GET", "/v2/account/user-list", undefined, auth());
     expect(res.status).toBe(403);
     expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects missing Authorization header → 401", async () => {
-    const res = await req("GET", "/account/user-list");
+    const res = await req("GET", "/v2/account/user-list");
     expect(res.status).toBe(401);
     expect(res.body.errorKey).toBe("common.unauthorized");
   });
@@ -702,48 +702,48 @@ describe("GET /account/user-list", () => {
 
 // ─── NGO Endpoints ────────────────────────────────────────────────────────────
 
-describe("GET /account/edit-ngo/{ngoId}", () => {
+describe("GET /v2/account/edit-ngo/{ngoId}", () => {
   test("fetches NGO details", async () => {
-    const res = await req("GET", `/account/edit-ngo/${state.ngoId}`, undefined, ngoAuth());
+    const res = await req("GET", `/v2/account/edit-ngo/${state.ngoId}`, undefined, ngoAuth());
     expect(res.status).toBe(200);
     expect(res.body?.userProfile?.password).toBeUndefined();
   });
 
   test("rejects regular user token → 403", async () => {
-    const res = await req("GET", `/account/edit-ngo/${state.ngoId}`, undefined, auth());
+    const res = await req("GET", `/v2/account/edit-ngo/${state.ngoId}`, undefined, auth());
     expect(res.status).toBe(403);
     expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects missing Authorization header → 401", async () => {
-    const res = await req("GET", `/account/edit-ngo/${state.ngoId}`);
+    const res = await req("GET", `/v2/account/edit-ngo/${state.ngoId}`);
     expect(res.status).toBe(401);
     expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects invalid ngoId format → 400", async () => {
-    const res = await req("GET", "/account/edit-ngo/not-a-valid-id", undefined, ngoAuth());
+    const res = await req("GET", "/v2/account/edit-ngo/not-a-valid-id", undefined, ngoAuth());
     expect(res.status).toBe(400);
     expect(res.body.errorKey).toBe("userRoutes.errors.ngo.invalidId");
   });
 
   test("returns 404 for non-existent ngoId", async () => {
-    const res = await req("GET", "/account/edit-ngo/000000000000000000000000", undefined, ngoAuth());
+    const res = await req("GET", "/v2/account/edit-ngo/000000000000000000000000", undefined, ngoAuth());
     expect(res.status).toBe(404);
     expect(res.body.errorKey).toBe("userRoutes.errors.ngo.notFound");
   });
 });
 
-describe("PUT /account/edit-ngo/{ngoId}", () => {
+describe("PUT /v2/account/edit-ngo/{ngoId}", () => {
   test("updates NGO details", async () => {
-    const res = await req("PUT", `/account/edit-ngo/${state.ngoId}`, {
+    const res = await req("PUT", `/v2/account/edit-ngo/${state.ngoId}`, {
       ngoProfile: { description: "Updated by test" },
     }, ngoAuth());
     expect(res.status).toBe(200);
   });
 
   test("rejects regular user token → 403", async () => {
-    const res = await req("PUT", `/account/edit-ngo/${state.ngoId}`, {
+    const res = await req("PUT", `/v2/account/edit-ngo/${state.ngoId}`, {
       ngoProfile: { description: "Should fail" },
     }, auth());
     expect(res.status).toBe(403);
@@ -751,7 +751,7 @@ describe("PUT /account/edit-ngo/{ngoId}", () => {
   });
 
   test("rejects missing Authorization header → 401", async () => {
-    const res = await req("PUT", `/account/edit-ngo/${state.ngoId}`, {
+    const res = await req("PUT", `/v2/account/edit-ngo/${state.ngoId}`, {
       ngoProfile: { description: "Should fail" },
     });
     expect(res.status).toBe(401);
@@ -759,7 +759,7 @@ describe("PUT /account/edit-ngo/{ngoId}", () => {
   });
 
   test("rejects duplicate user email → 409", async () => {
-    const res = await req("PUT", `/account/edit-ngo/${state.ngoId}`, {
+    const res = await req("PUT", `/v2/account/edit-ngo/${state.ngoId}`, {
       userProfile: { email: state.email },
     }, ngoAuth());
     expect(res.status).toBe(409);
@@ -771,7 +771,7 @@ describe("PUT /account/edit-ngo/{ngoId}", () => {
     // with persistent integration-test data from earlier runs.
     const uniqueSuffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
     const secondBr = `BRDUP2_${uniqueSuffix}`;
-    const setupRes = await req("POST", "/account/register-ngo", {
+    const setupRes = await req("POST", "/v2/account/register-ngo", {
       firstName: "Second",
       lastName: "Ngo",
       email: `second_ngo_${uniqueSuffix}@test.com`,
@@ -785,7 +785,7 @@ describe("PUT /account/edit-ngo/{ngoId}", () => {
     }, { "x-forwarded-for": `198.51.105.${(TEST_TS % 200) + 1}` });
     expect(setupRes.status).toBe(201);
 
-    const res = await req("PUT", `/account/edit-ngo/${state.ngoId}`, {
+    const res = await req("PUT", `/v2/account/edit-ngo/${state.ngoId}`, {
       ngoProfile: { registrationNumber: secondBr },
     }, ngoAuth());
     expect(res.status).toBe(409);
@@ -793,32 +793,32 @@ describe("PUT /account/edit-ngo/{ngoId}", () => {
   });
 });
 
-describe("GET /account/edit-ngo/{ngoId}/pet-placement-options", () => {
+describe("GET /v2/account/edit-ngo/{ngoId}/pet-placement-options", () => {
   test("fetches pet placement options", async () => {
-    const res = await req("GET", `/account/edit-ngo/${state.ngoId}/pet-placement-options`, undefined, ngoAuth());
+    const res = await req("GET", `/v2/account/edit-ngo/${state.ngoId}/pet-placement-options`, undefined, ngoAuth());
     expect(res.status).toBe(200);
   });
 
   test("rejects regular user token → 403", async () => {
-    const res = await req("GET", `/account/edit-ngo/${state.ngoId}/pet-placement-options`, undefined, auth());
+    const res = await req("GET", `/v2/account/edit-ngo/${state.ngoId}/pet-placement-options`, undefined, auth());
     expect(res.status).toBe(403);
     expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects missing Authorization header → 401", async () => {
-    const res = await req("GET", `/account/edit-ngo/${state.ngoId}/pet-placement-options`);
+    const res = await req("GET", `/v2/account/edit-ngo/${state.ngoId}/pet-placement-options`);
     expect(res.status).toBe(401);
     expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
   test("rejects invalid ngoId format → 400", async () => {
-    const res = await req("GET", "/account/edit-ngo/not-a-valid-id/pet-placement-options", undefined, ngoAuth());
+    const res = await req("GET", "/v2/account/edit-ngo/not-a-valid-id/pet-placement-options", undefined, ngoAuth());
     expect(res.status).toBe(400);
     expect(res.body.errorKey).toBe("userRoutes.errors.ngo.invalidId");
   });
 
   test("returns 404 for non-existent ngoId", async () => {
-    const res = await req("GET", "/account/edit-ngo/000000000000000000000000/pet-placement-options", undefined, ngoAuth());
+    const res = await req("GET", "/v2/account/edit-ngo/000000000000000000000000/pet-placement-options", undefined, ngoAuth());
     expect(res.status).toBe(404);
     expect(res.body.errorKey).toBe("userRoutes.errors.ngo.notFound");
   });
@@ -1073,7 +1073,7 @@ describe("Security", () => {
   test("PUT /account/edit-ngo ignores userId in body — uses JWT identity", async () => {
     // Pass a completely fake userId in userProfile; should succeed (not 400/403)
     // because userId is stripped by Zod and the JWT userId is used internally
-    const res = await req("PUT", `/account/edit-ngo/${state.ngoId}`, {
+    const res = await req("PUT", `/v2/account/edit-ngo/${state.ngoId}`, {
       userProfile: { userId: "000000000000000000000000", firstName: "Injected" },
       ngoProfile: { description: "Security test" },
     }, ngoAuth());
@@ -1081,7 +1081,7 @@ describe("Security", () => {
   });
 
   test("PUT /account/edit-ngo ignores deleted in body", async () => {
-    const res = await req("PUT", `/account/edit-ngo/${state.ngoId}`, {
+    const res = await req("PUT", `/v2/account/edit-ngo/${state.ngoId}`, {
       userProfile: { deleted: true },
       ngoProfile: { description: "Deleted flag ignored" },
     }, ngoAuth());

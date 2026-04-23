@@ -20,7 +20,7 @@ const PUBLIC_RESOURCES = [
   "/account/register-by-email",
   "/account/register-email-2",
   "/account/register-email-app",
-  "/account/register-ngo",
+  "/v2/account/register-ngo",
   "/account/generate-sms-code",
   "/account/verify-sms-code",
 ];
