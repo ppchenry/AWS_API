@@ -19,7 +19,7 @@ Wrappers over the SF Express waybill and address APIs for our admin / NGO / staf
 
 **Lambda:** SFExpressRoutes
 
-**Auth:** Bearer JWT (HS256). Privileged roles that bypass SF order email-ownership checks: `admin`, `ngo`, `staff`, `developer`. Request bodies are JSON with schema `.strict()` â€” unknown fields rejected.
+**Auth:** Bearer JWT (HS256). Privileged roles that bypass SF order email-ownership checks: `admin`, `ngo`, `staff`, `developer`. Request bodies are JSON with schema `.strict()` — unknown fields rejected.
 
 ---
 

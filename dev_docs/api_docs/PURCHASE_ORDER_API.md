@@ -10,7 +10,7 @@ PTag purchase checkout, shop metadata, admin order list, and supplier / owner or
 
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
-| POST | `/purchase/confirmation` | Public | Guest checkout â†’ create order |
+| POST | `/purchase/confirmation` | Public | Guest checkout → create order |
 | GET | `/purchase/shop-info` | Public | Shop info (bank details stripped) |
 | GET | `/purchase/orders` | Admin | Paginated order list |
 | GET | `/purchase/order-verification` | Admin | Paginated verification list |
@@ -46,8 +46,8 @@ Public checkout. `multipart/form-data`. Creates an `Order`, generates a unique `
 | `lastName` | string | Yes | |
 | `email` | string | Yes | Valid email |
 | `address` | string | Yes | |
-| `option` | string | Yes | 1â€“64 chars, `^[a-zA-Z0-9_-]+$` |
-| `tempId` | string | Yes | 1â€“64 chars, `^[a-zA-Z0-9_-]+$` |
+| `option` | string | Yes | 1–64 chars, `^[a-zA-Z0-9_-]+$` |
+| `tempId` | string | Yes | 1–64 chars, `^[a-zA-Z0-9_-]+$` |
 | `paymentWay` | string | Yes | Max 128 |
 | `delivery` | string | Yes | Max 128 |
 | `petName` | string | Yes | |
@@ -128,8 +128,8 @@ Bank details are stripped (sanitized) before returning.
 
 | Param | Type | Default | Limits |
 | --- | --- | --- | --- |
-| `page` | number | `1` | â‰¥ 1 |
-| `limit` | number | `100` | 1â€“500 |
+| `page` | number | `1` | ≥ 1 |
+| `limit` | number | `100` | 1–500 |
 
 **Success (200):**
 
@@ -272,7 +272,7 @@ Admin-triggered email alert. `application/json`.
 
 ### GET /v2/orderVerification/supplier/{orderId}
 
-Supplier lookup. Looks up `OrderVerification` by `orderId` â†’ `contact` â†’ `tagId` (cascading). Ownership: caller email must match `masterEmail` or linked `Order.email`; privileged roles bypass.
+Supplier lookup. Looks up `OrderVerification` by `orderId` → `contact` → `tagId` (cascading). Ownership: caller email must match `masterEmail` or linked `Order.email`; privileged roles bypass.
 
 **Path params:** `orderId` (string, not necessarily ObjectId)
 
@@ -321,7 +321,7 @@ Supplier lookup. Looks up `OrderVerification` by `orderId` â†’ `contact` â
 
 ### PUT /v2/orderVerification/supplier/{orderId}
 
-Supplier update. Accepts `multipart/form-data` or `application/json`. Schema `.strict()` â€” no extra fields.
+Supplier update. Accepts `multipart/form-data` or `application/json`. Schema `.strict()` — no extra fields.
 
 **Body** (all optional; at least one required):
 
@@ -398,7 +398,7 @@ For WhatsApp deep-link UX. Admin OR owner (email match to linked `Order` or `mas
 
 Minimal linked-order contact info. Owner-only (email match on linked `Order`).
 
-**Path params:** `tempId` (string â€” matches `Order.tempId`)
+**Path params:** `tempId` (string — matches `Order.tempId`)
 
 **Success (200):**
 
@@ -511,7 +511,7 @@ Update verification fields and optionally fire a WhatsApp tracking notification 
 }
 ```
 
-`notificationDispatched` is `false` when WhatsApp prerequisites are missing (no bearer token, no SF waybill, no contact) or the provider errored â€” the update itself still succeeds.
+`notificationDispatched` is `false` when WhatsApp prerequisites are missing (no bearer token, no SF waybill, no contact) or the provider errored — the update itself still succeeds.
 
 **Errors:**
 

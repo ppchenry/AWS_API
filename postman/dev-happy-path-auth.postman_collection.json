@@ -1,0 +1,1323 @@
+{
+  "info": {
+    "name": "PetPetClub Dev — Happy Path (Authenticated)",
+    "description": "Happy-path smoke tests for auth-gated endpoints. A collection-level pre-request script mints HS256 JWTs for three roles ({{USER_TOKEN}}, {{ADMIN_TOKEN}}, {{NGO_TOKEN}}) using {{JWT_SECRET}} so no out-of-band login is needed. Fixed stable IDs from env.json: {{TEST_OWNER_USER_ID}}, {{TEST_PET_ID}}. Also runs a CREATE → DELETE pet cycle to cover POST/DELETE happy paths.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "ppc-dev-happy-auth-001"
+  },
+  "variable": [
+    { "key": "TEST_OWNER_USER_ID", "value": "" },
+    { "key": "TEST_OWNER_EMAIL",   "value": "" },
+    { "key": "TEST_PET_ID",        "value": "" },
+    { "key": "TEST_NGO_ID",        "value": "" },
+    { "key": "USER_TOKEN",         "value": "" },
+    { "key": "ADMIN_TOKEN",        "value": "" },
+    { "key": "NGO_TOKEN",          "value": "" },
+    { "key": "createdPetId",       "value": "" },
+    { "key": "createdTransferId",  "value": "" },
+    { "key": "createdSourceId",    "value": "" },
+    { "key": "firstMedicalId",     "value": "" },
+    { "key": "firstMedicationId",  "value": "" },
+    { "key": "firstDewormId",      "value": "" },
+    { "key": "firstVaccineId",     "value": "" },
+    { "key": "firstBloodTestId",   "value": "" },
+    { "key": "createdAdoptionId",  "value": "" },
+    { "key": "notificationId",     "value": "" }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      { "key": "key", "value": "x-api-key", "type": "string" },
+      { "key": "value", "value": "{{DEV_API_KEY}}", "type": "string" },
+      { "key": "in", "value": "header", "type": "string" }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Mint HS256 JWTs once per run and stash in collection variables.",
+          "// Postman sandbox ships CryptoJS via require('crypto-js').",
+          "const CryptoJS = require('crypto-js');",
+          "",
+          "const base   = pm.environment.get('DEV_BASE_URL');",
+          "const apiKey = pm.environment.get('DEV_API_KEY');",
+          "const secret = pm.environment.get('JWT_SECRET') || 'PPCSecret';",
+          "if (!base)   throw new Error('DEV_BASE_URL is not set');",
+          "if (!apiKey) throw new Error('DEV_API_KEY is not set');",
+          "",
+          "// Load required fixture values from the environment so the collection",
+          "// does not depend on repo-hardcoded user or pet IDs.",
+          "['TEST_OWNER_USER_ID', 'TEST_OWNER_EMAIL', 'TEST_PET_ID', 'TEST_NGO_ID'].forEach((key) => {",
+          "  const value = pm.environment.get(key) || pm.variables.get(key);",
+          "  if (!value) throw new Error(key + ' is not set');",
+          "  pm.collectionVariables.set(key, value);",
+          "});",
+          "",
+          "const b64url = (input) => {",
+          "  const wa = typeof input === 'string' ? CryptoJS.enc.Utf8.parse(input) : input;",
+          "  return CryptoJS.enc.Base64.stringify(wa).replace(/=+$/,'').replace(/\\+/g,'-').replace(/\\//g,'_');",
+          "};",
+          "",
+          "const sign = (payload) => {",
+          "  const header  = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));",
+          "  const body    = b64url(JSON.stringify(payload));",
+          "  const signing = header + '.' + body;",
+          "  const sig     = b64url(CryptoJS.HmacSHA256(signing, secret));",
+          "  return signing + '.' + sig;",
+          "};",
+          "",
+          "const now    = Math.floor(Date.now() / 1000);",
+          "const userId = pm.collectionVariables.get('TEST_OWNER_USER_ID');",
+          "const email  = pm.collectionVariables.get('TEST_OWNER_EMAIL');",
+          "const ngoId  = pm.collectionVariables.get('TEST_NGO_ID');",
+          "",
+          "const userToken  = sign({ userId, userEmail: email, userRole: 'user',  iat: now, exp: now + 900 });",
+          "const adminToken = sign({ userId, userEmail: email, userRole: 'admin', iat: now, exp: now + 900 });",
+          "const ngoToken   = sign({ userId, userEmail: email, userRole: 'ngo', ngoId, iat: now, exp: now + 900 });",
+          "",
+          "pm.collectionVariables.set('USER_TOKEN',  userToken);",
+          "pm.collectionVariables.set('ADMIN_TOKEN', adminToken);",
+          "pm.collectionVariables.set('NGO_TOKEN',   ngoToken);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Account (self)",
+      "item": [
+        {
+          "name": "GET /account/{userId}",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/account/{{TEST_OWNER_USER_ID}}",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["account", "{{TEST_OWNER_USER_ID}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true',       () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('user._id matches',   () => pm.expect(j.user._id).to.equal(pm.collectionVariables.get('TEST_OWNER_USER_ID')));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pet Profile (owner)",
+      "item": [
+        {
+          "name": "GET /pets/pet-list/{userId}",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/pet-list/{{TEST_OWNER_USER_ID}}?page=1",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "pet-list", "{{TEST_OWNER_USER_ID}}"],
+              "query": [{ "key": "page", "value": "1" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true',   () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('form is array',  () => pm.expect(j.form).to.be.an('array'));",
+                  "pm.test('total is number',() => pm.expect(j.total).to.be.a('number'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /pets/{petID}/basic-info",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{TEST_PET_ID}}/basic-info",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{TEST_PET_ID}}", "basic-info"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true',  () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('form object',   () => pm.expect(j.form).to.be.an('object'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /pets/{petID}/eyeLog",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{TEST_PET_ID}}/eyeLog",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{TEST_PET_ID}}", "eyeLog"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true',  () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('result is array', () => pm.expect(j.result).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pet Detail Info",
+      "item": [
+        {
+          "name": "GET /pets/{petID}/detail-info",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{TEST_PET_ID}}/detail-info",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{TEST_PET_ID}}", "detail-info"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('form object',  () => pm.expect(j.form).to.be.an('object'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /v2/pets/{petID}/detail-info/source",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/v2/pets/{{TEST_PET_ID}}/detail-info/source",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["v2", "pets", "{{TEST_PET_ID}}", "detail-info", "source"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "// form may be null per doc",
+                  "pm.test('form key present', () => pm.expect(j).to.have.property('form'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /v2/pets/{petID}/pet-adoption",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/v2/pets/{{TEST_PET_ID}}/pet-adoption",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["v2", "pets", "{{TEST_PET_ID}}", "pet-adoption"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('petId echoed', () => pm.expect(j.petId).to.equal(pm.collectionVariables.get('TEST_PET_ID')));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pet Health",
+      "item": [
+        {
+          "name": "GET /pets/{petID}/medical-record",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{TEST_PET_ID}}/medical-record",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{TEST_PET_ID}}", "medical-record"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('form.medical array', () => pm.expect(j.form.medical).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /pets/{petID}/medication-record",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{TEST_PET_ID}}/medication-record",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{TEST_PET_ID}}", "medication-record"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('form.medication array', () => pm.expect(j.form.medication).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /pets/{petID}/deworm-record",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{TEST_PET_ID}}/deworm-record",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{TEST_PET_ID}}", "deworm-record"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('form.deworm array', () => pm.expect(j.form.deworm).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /pets/{petID}/vaccine-record",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{TEST_PET_ID}}/vaccine-record",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{TEST_PET_ID}}", "vaccine-record"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('form.vaccineRecords array', () => pm.expect(j.form.vaccineRecords).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /v2/pets/{petID}/blood-test-record",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/v2/pets/{{TEST_PET_ID}}/blood-test-record",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["v2", "pets", "{{TEST_PET_ID}}", "blood-test-record"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('form.blood_test array', () => pm.expect(j.form.blood_test).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pet Biometrics",
+      "item": [
+        {
+          "name": "GET /petBiometrics/{petId}",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/petBiometrics/{{TEST_PET_ID}}",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["petBiometrics", "{{TEST_PET_ID}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Happy path: either pet has biometrics (200) or explicitly reports notRegistered (404).",
+                  "pm.test('status is 200 or 404', () => pm.expect([200, 404]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "  pm.test('faceImages object', () => pm.expect(j.faceImages).to.be.an('object'));",
+                  "} else {",
+                  "  pm.test('errorKey=notRegistered', () => pm.expect(j.errorKey).to.equal('petBiometricRoutes.errors.notRegistered'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Notifications (self)",
+      "item": [
+        {
+          "name": "GET /v2/account/{userId}/notifications",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/v2/account/{{TEST_OWNER_USER_ID}}/notifications",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["v2", "account", "{{TEST_OWNER_USER_ID}}", "notifications"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('notifications array', () => pm.expect(j.notifications).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /v2/account/{userId}/notifications",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"type\":\"smoke-test\",\"petName\":\"Automated\"}"
+            },
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/v2/account/{{TEST_OWNER_USER_ID}}/notifications",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["v2", "account", "{{TEST_OWNER_USER_ID}}", "notifications"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('id returned', () => pm.expect(j.id).to.be.a('string'));",
+                  "pm.collectionVariables.set('notificationId', j.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /v2/account/{userId}/notifications/{notificationId} (archive)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"isArchived\":true}" },
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/v2/account/{{TEST_OWNER_USER_ID}}/notifications/{{notificationId}}",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["v2", "account", "{{TEST_OWNER_USER_ID}}", "notifications", "{{notificationId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('notificationId echoed', () => pm.expect(j.notificationId).to.equal(pm.collectionVariables.get('notificationId')));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin — Purchase",
+      "item": [
+        {
+          "name": "GET /purchase/orders",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ADMIN_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/purchase/orders?page=1&limit=5",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["purchase", "orders"],
+              "query": [
+                { "key": "page",  "value": "1" },
+                { "key": "limit", "value": "5" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('orders array', () => pm.expect(j.orders).to.be.an('array'));",
+                  "pm.test('pagination object', () => pm.expect(j.pagination).to.be.an('object'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /purchase/order-verification",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ADMIN_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/purchase/order-verification?page=1&limit=5",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["purchase", "order-verification"],
+              "query": [
+                { "key": "page",  "value": "1" },
+                { "key": "limit", "value": "5" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('orderVerification array', () => pm.expect(j.orderVerification).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /v2/orderVerification/getAllOrders",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ADMIN_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/v2/orderVerification/getAllOrders",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["v2", "orderVerification", "getAllOrders"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('allOrders array', () => pm.expect(j.allOrders).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pet CREATE → DELETE cycle",
+      "description": "Full POST + DELETE happy path. Creates a throwaway pet via CreatePetBasicInfo, then soft-deletes it so state stays clean.",
+      "item": [
+        {
+          "name": "POST /pets/create-pet-basic-info",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Smoke Pet\",\n  \"birthday\": \"01/01/2024\",\n  \"sex\": \"unknown\",\n  \"animal\": \"cat\"\n}"
+            },
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/create-pet-basic-info",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "create-pet-basic-info"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('id is ObjectId', () => pm.expect(j.id).to.match(/^[a-f0-9]{24}$/));",
+                  "pm.collectionVariables.set('createdPetId', j.id);",
+                  "console.log('created pet id:', j.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /pets/{petID}/basic-info (update)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weight\": 3.5,\n  \"info\": \"Updated by Postman smoke test\"\n}"
+            },
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{createdPetId}}/basic-info",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{createdPetId}}", "basic-info"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('message indicates update', () => pm.expect(j.message || '').to.match(/updatedSuccessfully|Success/i));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /pets/{petID}/detail-info (update)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chipId\": \"SMOKE-CHIP-001\",\n  \"placeOfBirth\": \"Hong Kong\"\n}"
+            },
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{createdPetId}}/detail-info",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{createdPetId}}", "detail-info"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+              "type": "text/javascript",
+              "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true',  () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('chipId stored', () => pm.expect(j.form.chipId).to.equal('SMOKE-CHIP-001'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /pets/{petID}/detail-info/transfer (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"regDate\": \"15/01/2024\",\n  \"regPlace\": \"Smoke Transfer Place\",\n  \"transferOwner\": \"Smoke Owner\",\n  \"transferContact\": \"12345678\"\n}"
+            },
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{createdPetId}}/detail-info/transfer",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{createdPetId}}", "detail-info", "transfer"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('transferId returned', () => pm.expect(j.transferId).to.be.a('string'));",
+                  "pm.collectionVariables.set('createdTransferId', j.transferId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /pets/{petID}/detail-info/transfer/{transferId}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"regPlace\": \"Updated Smoke Transfer Place\"\n}"
+            },
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{createdPetId}}/detail-info/transfer/{{createdTransferId}}",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{createdPetId}}", "detail-info", "transfer", "{{createdTransferId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /pets/{petID}/detail-info/transfer/{transferId}",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{createdPetId}}/detail-info/transfer/{{createdTransferId}}",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{createdPetId}}", "detail-info", "transfer", "{{createdTransferId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /v2/pets/{petID}/detail-info/source (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeofOrigin\": \"Smoke Shelter\",\n  \"channel\": \"rescue\"\n}"
+            },
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/v2/pets/{{createdPetId}}/detail-info/source",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["v2", "pets", "{{createdPetId}}", "detail-info", "source"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201 or 200', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('sourceId returned', () => pm.expect(j.sourceId).to.be.a('string'));",
+                  "pm.collectionVariables.set('createdSourceId', j.sourceId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /v2/pets/{petID}/detail-info/source/{sourceId}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"causeOfInjury\": \"Updated smoke source\"\n}"
+            },
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/v2/pets/{{createdPetId}}/detail-info/source/{{createdSourceId}}",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["v2", "pets", "{{createdPetId}}", "detail-info", "source", "{{createdSourceId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /pets/{petID}/medical-record (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"medicalDate\": \"01/01/2024\",\n  \"medicalPlace\": \"Smoke Clinic\",\n  \"medicalDoctor\": \"Dr. Smoke\"\n}"
+            },
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{createdPetId}}/medical-record",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{createdPetId}}", "medical-record"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200 or 201', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('medicalRecordId returned', () => pm.expect(j.medicalRecordId).to.be.a('string'));",
+                  "pm.collectionVariables.set('firstMedicalId', j.medicalRecordId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /pets/{petID}/medical-record/{medicalID}",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{createdPetId}}/medical-record/{{firstMedicalId}}",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{createdPetId}}", "medical-record", "{{firstMedicalId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /v2/pets/{petID}/pet-adoption (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"postAdoptionName\": \"SmokeAdopt\",\n  \"isNeutered\": true,\n  \"followUpMonth1\": true\n}"
+            },
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/v2/pets/{{createdPetId}}/pet-adoption",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["v2", "pets", "{{createdPetId}}", "pet-adoption"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200 or 201', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('adoptionId returned', () => pm.expect(j.adoptionId).to.be.a('string'));",
+                  "pm.collectionVariables.set('createdAdoptionId', j.adoptionId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /v2/pets/{petID}/pet-adoption/{adoptionId}",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/v2/pets/{{createdPetId}}/pet-adoption/{{createdAdoptionId}}",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["v2", "pets", "{{createdPetId}}", "pet-adoption", "{{createdAdoptionId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /pets/{petID}/medication-record (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"medicationDate\": \"15/01/2024\",\n  \"drugName\": \"Smoke Drug\",\n  \"allergy\": false\n}"
+            },
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{createdPetId}}/medication-record",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{createdPetId}}", "medication-record"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200 or 201', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('medicationRecordId returned', () => pm.expect(j.medicationRecordId).to.be.a('string'));",
+                  "pm.collectionVariables.set('firstMedicationId', j.medicationRecordId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /pets/{petID}/medication-record/{medicationID}",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{createdPetId}}/medication-record/{{firstMedicationId}}",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{createdPetId}}", "medication-record", "{{firstMedicationId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /pets/{petID}/deworm-record (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"15/01/2024\",\n  \"frequency\": 3,\n  \"notification\": true\n}"
+            },
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{createdPetId}}/deworm-record",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{createdPetId}}", "deworm-record"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200 or 201', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('dewormRecordId returned', () => pm.expect(j.dewormRecordId).to.be.a('string'));",
+                  "pm.collectionVariables.set('firstDewormId', j.dewormRecordId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /pets/{petID}/deworm-record/{dewormID}",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{createdPetId}}/deworm-record/{{firstDewormId}}",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{createdPetId}}", "deworm-record", "{{firstDewormId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /pets/{petID}/vaccine-record (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vaccineDate\": \"15/01/2024\",\n  \"vaccineName\": \"Smoke Vaccine\",\n  \"vaccineNumber\": \"VR-SMOKE-1\",\n  \"vaccineTimes\": \"1\",\n  \"vaccinePosition\": \"left shoulder\"\n}"
+            },
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{createdPetId}}/vaccine-record",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{createdPetId}}", "vaccine-record"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200 or 201', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('vaccineId returned', () => pm.expect(j.vaccineId).to.be.a('string'));",
+                  "pm.collectionVariables.set('firstVaccineId', j.vaccineId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /pets/{petID}/vaccine-record/{vaccineID}",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{createdPetId}}/vaccine-record/{{firstVaccineId}}",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{createdPetId}}", "vaccine-record", "{{firstVaccineId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /v2/pets/{petID}/blood-test-record (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bloodTestDate\": \"15/01/2024\",\n  \"heartworm\": \"negative\"\n}"
+            },
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/v2/pets/{{createdPetId}}/blood-test-record",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["v2", "pets", "{{createdPetId}}", "blood-test-record"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200 or 201', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));",
+                  "pm.test('bloodTestRecordId returned', () => pm.expect(j.bloodTestRecordId).to.be.a('string'));",
+                  "pm.collectionVariables.set('firstBloodTestId', j.bloodTestRecordId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /v2/pets/{petID}/blood-test-record/{bloodTestID}",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/v2/pets/{{createdPetId}}/blood-test-record/{{firstBloodTestId}}",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["v2", "pets", "{{createdPetId}}", "blood-test-record", "{{firstBloodTestId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /pets/updatePetEye",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"petId\": \"{{createdPetId}}\",\n  \"date\": \"15/01/2024\",\n  \"leftEyeImage1PublicAccessUrl\": \"https://example.com/left-eye.jpg\",\n  \"rightEyeImage1PublicAccessUrl\": \"https://example.com/right-eye.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/updatePetEye",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "updatePetEye"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201 or 200', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /pets/{petID} (cleanup)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }],
+            "url": {
+              "raw": "{{DEV_BASE_URL}}/pets/{{createdPetId}}",
+              "host": ["{{DEV_BASE_URL}}"],
+              "path": ["pets", "{{createdPetId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('success=true', () => pm.expect(j.success).to.equal(true));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

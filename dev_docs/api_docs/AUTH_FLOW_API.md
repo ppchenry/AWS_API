@@ -10,34 +10,37 @@ Verification-first authentication flow for the PetPetClub platform. Users prove 
 
 ### How It Works
 
-1. **Generate code** â€” `POST /account/generate-email-code` or `POST /account/generate-sms-code`
-2. **Verify code** â€” `POST /account/verify-email-code` or `POST /account/verify-sms-code`
-   - **Existing user** â†’ auto-login (returns access token + sets refresh cookie)
-   - **New user** â†’ returns `{ verified: true, isNewUser: true }` â€” no token, no account created
-   - **Authenticated user (JWT present)** â†’ links email/phone to the caller's account
-3. **Register** (new users only) â€” `POST /account/register` â€” requires recent verification proof within 10 minutes
-4. **Refresh** â€” `POST /auth/refresh` â€” rotates the refresh-token cookie and issues a new access token
+1. **Generate code** — `POST /account/generate-email-code` or `POST /account/generate-sms-code`
+2. **Verify code** — `POST /account/verify-email-code` or `POST /account/verify-sms-code`
+   - **Existing user** → auto-login (returns access token + sets refresh cookie)
+   - **New user** → returns `{ verified: true, isNewUser: true }` — no token, no account created
+   - **Authenticated user (JWT present)** → links email/phone to the caller's account
+3. **Register** (new users only) — `POST /account/register` — requires recent verification proof within 10 minutes
+4. **Refresh** — `POST /auth/refresh` — rotates the refresh-token cookie and issues a new access token
 
 ```
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚  New User                                                â”‚
-â”‚  generate code â†’ verify code â†’ { isNewUser: true }       â”‚
-â”‚                                  â†“                       â”‚
-â”‚                        frontend collects username        â”‚
-â”‚                                  â†“                       â”‚
-â”‚                           POST /account/register         â”‚
-â”‚                                  â†“                       â”‚
-â”‚                        â† token + refresh cookie          â”‚
-â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-â”‚  Returning User                                          â”‚
-â”‚  generate code â†’ verify code â†’ â† token + refresh cookie  â”‚
-â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-â”‚  Link Email/Phone (already logged in)                    â”‚
-â”‚  generate code â†’ verify code (with JWT) â†’ â† linked       â”‚
-â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-â”‚  Refresh Access Token                                    â”‚
-â”‚  POST /auth/refresh (cookie) â†’ â† new token + new cookie  â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
++----------------------------------------------------------+
+|  New User                                                |
+|  generate code -> verify code -> { isNewUser: true }    |
+|                                  |                       |
+|                                  v                       |
+|                        frontend collects username        |
+|                                  |                       |
+|                                  v                       |
+|                           POST /account/register         |
+|                                  |                       |
+|                                  v                       |
+|                        <- token + refresh cookie         |
++----------------------------------------------------------+
+|  Returning User                                          |
+|  generate code -> verify code -> <- token + refresh cookie |
++----------------------------------------------------------+
+|  Link Email/Phone (already logged in)                    |
+|  generate code -> verify code (with JWT) -> <- linked    |
++----------------------------------------------------------+
+|  Refresh Access Token                                    |
+|  POST /auth/refresh (cookie) -> <- new token + new cookie |
++----------------------------------------------------------+
 ```
 
 ---
@@ -50,7 +53,7 @@ For the deployed API Gateway endpoint, every request must include a valid `x-api
 x-api-key: <api-gateway-api-key>
 ```
 
-This applies to all endpoints below â€” public and protected. Requests missing the header are rejected by API Gateway with `403 Forbidden` before Lambda logic runs.
+This applies to all endpoints below — public and protected. Requests missing the header are rejected by API Gateway with `403 Forbidden` before Lambda logic runs.
 
 Local SAM testing (`sam local start-api`) does not enforce this.
 
@@ -58,7 +61,7 @@ Local SAM testing (`sam local start-api`) does not enforce this.
 
 | Type | Mechanism |
 | --- | --- |
-| **Public endpoints** | No `Authorization` header required. JWT is optional â€” if present and valid, `event.userId` is populated (used by linking flow). |
+| **Public endpoints** | No `Authorization` header required. JWT is optional — if present and valid, `event.userId` is populated (used by linking flow). |
 | **Protected endpoints** | `Authorization: Bearer <access-token>` required. Returns `401` on missing/invalid token. |
 | **Refresh endpoint** | Authenticates via `Cookie` header (refresh token). No Bearer token needed. |
 
@@ -69,7 +72,7 @@ Access tokens use HS256 with a 15-minute expiry.
 | Scenario | Headers |
 | --- | --- |
 | Deployed API Gateway | `Content-Type: application/json`, `x-api-key: <key>` |
-| Local frontend â†’ AWS Dev URL | `Content-Type: application/json`, `x-api-key: <key>` |
+| Local frontend → AWS Dev URL | `Content-Type: application/json`, `x-api-key: <key>` |
 | Local SAM testing | `Content-Type: application/json` |
 | Protected route | Add `Authorization: Bearer <token>` |
 | Linking flow | Add `Authorization: Bearer <token>` to the verify endpoint |
@@ -104,7 +107,7 @@ Append `?lang=en` to the URL for English error messages. Default is `zh` (Tradit
 
 ### POST /account/generate-email-code
 
-Generates a 6-digit email verification code and sends it. Anti-enumeration hardened â€” does not reveal whether the email belongs to an existing account.
+Generates a 6-digit email verification code and sends it. Anti-enumeration hardened — does not reveal whether the email belongs to an existing account.
 
 **Lambda:** EmailVerification  
 **Auth:** None (public)  
@@ -184,8 +187,8 @@ Verifies a submitted 6-digit email code. Behavior depends on context:
 
 | Context | Result |
 | --- | --- |
-| No JWT, email not in DB | `isNewUser: true` â€” frontend proceeds to register |
-| No JWT, email exists in DB | Auto-login â€” returns access token + refresh cookie |
+| No JWT, email not in DB | `isNewUser: true` — frontend proceeds to register |
+| No JWT, email exists in DB | Auto-login — returns access token + refresh cookie |
 | Valid JWT present | Links email to the authenticated user's account |
 
 **Lambda:** EmailVerification  
@@ -206,7 +209,7 @@ Verifies a submitted 6-digit email code. Behavior depends on context:
 { "email": "user@example.com", "resetCode": "123456" }
 ```
 
-**Success â€” New user (200):**
+**Success — New user (200):**
 
 ```json
 {
@@ -219,7 +222,7 @@ Verifies a submitted 6-digit email code. Behavior depends on context:
 
 No token, no `userId`. Frontend should collect the user's name and call `POST /account/register`.
 
-**Success â€” Existing user / login (200):**
+**Success — Existing user / login (200):**
 
 ```json
 {
@@ -236,7 +239,7 @@ No token, no `userId`. Frontend should collect the user's name and call `POST /a
 
 Also sets `Set-Cookie` with an `HttpOnly` refresh token cookie.
 
-**Success â€” Linking (200, requires JWT):**
+**Success — Linking (200, requires JWT):**
 
 ```json
 {
@@ -272,8 +275,8 @@ Verifies a submitted SMS code via Twilio. Same 3-branch behavior as email verify
 
 | Context | Result |
 | --- | --- |
-| No JWT, phone not in DB | `isNewUser: true` â€” frontend proceeds to register |
-| No JWT, phone exists in DB | Auto-login â€” returns access token + refresh cookie |
+| No JWT, phone not in DB | `isNewUser: true` — frontend proceeds to register |
+| No JWT, phone exists in DB | Auto-login — returns access token + refresh cookie |
 | Valid JWT present | Links phone to the authenticated user's account |
 
 **Lambda:** UserRoutes  
@@ -293,7 +296,7 @@ Verifies a submitted SMS code via Twilio. Same 3-branch behavior as email verify
 { "phoneNumber": "+85291234567", "code": "123456" }
 ```
 
-**Success â€” New user (200):**
+**Success — New user (200):**
 
 ```json
 {
@@ -304,7 +307,7 @@ Verifies a submitted SMS code via Twilio. Same 3-branch behavior as email verify
 }
 ```
 
-**Success â€” Existing user / login (200):**
+**Success — Existing user / login (200):**
 
 ```json
 {
@@ -321,7 +324,7 @@ Verifies a submitted SMS code via Twilio. Same 3-branch behavior as email verify
 
 Also sets `Set-Cookie` with refresh token cookie.
 
-**Success â€” Linking (200, requires JWT):**
+**Success — Linking (200, requires JWT):**
 
 ```json
 {
@@ -355,7 +358,7 @@ Also sets `Set-Cookie` with refresh token cookie.
 
 ### POST /account/register
 
-Creates a new user account. Requires recent verification proof â€” the caller must have successfully verified an email or phone within the last 10 minutes.
+Creates a new user account. Requires recent verification proof — the caller must have successfully verified an email or phone within the last 10 minutes.
 
 **Lambda:** UserRoutes  
 **Auth:** None (public)  
@@ -500,49 +503,49 @@ These legacy routes are intentionally disabled and return `405 Method Not Allowe
 
 ```
 1. POST /account/generate-email-code   { email }
-   â† 200  (code sent)
+   <- 200  (code sent)
 
 2. POST /account/verify-email-code     { email, resetCode }
-   â† 200  { verified: true, isNewUser: true }
+   <- 200  { verified: true, isNewUser: true }
 
 3. Collect firstName, lastName from user
 
 4. POST /account/register              { firstName, lastName, email }
-   â† 201  { token, userId, ... }
-   â† Set-Cookie: refreshToken=...
+   <- 201  { token, userId, ... }
+   <- Set-Cookie: refreshToken=...
 ```
 
 ### Returning User Login
 
 ```
 1. POST /account/generate-sms-code     { phoneNumber }
-   â† 201  (code sent)
+   <- 201  (code sent)
 
 2. POST /account/verify-sms-code       { phoneNumber, code }
-   â† 200  { verified: true, isNewUser: false, token, userId }
-   â† Set-Cookie: refreshToken=...
+   <- 200  { verified: true, isNewUser: false, token, userId }
+   <- Set-Cookie: refreshToken=...
 ```
 
 ### Link Email to Existing Account
 
 ```
 1. POST /account/generate-email-code   { email }
-   â† 200  (code sent)
+   <- 200  (code sent)
 
 2. POST /account/verify-email-code     { email, resetCode }
    Headers: Authorization: Bearer <access-token>
-   â† 200  { verified: true, linked: { email } }
+   <- 200  { verified: true, linked: { email } }
 ```
 
 ### Link Phone to Existing Account
 
 ```
 1. POST /account/generate-sms-code     { phoneNumber }
-   â† 201  (code sent)
+   <- 201  (code sent)
 
 2. POST /account/verify-sms-code       { phoneNumber, code }
    Headers: Authorization: Bearer <access-token>
-   â† 200  { verified: true, linked: { phoneNumber } }
+   <- 200  { verified: true, linked: { phoneNumber } }
 ```
 
 ### Refresh Access Token
@@ -550,8 +553,8 @@ These legacy routes are intentionally disabled and return `405 Method Not Allowe
 ```
 POST /auth/refresh
 Cookie: refreshToken=<token>
-â† 200  { accessToken, id }
-â† Set-Cookie: refreshToken=<new-rotated-token>
+<- 200  { accessToken, id }
+<- Set-Cookie: refreshToken=<new-rotated-token>
 ```
 
 ### Token Lifecycle
@@ -559,7 +562,7 @@ Cookie: refreshToken=<token>
 - **Access token:** 15-minute expiry, HS256. Sent in `Authorization: Bearer <token>` for protected routes.
 - **Refresh token:** Long-lived, `HttpOnly` cookie. Consumed on use (one-time) and replaced with a new one (rotation).
 - On `401` from any protected endpoint, call `POST /auth/refresh` to get a new access token.
-- If refresh also returns `401`, the session is expired â€” restart the verification flow.
+- If refresh also returns `401`, the session is expired — restart the verification flow.
 
 ---
 

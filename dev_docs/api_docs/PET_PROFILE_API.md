@@ -288,7 +288,7 @@ Sort: `updatedAt: -1`.
 | 400 | `getAllPets.errors.getPetsByUser.missingUserId` | Path missing |
 | 400 | `getAllPets.errors.getPetsByUser.invalidUserIdFormat` | userId invalid |
 | 401 | `common.unauthorized` | Missing / invalid JWT |
-| 403 | `common.unauthorized` | Path `userId` â‰  JWT `userId` |
+| 403 | `common.unauthorized` | Path `userId` ≠ JWT `userId` |
 | 500 | `common.internalError` | |
 
 ---
@@ -306,7 +306,7 @@ Public list of an NGO's pets, with full search / sort / pagination.
 | Param | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `page` | number | `1` | 1-indexed |
-| `search` | string | â€” | Regex over `name`, `animal`, `breed`, `ngoPetId`, `locationName`, `owner` |
+| `search` | string | — | Regex over `name`, `animal`, `breed`, `ngoPetId`, `locationName`, `owner` |
 | `sortBy` | string | `updatedAt` | Allowlist: `updatedAt`, `createdAt`, `name`, `animal`, `breed`, `birthday`, `receivedDate`, `ngoPetId` |
 | `sortOrder` | string | `desc` | `asc` or `desc` |
 
@@ -339,7 +339,7 @@ Public list of an NGO's pets, with full search / sort / pagination.
 Legacy-style soft-delete (by body `petId`). Preferred: `DELETE /pets/{petID}`.
 
 **Lambda:** GetAllPets  
-**Auth:** Bearer JWT (atomic ownership filter â€” only the owner can delete)  
+**Auth:** Bearer JWT (atomic ownership filter — only the owner can delete)  
 **Rate limit:** 10 / 60 s per `userId`
 
 **Body:**
@@ -407,12 +407,12 @@ Append a left + right eye image pair (with date) to a pet's `eyeimages[]` array.
 
 ### GET /pets/getPetInfobyTagId/{tagId}
 
-Public tag ID lookup. Returns a **privacy-minimised projection** â€” internal IDs (`_id`, `userId`, `ngoId`, `ngoPetId`) are stripped. Contact fields are respected via `contact1Show` / `contact2Show` flags.
+Public tag ID lookup. Returns a **privacy-minimised projection** — internal IDs (`_id`, `userId`, `ngoId`, `ngoPetId`) are stripped. Contact fields are respected via `contact1Show` / `contact2Show` flags.
 
 **Lambda:** PetInfoByPetNumber  
 **Auth:** Public
 
-**Path params:** `tagId` (string, 1â€“120 chars)
+**Path params:** `tagId` (string, 1–120 chars)
 
 **Success (200):**
 
@@ -444,5 +444,5 @@ Public tag ID lookup. Returns a **privacy-minimised projection** â€” intern
 | 400 | `petInfoByPetNumber.errors.tagIdRequired` | Missing tagId |
 | 400 | `common.invalidPathParam` | tagId > 120 chars |
 | 400 | `common.invalidJSON` | Malformed JSON (if body sent) |
-| 404 | â€” | Pet not found for tagId |
+| 404 | — | Pet not found for tagId |
 | 500 | `common.internalError` | |

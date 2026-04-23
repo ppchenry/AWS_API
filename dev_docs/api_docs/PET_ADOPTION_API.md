@@ -4,8 +4,8 @@
 
 Two sets of endpoints:
 
-- **Owner-side adoption placement records** â€” attached to a specific pet, managed by the pet's owner / NGO.
-- **Public adoption browsing** â€” browse / view adoption listings sourced from partner shelters.
+- **Owner-side adoption placement records** — attached to a specific pet, managed by the pet's owner / NGO.
+- **Public adoption browsing** — browse / view adoption listings sourced from partner shelters.
 
 > Conventions: [README.md](./README.md).
 
@@ -150,11 +150,11 @@ Paginated browsing list with filters.
 | Param | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `page` | number | `1` | Positive integer |
-| `search` | string | â€” | â‰¤ 100 chars; regex on `Breed` / `Animal_Type` / `Remark` |
-| `animal_type` | string | â€” | Comma-separated |
-| `location` | string | â€” | Comma-separated; matches `AdoptionSite` |
-| `sex` | string | â€” | Comma-separated |
-| `age` | string | â€” | Comma-separated; valid values: `å¹¼å¹´` (<12mo), `é’å¹´` (12â€“36mo), `æˆå¹´` (48â€“72mo), `è€å¹´` (>84mo) |
+| `search` | string | — | ≤ 100 chars; regex on `Breed` / `Animal_Type` / `Remark` |
+| `animal_type` | string | — | Comma-separated |
+| `location` | string | — | Comma-separated; matches `AdoptionSite` |
+| `sex` | string | — | Comma-separated |
+| `age` | string | — | Comma-separated; valid values: `幼年` (<12mo), `青年` (12–36mo), `成年` (48–72mo), `老年` (>84mo) |
 | `lang` | string | `zh` | |
 
 **Success (200):**

@@ -89,7 +89,7 @@ Update the authenticated user's profile. Email / phone uniqueness is validated a
 | 400 | `common.invalidEmailFormat` | `email` invalid |
 | 400 | `common.invalidPhoneFormat` | `phoneNumber` invalid |
 | 401 | `common.unauthorized` | Missing / invalid JWT |
-| 403 | `common.unauthorized` | body `userId` â‰  JWT `userId` |
+| 403 | `common.unauthorized` | body `userId` ≠ JWT `userId` |
 | 404 | `userRoutes.errors.putUserNotFound` | User not found or deleted |
 | 409 | `userRoutes.errors.emailExists` | Email used by another active user |
 | 409 | `userRoutes.errors.phoneExists` | Phone used by another active user |
@@ -114,7 +114,7 @@ Return the authenticated user's sanitized profile.
 | --- | --- | --- |
 | 400 | `userRoutes.errors.invalidGET` | `userId` invalid ObjectId |
 | 401 | `common.unauthorized` | Missing / invalid JWT |
-| 403 | `common.unauthorized` | Path `userId` â‰  JWT `userId` |
+| 403 | `common.unauthorized` | Path `userId` ≠ JWT `userId` |
 | 404 | `userRoutes.errors.getUserNotFound` | User not found or deleted |
 | 500 | `common.internalError` | |
 
@@ -186,7 +186,7 @@ Soft-delete the authenticated user by email (the email must match the JWT). Usef
 | --- | --- | --- |
 | 400 | `userRoutes.errors.deleteAccount.invalidEmailFormat` | Email invalid |
 | 401 | `common.unauthorized` | Missing / invalid JWT |
-| 403 | `common.unauthorized` | `email` â‰  JWT `userEmail` |
+| 403 | `common.unauthorized` | `email` ≠ JWT `userEmail` |
 | 404 | `userRoutes.errors.deleteAccount.userNotFound` | No user with email |
 | 409 | `userRoutes.errors.deleteAccount.userAlreadyDeleted` | Already deleted |
 | 500 | `common.internalError` | |
@@ -225,6 +225,6 @@ Update the authenticated user's profile image URL.
 | 400 | `userRoutes.errors.updateImage.invalidUserId` | `userId` invalid |
 | 400 | `userRoutes.errors.updateImage.invalidImageUrl` | Bad image URL |
 | 401 | `common.unauthorized` | Missing / invalid JWT |
-| 403 | `common.unauthorized` | body `userId` â‰  JWT `userId` |
+| 403 | `common.unauthorized` | body `userId` ≠ JWT `userId` |
 | 404 | `userRoutes.errors.updateImage.userNotFound` | User not found or deleted |
 | 500 | `common.internalError` | |

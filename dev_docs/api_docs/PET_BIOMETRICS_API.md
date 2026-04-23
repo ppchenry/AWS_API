@@ -114,7 +114,7 @@ Create or update biometric reference image URLs for a pet. Upserts `PetFacialIma
 | 400 | `petBiometricRoutes.errors.petBiometric.errors.imageArrayRequired` | A required face/nose array missing or empty |
 | 400 | `petBiometricRoutes.errors.petBiometric.invalidImageUrl` | URL not valid HTTPS |
 | 401 | `common.unauthorized` | |
-| 403 | `petBiometricRoutes.errors.forbidden` | Body `userId` Ã¢â€°Â  JWT or ownership mismatch |
+| 403 | `petBiometricRoutes.errors.forbidden` | Body `userId` ≠ JWT or ownership mismatch |
 | 404 | `petBiometricRoutes.errors.petNotFound` | |
 | 429 | `common.rateLimited` | |
 | 500 | `common.internalError` | |
@@ -132,7 +132,7 @@ Verify a candidate image against the pet's registered references. Requires both 
 | `petId` | string (ObjectId) | Yes | |
 | `access_secret` | string | Yes | Business access key |
 | `secret_key` | string | Yes | Business secret key |
-| `animalType` | string | No | e.g., `"dog"` Ã¢â‚¬â€ sent to FaceID as `species` |
+| `animalType` | string | No | e.g., `"dog"` — sent to FaceID as `species` |
 | `image_url` | string | Conditional | Valid HTTPS URL |
 | `userId` | string (ObjectId) | No | Must match JWT if provided |
 | `files` | object[] | Conditional | Inline file upload |
@@ -140,7 +140,7 @@ Verify a candidate image against the pet's registered references. Requires both 
 | `files[].contentType` | string | Yes | Must match detected MIME |
 | `files[].content` | string (base64) \| binary | Yes | |
 
-Allowed file MIMEs: `image/jpeg`, `image/jpg`, `image/png`, `image/gif`, `image/tiff`. Size: `> 0 B`, `Ã¢â€°Â¤ 10 MB`.
+Allowed file MIMEs: `image/jpeg`, `image/jpg`, `image/png`, `image/gif`, `image/tiff`. Size: `> 0 B`, `≤ 10 MB`.
 
 **Success (200):**
 
@@ -182,4 +182,3 @@ Allowed file MIMEs: `image/jpeg`, `image/jpg`, `image/png`, `image/gif`, `image/
 | 503 | `petBiometricRoutes.errors.uploadFailed` | S3 upload returned null URL |
 | 503 | `common.serviceUnavailable` | FaceID provider error / unrecognized payload |
 | 500 | `common.internalError` | |
-

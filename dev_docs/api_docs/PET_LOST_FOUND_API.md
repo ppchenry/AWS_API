@@ -10,13 +10,13 @@ Lost / found pet posts and per-user notifications. All endpoints require Bearer 
 
 | Method | Path | Content-Type | Purpose |
 | --- | --- | --- | --- |
-| GET | `/pets/pet-lost` | â€” | List all lost posts |
+| GET | `/pets/pet-lost` | — | List all lost posts |
 | POST | `/pets/pet-lost` | `multipart/form-data` | Create lost post |
-| DELETE | `/pets/pet-lost/{petLostID}` | â€” | Delete own lost post |
-| GET | `/pets/pet-found` | â€” | List all found posts |
+| DELETE | `/pets/pet-lost/{petLostID}` | — | Delete own lost post |
+| GET | `/pets/pet-found` | — | List all found posts |
 | POST | `/pets/pet-found` | `multipart/form-data` | Create found post |
-| DELETE | `/pets/pet-found/{petFoundID}` | â€” | Delete own found post |
-| GET | `/v2/account/{userId}/notifications` | â€” | List own notifications |
+| DELETE | `/pets/pet-found/{petFoundID}` | — | Delete own found post |
+| GET | `/v2/account/{userId}/notifications` | — | List own notifications |
 | POST | `/v2/account/{userId}/notifications` | `application/json` | Create own notification |
 | PUT | `/v2/account/{userId}/notifications/{notificationId}` | `application/json` | Archive notification |
 
@@ -198,7 +198,7 @@ Only the creator can delete.
 | Status | errorKey | Cause |
 | --- | --- | --- |
 | 400 | `common.invalidPathParam` | `userId` not ObjectId |
-| 403 | `common.selfAccessDenied` | Path â‰  JWT `userId` |
+| 403 | `common.selfAccessDenied` | Path ≠ JWT `userId` |
 | 500 | `common.internalError` | |
 
 ---
@@ -246,7 +246,7 @@ Only the creator can delete.
 
 ### PUT /v2/account/{userId}/notifications/{notificationId}
 
-Archives (soft-closes) the notification â€” the body is ignored, the service always sets `isArchived: true`.
+Archives (soft-closes) the notification — the body is ignored, the service always sets `isArchived: true`.
 
 **Path params:** `userId` (must match JWT), `notificationId` (ObjectId).
 
