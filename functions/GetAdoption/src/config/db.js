@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const AdoptionSchema = require("../../models/Adoption");
+const AdoptionSchema = require("../models/Adoption");
 const { logInfo, logError } = require("../utils/logger");
 
 let conn = null;

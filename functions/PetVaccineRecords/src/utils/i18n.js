@@ -9,7 +9,7 @@ const loadTranslations = (lang = "en") => {
   const safeLang = SUPPORTED_LANGS.includes(lang) ? lang : FALLBACK_LANG;
   if (translationCache[safeLang]) return translationCache[safeLang];
 
-  const filePath = path.join(__dirname, "..", "..", "locales", `${safeLang}.json`);
+  const filePath = path.join(__dirname, "..", "locales", `${safeLang}.json`);
   const content = fs.readFileSync(filePath, "utf8");
   translationCache[safeLang] = JSON.parse(content);
   return translationCache[safeLang];

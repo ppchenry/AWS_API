@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
-const PetSchema = require("../../models/pet");
-const VaccineRecordsSchema = require("../../models/vaccine_records");
+const PetSchema = require("../models/pet");
+const VaccineRecordsSchema = require("../models/vaccine_records");
 const { logInfo, logError } = require("../utils/logger");
 
 let conn = null;

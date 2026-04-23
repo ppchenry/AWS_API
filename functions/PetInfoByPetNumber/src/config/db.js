@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const PetSchema = require("../../models/pet");
+const PetSchema = require("../models/pet");
 const { logInfo, logError } = require("../utils/logger");
 
 let conn = null;
