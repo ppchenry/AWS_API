@@ -5,8 +5,8 @@ const { createErrorResponse } = require("../utils/response");
  * Routes that use multipart form data — skip JSON parsing for these.
  */
 const MULTIPART_RESOURCES = new Set([
-  "/pets/pet-lost",
-  "/pets/pet-found",
+  "/v2/pets/pet-lost",
+  "/v2/pets/pet-found",
 ]);
 
 /**

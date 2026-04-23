@@ -94,7 +94,7 @@ Upload an image to a specific S3 folder. Folder must be in the allowlist to prev
 
 ### POST /pets/create-pet-basic-info-with-image
 
-Create a pet from multipart form data (with zero or more images). Ownership is always set from the caller's JWT â€” `userId` cannot be set from the body. NGO callers may set `ngoId` (must match their JWT claim).
+Create a pet from multipart form data (with zero or more images). Ownership is always set from the caller's JWT — `userId` cannot be set from the body. NGO callers may set `ngoId` (must match their JWT claim).
 
 **Rate limit:** 20 / 5 min per `userId`.
 
@@ -121,8 +121,8 @@ Create a pet from multipart form data (with zero or more images). Ownership is a
 | `contact1Show`, `contact2Show` | string | No | 10 | |
 | `receivedDate` | string | No | 20 | `DD/MM/YYYY` |
 | `location`, `position` | string | No | 500 | |
-| `breedimage` | string | No | â€” | Alternative: provide image URL instead of files |
-| _(files)_ | binary[] | No | â€” | JPEG / PNG, stored at `user-uploads/pets/{tempId}` |
+| `breedimage` | string | No | — | Alternative: provide image URL instead of files |
+| _(files)_ | binary[] | No | — | JPEG / PNG, stored at `user-uploads/pets/{tempId}` |
 
 **Success (201):**
 
@@ -142,9 +142,9 @@ Create a pet from multipart form data (with zero or more images). Ownership is a
 | 400 | `eyeUpload.errors.fieldTooLong` | Any field over max |
 | 400 | `eyeUpload.errors.invalidUrl` | `breedimage` not valid URL |
 | 400 | `eyeUpload.errors.unknownField` | Unknown form field |
-| 403 | `eyeUpload.errors.ngoRoleRequired` | `ngoId` set but role â‰  `ngo` |
+| 403 | `eyeUpload.errors.ngoRoleRequired` | `ngoId` set but role ≠ `ngo` |
 | 403 | `eyeUpload.errors.ngoIdClaimRequired` | `ngoId` set but JWT has no `ngoId` claim |
-| 403 | `eyeUpload.errors.forbidden` | JWT `ngoId` â‰  form `ngoId` |
+| 403 | `eyeUpload.errors.forbidden` | JWT `ngoId` ≠ form `ngoId` |
 | 404 | `eyeUpload.errors.userNotFound` | Caller user deleted |
 | 409 | `eyeUpload.errors.duplicateNgoPetId` | Auto-generated `ngoPetId` collides |
 | 429 | `common.rateLimited` | |
@@ -162,8 +162,8 @@ Update scalar pet fields and manage pet images (add + remove) in one call.
 
 | Field | Type | Required | Max | Notes |
 | --- | --- | --- | --- | --- |
-| `petId` | string (ObjectId) | **Yes** | â€” | |
-| `removedIndices` | string | No | â€” | JSON array of integer indices into existing `breedimage` to remove, e.g. `"[0,2]"` |
+| `petId` | string (ObjectId) | **Yes** | — | |
+| `removedIndices` | string | No | — | JSON array of integer indices into existing `breedimage` to remove, e.g. `"[0,2]"` |
 | `name`, `animal`, `breed`, `bloodType`, `features`, `info`, `status`, `owner`, `tagId` | string | No | (see above) | |
 | `birthday`, `sterilizationDate`, `receivedDate` | string | No | 20 | `DD/MM/YYYY` |
 | `weight`, `sex`, `sterilization` | string | No | 20 | |
@@ -171,7 +171,7 @@ Update scalar pet fields and manage pet images (add + remove) in one call.
 | `ownerContact1`, `ownerContact2` | string | No | 200 | |
 | `contact1Show`, `contact2Show` | string | No | 10 | |
 | `ngoId`, `ngoPetId` | string | No | 100 | NGO owners only; must match JWT `ngoId` |
-| _(files)_ | binary[] | No | â€” | JPEG / PNG, appended to `breedimage` |
+| _(files)_ | binary[] | No | — | JPEG / PNG, appended to `breedimage` |
 
 **Success (200):**
 
@@ -213,7 +213,7 @@ Upload an eye image (file or URL) and forward it to the external eye-analysis + 
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
 | `image_url` | string | Conditional | External HTTPS URL; required if no file |
-| _(file)_ | binary | Conditional | MIME: `image/jpeg`, `image/jpg`, `image/png`, `image/gif`, `image/tiff`; size 1 B â€“ 30 MB |
+| _(file)_ | binary | Conditional | MIME: `image/jpeg`, `image/jpg`, `image/png`, `image/gif`, `image/tiff`; size 1 B – 30 MB |
 
 **Success (200):**
 
@@ -256,7 +256,7 @@ Send species + image URL to the external breed classifier.
 
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
-| `species` | string | Yes | 1â€“100 chars |
+| `species` | string | Yes | 1–100 chars |
 | `url` | string | Yes | Valid URL |
 
 **Success (200):**

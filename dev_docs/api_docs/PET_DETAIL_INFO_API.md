@@ -164,7 +164,7 @@ Remove a transfer record. No body.
 
 ### PUT /pets/{petID}/detail-info/NGOtransfer
 
-Transfer NGO-held pet to a target user. Caller's role must be `ngo`. The target user is validated by both email **and** phone â€” both must resolve to the same user record. On success, `pet.userId` is reassigned and `pet.ngoId` cleared.
+Transfer NGO-held pet to a target user. Caller's role must be `ngo`. The target user is validated by both email **and** phone — both must resolve to the same user record. On success, `pet.userId` is reassigned and `pet.ngoId` cleared.
 
 **Body:**
 
@@ -190,8 +190,8 @@ Transfer NGO-held pet to a target user. Caller's role must be `ngo`. The target 
 | 400 | `petDetailInfo.errors.ngoTransfer.invalidPhoneFormat` | Bad phone |
 | 400 | `petDetailInfo.errors.ngoTransfer.invalidDateFormat` | Bad regDate |
 | 400 | `petDetailInfo.errors.ngoTransfer.userIdentityMismatch` | Email and phone resolve to different users |
-| 403 | `common.forbidden` | Caller role â‰  `ngo` |
-| 404 | `petDetailInfo.errors.ngoTransfer.targetUserNotFound` | Target user missing (generic â€” anti-enumeration) |
+| 403 | `common.forbidden` | Caller role ≠ `ngo` |
+| 404 | `petDetailInfo.errors.ngoTransfer.targetUserNotFound` | Target user missing (generic — anti-enumeration) |
 
 ---
 

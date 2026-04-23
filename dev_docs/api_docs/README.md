@@ -131,6 +131,12 @@ All errorKeys follow the namespaced dot-notation scheme introduced in the locale
 | `common.internalError` | 500 | Unhandled server error — inspect CloudWatch by `requestId` |
 | `common.serviceUnavailable` | 503 | Upstream third-party service (SMS, FaceID, email, etc.) failed |
 
+### Known Issues
+
+- Some multipart/form-data routes in the refactored Lambda set do not yet normalize malformed multipart parse failures into a stable `400` error response. In those affected routes, a broken multipart body may currently fall through to `500` with `errorKey: "common.internalError"` instead of a client-facing parse error key.
+- `SFExpressRoutes` also has a known upstream-response parsing gap: if SF returns invalid JSON in certain flows, the response may currently fall through to `500` with `errorKey: "common.internalError"` instead of `sfExpressRoutes.errors.invalidSfResponse`.
+- The current tracked remediation list lives in [`dev_docs/TODO.md`](../TODO.md).
+
 ### Localization
 
 Error / success messages are localized. Language selection priority:

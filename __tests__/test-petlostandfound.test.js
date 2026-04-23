@@ -174,8 +174,8 @@ afterAll(async () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe("CORS Preflight", () => {
-  test("OPTIONS /pets/pet-lost with allowed origin → 204", async () => {
-    const res = await fetch(`${BASE_URL}/pets/pet-lost`, {
+  test("OPTIONS /v2/pets/pet-lost with allowed origin → 204", async () => {
+    const res = await fetch(`${BASE_URL}/v2/pets/pet-lost`, {
       method: "OPTIONS",
       headers: { Origin: VALID_ORIGIN },
     });
@@ -184,16 +184,16 @@ describe("CORS Preflight", () => {
     expect(res.headers.get("access-control-allow-methods")).toContain("GET");
   });
 
-  test("OPTIONS /pets/pet-lost with disallowed origin → 403", async () => {
-    const res = await fetch(`${BASE_URL}/pets/pet-lost`, {
+  test("OPTIONS /v2/pets/pet-lost with disallowed origin → 403", async () => {
+    const res = await fetch(`${BASE_URL}/v2/pets/pet-lost`, {
       method: "OPTIONS",
       headers: { Origin: DISALLOWED_ORIGIN },
     });
     expect(res.status).toBe(403);
   });
 
-  test("OPTIONS /pets/pet-found with allowed origin → 204", async () => {
-    const res = await fetch(`${BASE_URL}/pets/pet-found`, {
+  test("OPTIONS /v2/pets/pet-found with allowed origin → 204", async () => {
+    const res = await fetch(`${BASE_URL}/v2/pets/pet-found`, {
       method: "OPTIONS",
       headers: { Origin: VALID_ORIGIN },
     });
@@ -214,36 +214,36 @@ describe("CORS Preflight", () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe("Authentication", () => {
-  test("GET /pets/pet-lost without Authorization header → 401", async () => {
-    const res = await req("GET", "/pets/pet-lost");
+  test("GET /v2/pets/pet-lost without Authorization header → 401", async () => {
+    const res = await req("GET", "/v2/pets/pet-lost");
     expect(res.status).toBe(401);
     expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
-  test("GET /pets/pet-found with expired JWT → 401", async () => {
-    const res = await req("GET", "/pets/pet-found", undefined, auth(expiredToken()));
+  test("GET /v2/pets/pet-found with expired JWT → 401", async () => {
+    const res = await req("GET", "/v2/pets/pet-found", undefined, auth(expiredToken()));
     expect(res.status).toBe(401);
     expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
-  test("GET /pets/pet-lost with garbage token → 401", async () => {
-    const res = await req("GET", "/pets/pet-lost", undefined, {
+  test("GET /v2/pets/pet-lost with garbage token → 401", async () => {
+    const res = await req("GET", "/v2/pets/pet-lost", undefined, {
       Authorization: "Bearer this.is.garbage",
     });
     expect(res.status).toBe(401);
     expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
-  test("GET /pets/pet-lost with wrong algorithm (RS256) → 401", async () => {
+  test("GET /v2/pets/pet-lost with wrong algorithm (RS256) → 401", async () => {
     // HS256 is enforced; a token signed with a different secret should fail
     const badToken = jwt.sign({ userId: TEST_USER_ID }, "wrong-secret", { expiresIn: "1h" });
-    const res = await req("GET", "/pets/pet-lost", undefined, auth(badToken));
+    const res = await req("GET", "/v2/pets/pet-lost", undefined, auth(badToken));
     expect(res.status).toBe(401);
     expect(res.body.errorKey).toBe("common.unauthorized");
   });
 
-  test("POST /pets/pet-lost without Authorization header → 401", async () => {
-    const res = await multipartReq("POST", "/pets/pet-lost", { name: "TestPet" });
+  test("POST /v2/pets/pet-lost without Authorization header → 401", async () => {
+    const res = await multipartReq("POST", "/v2/pets/pet-lost", { name: "TestPet" });
     expect(res.status).toBe(401);
     expect(res.body.errorKey).toBe("common.unauthorized");
   });
@@ -254,14 +254,14 @@ describe("Authentication", () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe("Route dispatch", () => {
-  test("PUT /pets/pet-lost → 405 method not allowed", async () => {
-    const res = await req("PUT", "/pets/pet-lost", { name: "Test" }, auth());
+  test("PUT /v2/pets/pet-lost → 405 method not allowed", async () => {
+    const res = await req("PUT", "/v2/pets/pet-lost", { name: "Test" }, auth());
     // SAM local may return 403 for unmapped routes; accept 403 or 405
     expect([403, 405]).toContain(res.status);
   });
 
-  test("PATCH /pets/pet-found → 405 or 403", async () => {
-    const res = await req("PATCH", "/pets/pet-found", { name: "Test" }, auth());
+  test("PATCH /v2/pets/pet-found → 405 or 403", async () => {
+    const res = await req("PATCH", "/v2/pets/pet-found", { name: "Test" }, auth());
     expect([403, 405]).toContain(res.status);
   });
 });
@@ -271,14 +271,14 @@ describe("Route dispatch", () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe("Guard — path param validation", () => {
-  test("DELETE /pets/pet-lost/{invalid} → 400 invalidPathParam", async () => {
-    const res = await req("DELETE", `/pets/pet-lost/${INVALID_OBJECT_ID}`, undefined, auth());
+  test("DELETE /v2/pets/pet-lost/{invalid} → 400 invalidPathParam", async () => {
+    const res = await req("DELETE", `/v2/pets/pet-lost/${INVALID_OBJECT_ID}`, undefined, auth());
     expect(res.status).toBe(400);
     expect(res.body.errorKey).toBe("common.invalidPathParam");
   });
 
-  test("DELETE /pets/pet-found/{invalid} → 400 invalidPathParam", async () => {
-    const res = await req("DELETE", `/pets/pet-found/${INVALID_OBJECT_ID}`, undefined, auth());
+  test("DELETE /v2/pets/pet-found/{invalid} → 400 invalidPathParam", async () => {
+    const res = await req("DELETE", `/v2/pets/pet-found/${INVALID_OBJECT_ID}`, undefined, auth());
     expect(res.status).toBe(400);
     expect(res.body.errorKey).toBe("common.invalidPathParam");
   });
@@ -361,9 +361,9 @@ describe("Guard — body validation", () => {
 // Pet Lost — GET list
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe("GET /pets/pet-lost", () => {
+describe("GET /v2/pets/pet-lost", () => {
   test("returns 200 with pets array", async () => {
-    const res = await req("GET", "/pets/pet-lost", undefined, auth());
+    const res = await req("GET", "/v2/pets/pet-lost", undefined, auth());
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(Array.isArray(res.body.pets)).toBe(true);
@@ -371,19 +371,19 @@ describe("GET /pets/pet-lost", () => {
   });
 
   test("response contains CORS headers for allowed origin", async () => {
-    const res = await req("GET", "/pets/pet-lost", undefined, auth());
+    const res = await req("GET", "/v2/pets/pet-lost", undefined, auth());
     expect(res.headers.get("access-control-allow-origin")).toBe(VALID_ORIGIN);
   });
 
   test("response excludes __v field from results", async () => {
-    const res = await req("GET", "/pets/pet-lost", undefined, auth());
+    const res = await req("GET", "/v2/pets/pet-lost", undefined, auth());
     if (res.body.pets && res.body.pets.length > 0) {
       expect(res.body.pets[0]).not.toHaveProperty("__v");
     }
   });
 
   test("response includes requestId on error", async () => {
-    const res = await req("GET", "/pets/pet-lost");
+    const res = await req("GET", "/v2/pets/pet-lost");
     expect(res.status).toBe(401);
     expect(typeof res.body.requestId).toBe("string");
   });
@@ -393,9 +393,9 @@ describe("GET /pets/pet-lost", () => {
 // Pet Lost — POST create
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe("POST /pets/pet-lost", () => {
+describe("POST /v2/pets/pet-lost", () => {
   test("creates a pet lost record with valid multipart data → 201", async () => {
-    const res = await multipartReq("POST", "/pets/pet-lost", {
+    const res = await multipartReq("POST", "/v2/pets/pet-lost", {
       name: `TestLost_${TEST_TS}`,
       animal: "dog",
       breed: "Poodle",
@@ -415,7 +415,7 @@ describe("POST /pets/pet-lost", () => {
   });
 
   test("rejects create with missing required fields → 400", async () => {
-    const res = await multipartReq("POST", "/pets/pet-lost", {
+    const res = await multipartReq("POST", "/v2/pets/pet-lost", {
       name: "IncompleteRecord",
       // Missing lostDate, lostLocation, lostDistrict, etc.
     }, auth());
@@ -425,7 +425,7 @@ describe("POST /pets/pet-lost", () => {
   });
 
   test("rejects petId with invalid ObjectId format → 400", async () => {
-    const res = await multipartReq("POST", "/pets/pet-lost", {
+    const res = await multipartReq("POST", "/v2/pets/pet-lost", {
       petId: "not-a-valid-objectid",
       name: "TestLost",
       animal: "dog",
@@ -443,7 +443,7 @@ describe("POST /pets/pet-lost", () => {
   });
 
   test("rejects petId pointing to nonexistent pet → 404", async () => {
-    const res = await multipartReq("POST", "/pets/pet-lost", {
+    const res = await multipartReq("POST", "/v2/pets/pet-lost", {
       petId: NONEXISTENT_ID,
       name: "TestLost",
       animal: "dog",
@@ -465,30 +465,30 @@ describe("POST /pets/pet-lost", () => {
 // Pet Lost — DELETE
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe("DELETE /pets/pet-lost/{petLostID}", () => {
+describe("DELETE /v2/pets/pet-lost/{petLostID}", () => {
   test("rejects delete of nonexistent ID → 404", async () => {
-    const res = await req("DELETE", `/pets/pet-lost/${NONEXISTENT_ID}`, undefined, auth());
+    const res = await req("DELETE", `/v2/pets/pet-lost/${NONEXISTENT_ID}`, undefined, auth());
     expect(res.status).toBe(404);
     expect(res.body.errorKey).toBe("petLostAndFound.errors.petLost.notFound");
   });
 
   test("rejects delete by non-owner → 403", async () => {
     if (!state.petLostId) return;
-    const res = await req("DELETE", `/pets/pet-lost/${state.petLostId}`, undefined, auth(strangerToken));
+    const res = await req("DELETE", `/v2/pets/pet-lost/${state.petLostId}`, undefined, auth(strangerToken));
     expect(res.status).toBe(403);
     expect(res.body.errorKey).toBe("common.selfAccessDenied");
   });
 
   test("owner can delete their own record → 200", async () => {
     if (!state.petLostId) return;
-    const res = await req("DELETE", `/pets/pet-lost/${state.petLostId}`, undefined, auth());
+    const res = await req("DELETE", `/v2/pets/pet-lost/${state.petLostId}`, undefined, auth());
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
   });
 
   test("delete of already-deleted record → 404", async () => {
     if (!state.petLostId) return;
-    const res = await req("DELETE", `/pets/pet-lost/${state.petLostId}`, undefined, auth());
+    const res = await req("DELETE", `/v2/pets/pet-lost/${state.petLostId}`, undefined, auth());
     expect(res.status).toBe(404);
     expect(res.body.errorKey).toBe("petLostAndFound.errors.petLost.notFound");
   });
@@ -498,9 +498,9 @@ describe("DELETE /pets/pet-lost/{petLostID}", () => {
 // Pet Found — GET list
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe("GET /pets/pet-found", () => {
+describe("GET /v2/pets/pet-found", () => {
   test("returns 200 with pets array", async () => {
-    const res = await req("GET", "/pets/pet-found", undefined, auth());
+    const res = await req("GET", "/v2/pets/pet-found", undefined, auth());
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(Array.isArray(res.body.pets)).toBe(true);
@@ -508,7 +508,7 @@ describe("GET /pets/pet-found", () => {
   });
 
   test("response excludes __v field from results", async () => {
-    const res = await req("GET", "/pets/pet-found", undefined, auth());
+    const res = await req("GET", "/v2/pets/pet-found", undefined, auth());
     if (res.body.pets && res.body.pets.length > 0) {
       expect(res.body.pets[0]).not.toHaveProperty("__v");
     }
@@ -519,9 +519,9 @@ describe("GET /pets/pet-found", () => {
 // Pet Found — POST create
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe("POST /pets/pet-found", () => {
+describe("POST /v2/pets/pet-found", () => {
   test("creates a pet found record with valid multipart data → 201", async () => {
-    const res = await multipartReq("POST", "/pets/pet-found", {
+    const res = await multipartReq("POST", "/v2/pets/pet-found", {
       animal: "cat",
       breed: "Persian",
       status: "found",
@@ -537,7 +537,7 @@ describe("POST /pets/pet-found", () => {
   });
 
   test("rejects create with missing required fields → 400", async () => {
-    const res = await multipartReq("POST", "/pets/pet-found", {
+    const res = await multipartReq("POST", "/v2/pets/pet-found", {
       animal: "cat",
       // Missing foundDate, foundLocation, foundDistrict, etc.
     }, auth());
@@ -551,11 +551,11 @@ describe("POST /pets/pet-found", () => {
 // Pet Found — DELETE
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe("DELETE /pets/pet-found/{petFoundID}", () => {
+describe("DELETE /v2/pets/pet-found/{petFoundID}", () => {
   let tempPetFoundId;
 
   test("create a record for delete tests", async () => {
-    const res = await multipartReq("POST", "/pets/pet-found", {
+    const res = await multipartReq("POST", "/v2/pets/pet-found", {
       animal: "dog",
       breed: "Labrador",
       status: "found",
@@ -571,13 +571,13 @@ describe("DELETE /pets/pet-found/{petFoundID}", () => {
   });
 
   test("rejects delete of nonexistent ID → 404", async () => {
-    const res = await req("DELETE", `/pets/pet-found/${NONEXISTENT_ID}`, undefined, auth());
+    const res = await req("DELETE", `/v2/pets/pet-found/${NONEXISTENT_ID}`, undefined, auth());
     expect(res.status).toBe(404);
     expect(res.body.errorKey).toBe("petLostAndFound.errors.petFound.notFound");
   });
 
   test("rejects invalid ObjectId → 400", async () => {
-    const res = await req("DELETE", `/pets/pet-found/${INVALID_OBJECT_ID}`, undefined, auth());
+    const res = await req("DELETE", `/v2/pets/pet-found/${INVALID_OBJECT_ID}`, undefined, auth());
     expect(res.status).toBe(400);
     expect(res.body.errorKey).toBe("common.invalidPathParam");
   });
@@ -727,13 +727,13 @@ describe("PUT /v2/account/{userId}/notifications/{notificationId}", () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe("Rate limiting on create routes", () => {
-  test("POST /pets/pet-lost rate limits after 5 requests in 60s → 429", async () => {
+  test("POST /v2/pets/pet-lost rate limits after 5 requests in 60s → 429", async () => {
     // Use a unique hex userId per run so we don't collide with other tests
     const rateLimitUserId = `aa${TEST_TS.toString(16).padStart(22, "0")}`;
     const rlToken = makeToken({ userId: rateLimitUserId });
 
     for (let i = 0; i < 5; i++) {
-      const res = await multipartReq("POST", "/pets/pet-lost", {
+      const res = await multipartReq("POST", "/v2/pets/pet-lost", {
         name: `RateLimitTest_${i}`,
         animal: "dog",
         breed: "Mix",
@@ -749,7 +749,7 @@ describe("Rate limiting on create routes", () => {
     }
 
     // 6th request should be rate limited
-    const blocked = await multipartReq("POST", "/pets/pet-lost", {
+    const blocked = await multipartReq("POST", "/v2/pets/pet-lost", {
       name: "RateLimitBlocked",
       animal: "dog",
       breed: "Mix",
@@ -765,12 +765,12 @@ describe("Rate limiting on create routes", () => {
     expect(blocked.body.errorKey).toBe("common.rateLimited");
   });
 
-  test("POST /pets/pet-found rate limits after 5 requests in 60s → 429", async () => {
+  test("POST /v2/pets/pet-found rate limits after 5 requests in 60s → 429", async () => {
     const rateLimitUserId = `bb${TEST_TS.toString(16).padStart(22, "0")}`;
     const rlToken = makeToken({ userId: rateLimitUserId });
 
     for (let i = 0; i < 5; i++) {
-      const res = await multipartReq("POST", "/pets/pet-found", {
+      const res = await multipartReq("POST", "/v2/pets/pet-found", {
         animal: "cat",
         breed: "Mix",
         status: "found",
@@ -783,7 +783,7 @@ describe("Rate limiting on create routes", () => {
       expect(res.status).toBe(201);
     }
 
-    const blocked = await multipartReq("POST", "/pets/pet-found", {
+    const blocked = await multipartReq("POST", "/v2/pets/pet-found", {
       animal: "cat",
       breed: "Mix",
       status: "found",
@@ -804,7 +804,7 @@ describe("Rate limiting on create routes", () => {
 
 describe("Response shape", () => {
   test("error responses include success=false, errorKey, error, requestId", async () => {
-    const res = await req("GET", "/pets/pet-lost");
+    const res = await req("GET", "/v2/pets/pet-lost");
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
     expect(typeof res.body.errorKey).toBe("string");
@@ -814,7 +814,7 @@ describe("Response shape", () => {
   });
 
   test("success responses include success=true", async () => {
-    const res = await req("GET", "/pets/pet-lost", undefined, auth());
+    const res = await req("GET", "/v2/pets/pet-lost", undefined, auth());
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
   });

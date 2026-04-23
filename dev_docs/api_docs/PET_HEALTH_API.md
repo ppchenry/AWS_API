@@ -14,7 +14,7 @@ All resource endpoints share:
 - **Pet ownership guard** → 403 `common.forbidden` on mismatch; 404 `<lambdaDomain>.errors.petNotFound` when pet is soft-deleted / missing (where `<lambdaDomain>` is `petMedicalRecord` or `petVaccineRecords` depending on the route)
 - **Date format**: all user-supplied date strings are **`DD/MM/YYYY`**, stored as ISO Date
 - **Content-Type**: `application/json` (POST / PUT)
-- **Soft delete (vaccine only)** â€” see below
+- **Soft delete (vaccine only)** — see below
 
 ### Common Errors (all endpoints)
 
@@ -170,7 +170,7 @@ Base path: `/v2/pets/{petID}/blood-test-record`.
 
 **Pet sync**:
 - **POST**: increments `Pet.bloodTestRecordsCount`, updates `latestBloodTestDate` to max
-- **PUT / DELETE**: **full recalculation** â€” queries all remaining blood-test dates to recompute `bloodTestRecordsCount` and `latestBloodTestDate`
+- **PUT / DELETE**: **full recalculation** — queries all remaining blood-test dates to recompute `bloodTestRecordsCount` and `latestBloodTestDate`
 
 **Domain errors:**
 

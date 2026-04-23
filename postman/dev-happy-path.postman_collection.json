@@ -1,0 +1,244 @@
+{
+  "info": {
+    "name": "PetPetClub Dev — Happy Path (Public)",
+    "description": "Happy-path smoke tests for all PUBLIC (no-auth) endpoints exposed by the PetPetClub Dev stage at {{DEV_BASE_URL}}. Uses API Gateway key {{DEV_API_KEY}}. Protected / stateful / multipart / external-service endpoints are tracked in dev_docs/TODO.md for manual Postman testing.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "ppc-dev-happy-public-001"
+  },
+  "variable": [
+    { "key": "adoptionId", "value": "" },
+    { "key": "ngoId", "value": "" },
+    { "key": "ngoIdAlt", "value": "" }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      { "key": "key", "value": "x-api-key", "type": "string" },
+      { "key": "value", "value": "{{DEV_API_KEY}}", "type": "string" },
+      { "key": "in", "value": "header", "type": "string" }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Guard: required environment variables",
+          "const base = pm.environment.get('DEV_BASE_URL') || pm.variables.get('DEV_BASE_URL');",
+          "const key  = pm.environment.get('DEV_API_KEY') || pm.variables.get('DEV_API_KEY');",
+          "if (!base) throw new Error('DEV_BASE_URL is not set');",
+          "if (!key)  throw new Error('DEV_API_KEY is not set');",
+          "",
+          "// Public NGO list requests still need stable ngoIds. Source them from",
+          "// the environment so the collection is portable across Dev fixtures.",
+          "const ngoId = pm.environment.get('PUBLIC_NGO_ID') || pm.environment.get('TEST_NGO_ID') || pm.variables.get('PUBLIC_NGO_ID') || pm.variables.get('TEST_NGO_ID');",
+          "const ngoIdAlt = pm.environment.get('PUBLIC_NGO_ID_ALT') || pm.variables.get('PUBLIC_NGO_ID_ALT');",
+          "if (!ngoId) throw new Error('PUBLIC_NGO_ID or TEST_NGO_ID is not set');",
+          "if (!ngoIdAlt) throw new Error('PUBLIC_NGO_ID_ALT is not set');",
+          "pm.collectionVariables.set('ngoId', ngoId);",
+          "pm.collectionVariables.set('ngoIdAlt', ngoIdAlt);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Purchase — GET /purchase/shop-info",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{DEV_BASE_URL}}/purchase/shop-info",
+          "host": ["{{DEV_BASE_URL}}"],
+          "path": ["purchase", "shop-info"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('success=true', () => pm.expect(json.success).to.equal(true));",
+              "pm.test('shopInfo is array', () => pm.expect(json.shopInfo).to.be.an('array'));",
+              "pm.test('shop entry has shopCode', () => {",
+              "  if (json.shopInfo.length) pm.expect(json.shopInfo[0]).to.have.property('shopCode');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Adoption — GET /adoption (list)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{DEV_BASE_URL}}/adoption?page=1",
+          "host": ["{{DEV_BASE_URL}}"],
+          "path": ["adoption"],
+          "query": [{ "key": "page", "value": "1" }]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('success=true', () => pm.expect(json.success).to.equal(true));",
+              "pm.test('adoptionList is array', () => pm.expect(json.adoptionList).to.be.an('array'));",
+              "pm.test('maxPage is number', () => pm.expect(json.maxPage).to.be.a('number'));",
+              "if (json.adoptionList.length) {",
+              "  pm.collectionVariables.set('adoptionId', json.adoptionList[0]._id);",
+              "  console.log('captured adoptionId =', json.adoptionList[0]._id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Adoption — GET /adoption/{id} (detail)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{DEV_BASE_URL}}/adoption/{{adoptionId}}",
+          "host": ["{{DEV_BASE_URL}}"],
+          "path": ["adoption", "{{adoptionId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const id = pm.collectionVariables.get('adoptionId');",
+              "if (!id) {",
+              "  console.warn('no adoptionId captured; skipping (previous step may have returned empty list)');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('success=true', () => pm.expect(json.success).to.equal(true));",
+              "pm.test('pet._id matches captured id', () => {",
+              "  pm.expect(json.pet).to.be.an('object');",
+              "  pm.expect(json.pet._id).to.equal(pm.collectionVariables.get('adoptionId'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "NGO Pet List — GET /pets/pet-list-ngo/{ngoId}",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{DEV_BASE_URL}}/pets/pet-list-ngo/{{ngoId}}?page=1",
+          "host": ["{{DEV_BASE_URL}}"],
+          "path": ["pets", "pet-list-ngo", "{{ngoId}}"],
+          "query": [{ "key": "page", "value": "1" }]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('success=true', () => pm.expect(json.success).to.equal(true));",
+              "pm.test('pets is array', () => pm.expect(json.pets).to.be.an('array'));",
+              "pm.test('pagination meta present', () => {",
+              "  pm.expect(json).to.have.property('total');",
+              "  pm.expect(json).to.have.property('currentPage');",
+              "  pm.expect(json).to.have.property('perPage');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "NGO Pet List — search + sort",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{DEV_BASE_URL}}/pets/pet-list-ngo/{{ngoIdAlt}}?page=1&sortBy=name&sortOrder=asc&search=a",
+          "host": ["{{DEV_BASE_URL}}"],
+          "path": ["pets", "pet-list-ngo", "{{ngoIdAlt}}"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "sortBy", "value": "name" },
+            { "key": "sortOrder", "value": "asc" },
+            { "key": "search", "value": "a" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Either 200 (pets found) or 404 (no match) is a valid happy-ish outcome per docs.",
+              "pm.test('status is 200 or 404', () => pm.expect([200, 404]).to.include(pm.response.code));",
+              "const json = pm.response.json();",
+              "pm.test('success boolean set', () => pm.expect(json).to.have.property('success'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Adoption — GET /adoption with filters",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{DEV_BASE_URL}}/adoption?page=1&animal_type=dog&lang=en",
+          "host": ["{{DEV_BASE_URL}}"],
+          "path": ["adoption"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "animal_type", "value": "dog" },
+            { "key": "lang", "value": "en" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('success=true', () => pm.expect(json.success).to.equal(true));",
+              "pm.test('adoptionList is array', () => pm.expect(json.adoptionList).to.be.an('array'));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

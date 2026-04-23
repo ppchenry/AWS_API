@@ -120,10 +120,10 @@ async function getSupplierOrderVerification({ event }) {
 /**
  * Updates supplier-editable verification fields from a multipart payload.
  *
- * @param {{ event: import("aws-lambda").APIGatewayProxyEvent }} args
+ * @param {{ event: import("aws-lambda").APIGatewayProxyEvent, body?: Record<string, any>|null }} args
  * @returns {Promise<import("aws-lambda").APIGatewayProxyResult>}
  */
-async function updateSupplierOrderVerification({ event }) {
+async function updateSupplierOrderVerification({ event, body }) {
   try {
     const orderId = event.pathParameters?.orderId;
     if (!orderId) {
@@ -152,7 +152,15 @@ async function updateSupplierOrderVerification({ event }) {
       return createErrorResponse(404, "orderVerification.errors.notFound", event);
     }
 
-    const { files: _files, ...parsedBody } = await parse(event);
+    const contentType = (event.headers?.["content-type"] || event.headers?.["Content-Type"] || "").toLowerCase();
+    const isMultipart = contentType.includes("multipart/form-data");
+
+    let parsedBody = body || {};
+    if (isMultipart) {
+      const { files: _files, ...multipartBody } = await parse(event);
+      parsedBody = multipartBody || {};
+    }
+
     const parseResult = supplierUpdateSchema.safeParse(parsedBody || {});
     if (!parseResult.success) {
       return createErrorResponse(400, getFirstZodIssueMessage(parseResult.error), event);

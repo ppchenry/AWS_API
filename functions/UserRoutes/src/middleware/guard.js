@@ -4,9 +4,11 @@ const { createErrorResponse } = require('../utils/response');
 const { validateSelfAccess } = require('./selfAccess');
 
 const NGO_ONLY_RESOURCES = new Set([
-  '/account/user-list',
   '/account/edit-ngo/{ngoId}',
   '/account/edit-ngo/{ngoId}/pet-placement-options',
+  '/v2/account/user-list',
+  '/v2/account/edit-ngo/{ngoId}',
+  '/v2/account/edit-ngo/{ngoId}/pet-placement-options',
 ]);
 
 /**

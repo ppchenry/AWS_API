@@ -1,9 +1,11 @@
-- [x] standardize and optimize all locale keys (2026-04-22: migrated to `common.*` / `<domain>.errors.*` / `<domain>.success.*` scheme across all 17 refactored Lambdas + purchaseConfirmation; see `dev_docs/refactor_reports/EN_REFACTOR_REPORT.md` addendum)
-- [x] add logs with logger
-- [ ] deploy all refactored lambdas onto dev and run Postman verification for each deployed route set
-- [x] write domain based api docs
-
-- [x] re run tests to ensure consistency
-
-- [ ] debug the depraceted routes 401 vs 405 issues
 - [ ] add location param to ngo pet list query
+- [ ] handle unhandled multipart parse errors in refactored lambdas: `purchaseConfirmation.submitPurchaseConfirmation` at `functions/purchaseConfirmation/src/services/purchase.js:39`
+- [ ] handle unhandled multipart parse errors in refactored lambdas: `OrderVerification.updateSupplierOrderVerification` at `functions/OrderVerification/src/services/orderVerification.js:160`
+- [ ] handle unhandled multipart parse errors in refactored lambdas: `EyeUpload.uploadImage` at `functions/EyeUpload/src/services/upload.js:44`
+- [ ] handle unhandled multipart parse errors in refactored lambdas: `EyeUpload.uploadPetBreedImage` at `functions/EyeUpload/src/services/upload.js:101`
+- [ ] handle unhandled multipart parse errors in refactored lambdas: `EyeUpload.createPetBasicInfoWithImage` at `functions/EyeUpload/src/services/petImage.js:46`
+- [ ] handle unhandled multipart parse errors in refactored lambdas: `EyeUpload.updatePetImage` at `functions/EyeUpload/src/services/petImage.js:193`
+- [ ] handle unhandled multipart parse errors in refactored lambdas: `EyeUpload.eyeUploadAnalysis` at `functions/EyeUpload/src/services/eyeAnalysis.js:96`
+- [ ] handle unhandled multipart parse errors in refactored lambdas: `PetLostandFound.createPetLost` at `functions/PetLostandFound/src/services/petLost.js:63`
+- [ ] handle unhandled multipart parse errors in refactored lambdas: `PetLostandFound.createPetFound` at `functions/PetLostandFound/src/services/petFound.js:63`
+- [ ] normalize upstream JSON parse error mapping in `SFExpressRoutes` so invalid SF JSON does not fall through to `common.internalError`: `functions/SFExpressRoutes/src/services/sfShared.js:56`

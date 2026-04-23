@@ -10,15 +10,15 @@ Endpoints for NGO account registration and NGO admin management. All protected e
 
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
-| POST | `/account/register-ngo` | Public | Register an NGO + admin user |
-| GET | `/account/user-list` | Bearer JWT (ngo role) | List NGO staff users |
-| GET | `/account/edit-ngo/{ngoId}` | Bearer JWT (ngo role) | Read full NGO profile |
-| PUT | `/account/edit-ngo/{ngoId}` | Bearer JWT (ngo role) | Update NGO profile (transactional) |
-| GET | `/account/edit-ngo/{ngoId}/pet-placement-options` | Bearer JWT (ngo role) | List configured pet placement options |
+| POST | `/v2/account/register-ngo` | Public | Register an NGO + admin user |
+| GET | `/v2/account/user-list` | Bearer JWT (ngo role) | List NGO staff users |
+| GET | `/v2/account/edit-ngo/{ngoId}` | Bearer JWT (ngo role) | Read full NGO profile |
+| PUT | `/v2/account/edit-ngo/{ngoId}` | Bearer JWT (ngo role) | Update NGO profile (transactional) |
+| GET | `/v2/account/edit-ngo/{ngoId}/pet-placement-options` | Bearer JWT (ngo role) | List configured pet placement options |
 
 ---
 
-### POST /account/register-ngo
+### POST /v2/account/register-ngo
 
 Creates an NGO admin user, the NGO profile, an NGO access record, and an NGO counter in one atomic transaction. On success, issues an access token and refresh cookie just like normal registration.
 
@@ -37,7 +37,7 @@ Creates an NGO admin user, the NGO profile, an NGO access record, and an NGO cou
 | `password` | string | Yes | Min 8 chars |
 | `confirmPassword` | string | Yes | Must match `password` |
 | `ngoName` | string | Yes | Min 1 |
-| `ngoPrefix` | string | Yes | 1â€“5 chars (used for pet ID prefixes) |
+| `ngoPrefix` | string | Yes | 1–5 chars (used for pet ID prefixes) |
 | `businessRegistrationNumber` | string | Yes | Unique across NGOs |
 | `address` | string | Yes | Min 1 |
 | `description` | string | No | Nullable |
@@ -73,7 +73,7 @@ Also sets `Set-Cookie: refreshToken=<token>` (HttpOnly, Secure, SameSite=Strict)
 | 400 | `userRoutes.errors.emailRegister.invalidPhoneFormat` | Bad phone |
 | 400 | `userRoutes.errors.registerNgo.errors.passwordRequired` | Missing / too short password |
 | 400 | `userRoutes.errors.registerNgo.errors.confirmPasswordRequired` | Missing confirmPassword |
-| 400 | `userRoutes.errors.registerNgo.errors.passwordMismatch` | password â‰  confirmPassword |
+| 400 | `userRoutes.errors.registerNgo.errors.passwordMismatch` | password ≠ confirmPassword |
 | 400 | `userRoutes.errors.registerNgo.errors.ngoNameRequired` | Missing ngoName |
 | 400 | `userRoutes.errors.registerNgo.errors.ngoPrefixTooLong` | ngoPrefix > 5 chars |
 | 400 | `userRoutes.errors.registerNgo.errors.businessRegRequired` | Missing BR number |
@@ -86,7 +86,7 @@ Also sets `Set-Cookie: refreshToken=<token>` (HttpOnly, Secure, SameSite=Strict)
 
 ---
 
-### GET /account/user-list
+### GET /v2/account/user-list
 
 List users managed by the caller's NGO. Paginated and searchable.
 
@@ -136,7 +136,7 @@ Page size: **50** users per page.
 
 ---
 
-### GET /account/edit-ngo/{ngoId}
+### GET /v2/account/edit-ngo/{ngoId}
 
 Return the NGO profile, linked admin user profile, access record, and counters.
 
@@ -199,13 +199,13 @@ Per-section `errors` string is set when a sub-lookup fails but the root NGO reco
 | --- | --- | --- |
 | 400 | `userRoutes.errors.ngo.invalidId` | `ngoId` invalid ObjectId |
 | 401 | `common.unauthorized` | Missing / invalid JWT |
-| 403 | `common.unauthorized` | Role â‰  `ngo` |
+| 403 | `common.unauthorized` | Role ≠ `ngo` |
 | 404 | `userRoutes.errors.ngo.notFound` | NGO not found |
 | 500 | `common.internalError` | |
 
 ---
 
-### PUT /account/edit-ngo/{ngoId}
+### PUT /v2/account/edit-ngo/{ngoId}
 
 Update any combination of the NGO's admin user, NGO profile, access record, and counters **in a single MongoDB transaction** (all-or-nothing).
 
@@ -214,7 +214,7 @@ Update any combination of the NGO's admin user, NGO profile, access record, and 
 
 **Path params:** `ngoId` (ObjectId)
 
-**Body** (all sections optional; only allowlisted fields below are applied â€” other fields are silently ignored):
+**Body** (all sections optional; only allowlisted fields below are applied — other fields are silently ignored):
 
 ```json
 {
@@ -279,7 +279,7 @@ On any sub-update failure, the entire transaction is rolled back and a `500` is 
 | 400 | `userRoutes.errors.ngo.invalidId` | ngoId invalid ObjectId |
 | 400 | `userRoutes.errors.ngo.invalidBody` | Body failed Zod / Mongoose validation |
 | 401 | `common.unauthorized` | Missing / invalid JWT |
-| 403 | `common.unauthorized` | Role â‰  `ngo` |
+| 403 | `common.unauthorized` | Role ≠ `ngo` |
 | 404 | `userRoutes.errors.ngo.notFound` | NGO not found |
 | 409 | `userRoutes.errors.emailExists` | Email used elsewhere |
 | 409 | `userRoutes.errors.phoneExists` | Phone used elsewhere |
@@ -288,7 +288,7 @@ On any sub-update failure, the entire transaction is rolled back and a `500` is 
 
 ---
 
-### GET /account/edit-ngo/{ngoId}/pet-placement-options
+### GET /v2/account/edit-ngo/{ngoId}/pet-placement-options
 
 Return the list of configured pet placement options for the NGO (used by adoption flows).
 
@@ -314,6 +314,6 @@ Return the list of configured pet placement options for the NGO (used by adoptio
 | 400 | `userRoutes.errors.ngo.missingId` | ngoId missing |
 | 400 | `userRoutes.errors.ngo.invalidId` | ngoId invalid |
 | 401 | `common.unauthorized` | Missing / invalid JWT |
-| 403 | `common.unauthorized` | Role â‰  `ngo` |
+| 403 | `common.unauthorized` | Role ≠ `ngo` |
 | 404 | `userRoutes.errors.ngo.notFound` | NGO not found |
 | 500 | `common.internalError` | |
