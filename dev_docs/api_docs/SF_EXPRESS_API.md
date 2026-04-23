@@ -42,7 +42,7 @@ Create a shipment in SF's system and persist the returned waybill number onto an
 | `tempId` | string | No | Single linked Order |
 | `tempIdList` | string[] | No | Multiple linked Orders |
 
-**Authorization of linked orders:** if `tempId` or `tempIdList` is supplied, non-privileged callers must own the orders (`Order.email === event.userEmail`). Otherwise `403 others.unauthorized`.
+**Authorization of linked orders:** if `tempId` or `tempIdList` is supplied, non-privileged callers must own the orders (`Order.email === event.userEmail`). Otherwise `403 common.unauthorized`.
 
 **Success (200):**
 

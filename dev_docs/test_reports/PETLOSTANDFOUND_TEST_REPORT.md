@@ -23,14 +23,14 @@ Current status:
 
 | Endpoint | Method | Tests |
 |----------|--------|-------|
-| `/pets/pet-lost` | OPTIONS | 2 |
-| `/pets/pet-lost` | GET | 4 |
-| `/pets/pet-lost` | POST | 4 |
-| `/pets/pet-lost/{petLostID}` | DELETE | 4 |
-| `/pets/pet-found` | OPTIONS | 1 |
-| `/pets/pet-found` | GET | 2 |
-| `/pets/pet-found` | POST | 2 |
-| `/pets/pet-found/{petFoundID}` | DELETE | 3 |
+| `/v2/pets/pet-lost` | OPTIONS | 2 |
+| `/v2/pets/pet-lost` | GET | 4 |
+| `/v2/pets/pet-lost` | POST | 4 |
+| `/v2/pets/pet-lost/{petLostID}` | DELETE | 4 |
+| `/v2/pets/pet-found` | OPTIONS | 1 |
+| `/v2/pets/pet-found` | GET | 2 |
+| `/v2/pets/pet-found` | POST | 2 |
+| `/v2/pets/pet-found/{petFoundID}` | DELETE | 3 |
 | `/v2/account/{userId}/notifications` | OPTIONS | 1 |
 | `/v2/account/{userId}/notifications` | GET | 3 |
 | `/v2/account/{userId}/notifications` | POST | 5 |
@@ -95,7 +95,7 @@ Current status:
 
 - Delete already-deleted record → 404
 - Delete with nonexistent ObjectId → 404
-- Unmapped HTTP methods (PUT /pets/pet-lost, PATCH /pets/pet-found) → 405 or 403
+- Unmapped HTTP methods (PUT /v2/pets/pet-lost, PATCH /v2/pets/pet-found) → 405 or 403
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Base URL (Dev):** `https://udnh87tari.execute-api.ap-southeast-1.amazonaws.com/Dev`
 
-Endpoints for NGO account registration and NGO admin management. All protected endpoints here require the caller's JWT `role` to be `ngo` (returns `403 others.unauthorized` otherwise).
+Endpoints for NGO account registration and NGO admin management. All protected endpoints here require the caller's JWT `role` to be `ngo` (returns `403 common.unauthorized` otherwise).
 
 > See [README.md](./README.md) for global conventions.
 

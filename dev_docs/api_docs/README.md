@@ -177,7 +177,7 @@ Allowed origins are configured per-environment via `ALLOWED_ORIGINS`. Browsers m
 
 ### Rate Limiting
 
-Rate limits are per-endpoint and per-caller (keyed by `userId`, `email`, IP, or tag depending on the endpoint). When exceeded, the API returns `429 others.rateLimited`. Specific limits are documented per endpoint.
+Rate limits are per-endpoint and per-caller (keyed by `userId`, `email`, IP, or tag depending on the endpoint). When exceeded, the API returns `429 common.rateLimited`. Specific limits are documented per endpoint.
 
 ### Refresh Cookie
 

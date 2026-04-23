@@ -1,6 +1,6 @@
 # Refactored Lambda Endpoint Status By Domain
 
-Date reviewed: 2026-04-22
+Date reviewed: 2026-04-23
 
 This report reviews the Lambda entries listed under **Already Refactored** in `dev_docs/LAMBDA_REFACTOR_INVENTORY.md`.
 
@@ -20,7 +20,7 @@ Classification rules:
 - **Dead ghost**: a dead router entry that is not exposed by the current SAM template.
 - `OPTIONS` CORS preflight routes are intentionally excluded.
 
-Note: the inventory is internally stale for `PetVaccineRecords`, `CreatePetBasicInfo`, `GetAdoption`, and `PetInfoByPetNumber`: the top **Already Refactored** section includes them, while the lower **Full Inventory** table still marks them as not having `src/handler.js`. The filesystem currently has refactored handlers for these Lambdas, so they are included here.
+Note: legacy duplicate or alias routes may still exist in SAM/API Gateway due to infrastructure history. The active API contract is the exact router/handler route set documented in `dev_docs/api_docs`.
 
 ## Summary
 
@@ -54,11 +54,11 @@ Duplicate-looking dead rows can represent different Lambda/SAM/router entries fo
 
 | Endpoint | Lambda | Purpose / actual behavior |
 | --- | --- | --- |
-| `POST /account/register-ngo` | `UserRoutes` | Creates an NGO admin user, NGO profile, NGO access record, and NGO counter in one transaction, then issues tokens. |
-| `GET /account/user-list` | `UserRoutes` | Lists NGO users with search and pagination through an aggregation pipeline. |
-| `GET /account/edit-ngo/{ngoId}` | `UserRoutes` | Returns NGO profile, linked user profile, access settings, and NGO counter data for editing. |
-| `PUT /account/edit-ngo/{ngoId}` | `UserRoutes` | Updates NGO profile, NGO admin user fields, counters, and access settings in a transaction. |
-| `GET /account/edit-ngo/{ngoId}/pet-placement-options` | `UserRoutes` | Returns configured pet placement options for an NGO. |
+| `POST /v2/account/register-ngo` | `UserRoutes` | Creates an NGO admin user, NGO profile, NGO access record, and NGO counter in one transaction, then issues tokens. |
+| `GET /v2/account/user-list` | `UserRoutes` | Lists NGO users with search and pagination through an aggregation pipeline. |
+| `GET /v2/account/edit-ngo/{ngoId}` | `UserRoutes` | Returns NGO profile, linked user profile, access settings, and NGO counter data for editing. |
+| `PUT /v2/account/edit-ngo/{ngoId}` | `UserRoutes` | Updates NGO profile, NGO admin user fields, counters, and access settings in a transaction. |
+| `GET /v2/account/edit-ngo/{ngoId}/pet-placement-options` | `UserRoutes` | Returns configured pet placement options for an NGO. |
 
 ### Pet Profile And Ownership
 
@@ -126,12 +126,12 @@ Duplicate-looking dead rows can represent different Lambda/SAM/router entries fo
 
 | Endpoint | Lambda | Purpose / actual behavior |
 | --- | --- | --- |
-| `GET /pets/pet-lost` | `PetLostandFound` | Lists lost-pet posts. |
-| `POST /pets/pet-lost` | `PetLostandFound` | Creates a lost-pet post, including optional pet ownership validation and image upload. |
-| `DELETE /pets/pet-lost/{petLostID}` | `PetLostandFound` | Deletes a lost-pet post after ownership/self-access checks. |
-| `GET /pets/pet-found` | `PetLostandFound` | Lists found-pet posts. |
-| `POST /pets/pet-found` | `PetLostandFound` | Creates a found-pet post, including uploaded image handling. |
-| `DELETE /pets/pet-found/{petFoundID}` | `PetLostandFound` | Deletes a found-pet post after ownership/self-access checks. |
+| `GET /v2/pets/pet-lost` | `PetLostandFound` | Lists lost-pet posts. |
+| `POST /v2/pets/pet-lost` | `PetLostandFound` | Creates a lost-pet post, including optional pet ownership validation and image upload. |
+| `DELETE /v2/pets/pet-lost/{petLostID}` | `PetLostandFound` | Deletes a lost-pet post after ownership/self-access checks. |
+| `GET /v2/pets/pet-found` | `PetLostandFound` | Lists found-pet posts. |
+| `POST /v2/pets/pet-found` | `PetLostandFound` | Creates a found-pet post, including uploaded image handling. |
+| `DELETE /v2/pets/pet-found/{petFoundID}` | `PetLostandFound` | Deletes a found-pet post after ownership/self-access checks. |
 | `GET /v2/account/{userId}/notifications` | `PetLostandFound` | Lists notifications for a user. |
 | `POST /v2/account/{userId}/notifications` | `PetLostandFound` | Creates a notification for a user. |
 | `PUT /v2/account/{userId}/notifications/{notificationId}` | `PetLostandFound` | Archives or marks a notification as handled. |

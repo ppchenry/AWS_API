@@ -35,13 +35,13 @@ Current status:
 | `/account` | PUT | 6 | |
 | `/account/update-password` | PUT | 1 | Frozen route (405) |
 | `/account/update-image` | POST | 3 | |
-| `/account/user-list` | GET | 4 | |
+| `/v2/account/user-list` | GET | 4 | |
 | `/account/register-by-email` etc. | POST | 3 | Dead routes (405) via `test.each` |
-| `/account/register-ngo` | POST | 10 | NGO still uses passwords |
+| `/v2/account/register-ngo` | POST | 10 | NGO still uses passwords |
 | `/account/login` (NGO) | POST | 1 | Frozen route (405); NGO token from register |
-| `/account/edit-ngo/{ngoId}` | GET | 5 | |
-| `/account/edit-ngo/{ngoId}` | PUT | 5 | |
-| `/account/edit-ngo/{ngoId}/pet-placement-options` | GET | 5 | |
+| `/v2/account/edit-ngo/{ngoId}` | GET | 5 | |
+| `/v2/account/edit-ngo/{ngoId}` | PUT | 5 | |
+| `/v2/account/edit-ngo/{ngoId}/pet-placement-options` | GET | 5 | |
 | `/account/delete-user-with-email` | POST | 6 | |
 | `/account/generate-sms-code` | POST | 2 | |
 | `/account/verify-sms-code` | POST | 3 | |
@@ -112,7 +112,7 @@ Every required field and every business rule is checked individually:
 - Completely arbitrary Bearer string → 401
 - Valid token but accessing a different user's resource → 403 (self-access enforcement) verified on all five protected mutation routes
 - NGO-only routes return `401` without auth and `403` for valid non-NGO tokens
-- `GET /account/user-list` returns paginated list only for NGO-role tokens → 200 (moved after NGO login in suite so `ngoToken` is populated)
+- `GET /v2/account/user-list` returns paginated list only for NGO-role tokens → 200 (moved after NGO registration in suite so `ngoToken` is populated)
 - `DELETE /account/{userId}` with a non-ObjectId path param returns `403` — self-access guard fires before format validation
 - Public `POST /account/login-2` route disabled → 405
 - Deleted user token can no longer read the profile → 404
@@ -128,7 +128,7 @@ Every required field and every business rule is checked individually:
 - **Frozen login route** — `POST /account/login` returns `405` for all callers (regular users authenticate via verify → register)
 - **Frozen password route** — `PUT /account/update-password` returns `405` (passwords are not used by regular users)
 - **Frozen login-2 route** — `POST /account/login-2` returns `405`
-- **NGO session alignment** — `POST /account/register-ngo` now issues an NGO session and `POST /account/login` rejects NGOs whose approval has been revoked
+- **NGO session alignment** — `POST /v2/account/register-ngo` now issues an NGO session; frozen `POST /account/login` remains disabled
 - **Cross-account conflict prevention** — profile updates and NGO edit reject email conflicts against existing accounts → `409`
 - **Body `userId` injection on NGO edit** — `userId` in the request body is ignored; the server always uses the JWT identity
 - **NGO self-delete hardening** — `deleted` in the NGO edit request body is ignored and does not soft-delete the caller
