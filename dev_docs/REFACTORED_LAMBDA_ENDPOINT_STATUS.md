@@ -200,13 +200,12 @@ Duplicate-looking dead rows can represent different Lambda/SAM/router entries fo
 
 | Endpoint | Lambda | Status detail |
 | --- | --- | --- |
-| `POST /pets/{petID}/basic-info` | `PetBasicInfo` | SAM still declares this method, but the router only supports GET and PUT for pet basic info, so it falls through to 405. |
-| `GET /pets/gets3Image` | `PetLostandFound` | Dead ghost route left from the old monolith. Not deployed by current SAM template for this Lambda. |
-| `POST /pets/upload-array-images` | `PetLostandFound` | Dead ghost upload route left from the old monolith. Not deployed by current SAM template. |
-| `PUT /pets/updatePetImage` | `EyeUpload` | SAM still declares this method, but the active image/profile update service is `POST /pets/updatePetImage`; PUT falls through to 405. |
-| `GET /pets/gets3Image` | `EyeUpload` | SAM declares this route and the router explicitly maps it to `null`, so it returns 405. |
-| `POST /pets/create-pet-basic-info` | `EyeUpload` | Explicit dead router entry. Active JSON pet creation lives in `CreatePetBasicInfo`; multipart pet creation with images lives at `POST /pets/create-pet-basic-info-with-image`. |
-| `PUT /pets/updatePetEye` | `EyeUpload` | Explicit dead router entry. Active eye-image append lives in `GetAllPets` at the same route path. |
+| `POST /pets/{petID}/basic-info` | `PetBasicInfo` | AWS Console has no POST method for this resource. Active pet basic-info methods are `GET /pets/{petID}/basic-info` and `PUT /pets/{petID}/basic-info`. |
+| `GET /pets/gets3Image` | `EyeUpload` | AWS Console points this route to `EyeUpload`, but legacy `EyeUpload` did not handle it; the old implementation lived in legacy `PetLostandFound`. It is intentionally not implemented in the refactored `EyeUpload` router. |
+| `POST /pets/upload-array-images` | `EyeUpload` | AWS Console points this route to `EyeUpload`, but legacy `EyeUpload` did not handle it. It is intentionally not implemented in the refactored `EyeUpload` router. |
+| `PUT /pets/updatePetImage` | `EyeUpload` | Wrong method. The active image/profile update route is `POST /pets/updatePetImage`. |
+| `POST /pets/create-pet-basic-info` | `CreatePetBasicInfo` | AWS Console now points this route to `CreatePetBasicInfo`. It was originally handled in legacy `EyeUpload`, but the refactored active JSON create flow intentionally lives in `CreatePetBasicInfo`. |
+| `PUT /pets/updatePetEye` | `GetAllPets` | AWS Console points this route to `GetAllPets`, and legacy `GetAllPets` handled it. The refactored active eye-image append flow remains in `GetAllPets`. |
 
 ### Purchase, PTag Orders, And Order Verification
 
@@ -214,14 +213,14 @@ Duplicate-looking dead rows can represent different Lambda/SAM/router entries fo
 | --- | --- | --- |
 | `Unknown Else Probably /ptag?` | `PetLostandFound` | Legacy catch-all ghost entry in router; not a valid HTTP route and not deployed by current SAM template. |
 | `PUT /orderVerification/supplier/{proxy+}` | `PetLostandFound` | Dead ghost supplier-order route left from the old monolith. Active supplier order verification now lives under `OrderVerification`. |
-| `POST /v2/purchase/confirmation` | `purchaseConfirmation` | SAM still declares this V2 alias, but the router only handles `POST /purchase/confirmation`, so it returns 405. |
-| `GET /v2/purchase/shop-info` | `purchaseConfirmation` | SAM still declares this V2 alias, but the router only handles `GET /purchase/shop-info`, so it returns 405. |
-| `GET /v2/purchase/orders` | `purchaseConfirmation` | SAM still declares this V2 alias, but the router only handles `GET /purchase/orders`, so it returns 405. |
-| `GET /v2/purchase/order-verification` | `purchaseConfirmation` | SAM still declares this V2 alias, but the router only handles `GET /purchase/order-verification`, so it returns 405. |
-| `DELETE /v2/purchase/order-verification/{orderVerificationId}` | `purchaseConfirmation` | SAM still declares this V2 alias, but the router only handles the non-V2 delete route, so it returns 405. |
-| `POST /v2/purchase/send-ptag-detection-email` | `purchaseConfirmation` | SAM still declares this V2 alias, but the router only handles the non-V2 email route, so it returns 405. |
-| `POST /purchase/get-presigned-url` | `purchaseConfirmation` | Dead ghost route. Not deployed by current SAM template and router maps it to `null`. |
-| `POST /purchase/whatsapp-SF-message` | `purchaseConfirmation` | Dead ghost route. Not deployed by current SAM template and router maps it to `null`. |
-| `POST /v2/purchase/get-presigned-url` | `purchaseConfirmation` | Dead ghost V2 route. Not deployed by current SAM template and router maps it to `null`. |
-| `POST /v2/purchase/whatsapp-SF-message` | `purchaseConfirmation` | Dead ghost V2 route. Not deployed by current SAM template and router maps it to `null`. |
+| `POST /v2/purchase/confirmation` | `purchaseConfirmation` | Duplicate infrastructure alias for `POST /purchase/confirmation`. The Lambda intentionally does not implement `/v2/purchase/*`; use the canonical non-`/v2` purchase route. |
+| `GET /v2/purchase/shop-info` | `purchaseConfirmation` | Duplicate infrastructure alias for `GET /purchase/shop-info`. The Lambda intentionally does not implement `/v2/purchase/*`; use the canonical non-`/v2` purchase route. |
+| `GET /v2/purchase/orders` | `purchaseConfirmation` | Duplicate infrastructure alias for `GET /purchase/orders`. The Lambda intentionally does not implement `/v2/purchase/*`; use the canonical non-`/v2` purchase route. |
+| `GET /v2/purchase/order-verification` | `purchaseConfirmation` | Duplicate infrastructure alias for `GET /purchase/order-verification`. The Lambda intentionally does not implement `/v2/purchase/*`; use the canonical non-`/v2` purchase route. |
+| `DELETE /v2/purchase/order-verification/{orderVerificationId}` | `purchaseConfirmation` | Duplicate infrastructure alias for `DELETE /purchase/order-verification/{orderVerificationId}`. The Lambda intentionally does not implement `/v2/purchase/*`; use the canonical non-`/v2` purchase route. |
+| `POST /v2/purchase/send-ptag-detection-email` | `purchaseConfirmation` | Duplicate infrastructure alias for `POST /purchase/send-ptag-detection-email`. The Lambda intentionally does not implement `/v2/purchase/*`; use the canonical non-`/v2` purchase route. |
+| `POST /purchase/get-presigned-url` | `purchaseConfirmation` | Exists in AWS Console, but the legacy purchase Lambda did not handle it. It is intentionally not implemented in the refactored router. |
+| `POST /v2/purchase/get-presigned-url` | `purchaseConfirmation` | Exists in AWS Console, but the legacy purchase Lambda did not handle it. It is intentionally not implemented in the refactored router. |
+| `POST /purchase/whatsapp-SF-message` | `purchaseConfirmation` | Does not exist in AWS Console. Router `null` entry is only a legacy monolith cleanup marker. |
+| `POST /v2/purchase/whatsapp-SF-message` | `purchaseConfirmation` | Does not exist in AWS Console. Router `null` entry is only a legacy monolith cleanup marker. |
 | `DELETE /v2/orderVerification/{tagId}` | `OrderVerification` | SAM still declares this method, but the router explicitly maps it to `null`, so it returns 405. |
