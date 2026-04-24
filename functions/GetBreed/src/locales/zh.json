@@ -1,0 +1,17 @@
+{
+  "common": {
+    "invalidJSON": "JSON 格式無效",
+    "missingParams": "缺少必要參數",
+    "internalError": "伺服器內部錯誤",
+    "methodNotAllowed": "不支援的請求方法",
+    "originNotAllowed": "來源不被允許"
+  },
+  "getBreed": {
+    "errors": {
+      "missingLanguage": "缺少語言參數",
+      "animalListNotFound": "找不到指定語言的動物列表",
+      "missingEyeDiseaseName": "缺少 eyeDiseaseName 參數",
+      "eyeDiseaseNotFound": "找不到眼疾資料"
+    }
+  }
+}

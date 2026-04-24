@@ -7,15 +7,15 @@ It is not a perfect measure. Final priority should still consider route count, a
 ## Summary
 
 - Total in-plan Lambda entry files checked: 22
-- Already modularized with `src/handler.js`: 17
-- Remaining Lambdas needing review: 5 (all marked out-of-scope by manager)
+- Already modularized with `src/handler.js`: 18
+- Remaining Lambdas needing review: 4
 - Clear full-separation candidates: 0
-- Medium-size Lambdas marked not required: 2
+- Medium-size Lambdas marked not required: 1
 - Smaller Lambdas marked not required: 3
 
 ## AWS Lambda Dev Deployment Status
 
-The 17 refactored Lambdas listed below are deployed on the AWS Lambda Dev stage and covered by the current Postman happy-path smoke suite / API-doc route check. See `dev_docs/test_reports/POSTMAN_HAPPY_PATH_TEST_REPORT_2026-04-23.md`.
+The first 17 refactored Lambdas listed below are deployed on the AWS Lambda Dev stage and covered by the current Postman happy-path smoke suite / API-doc route check. `GetBreed` has now been modularized as a legacy/support Lambda, but is not part of that previously published 17-Lambda smoke report. See `dev_docs/test_reports/POSTMAN_HAPPY_PATH_TEST_REPORT_2026-04-23.md`.
 
 ## Already Refactored
 
@@ -40,6 +40,7 @@ These already match the stronger handler-based pattern.
 | `CreatePetBasicInfo` | `index.js` | 3 | already modularized |
 | `GetAdoption` | `index.js` | 3 | already modularized |
 | `PetInfoByPetNumber` | `index.js` | 3 | already modularized |
+| `GetBreed` | `index.js` | 3 | already modularized |
 
 ## Partial Separation Recommended
 
@@ -55,7 +56,6 @@ Suggested target shape:
 | Priority Tier | Lambda | Entry file | Lines | Recommendation |
 | --- | --- | --- | ---: | --- |
 | x medium — not required | `AIChatBot` | `index.js` | 399 | not required by manager |
-| x medium — not required | `GetBreed` | `index.js` | 301 | not required by manager |
 
 ## Keep Simple Unless Risk Proves Otherwise
 
@@ -87,7 +87,7 @@ These are smaller Lambdas. They should still meet the refactor checklist for val
 | `AIChatBot` | `index.js` | 399 | no | partial separation |
 | `PetVaccineRecords` | `index.js` | 3 | yes | already modularized |
 | `CreatePetBasicInfo` | `index.js` | 3 | yes | already modularized |
-| `GetBreed` | `index.js` | 301 | no | partial separation |
+| `GetBreed` | `index.js` | 3 | yes | already modularized |
 | `LambdaProxyRoute` | `index.js` | 248 | no | keep simple unless risk says otherwise |
 | `GetAdoption` | `index.js` | 3 | yes | already modularized |
 | `PetInfoByPetNumber` | `index.js` | 3 | yes | already modularized |

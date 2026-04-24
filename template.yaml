@@ -878,6 +878,82 @@ Resources:
           ALLOWED_ORIGINS: ""
           NODE_ENV: "development"
 
+  GetBreedFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 60
+      MemorySize: 512
+      CodeUri: functions/GetBreed/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Events:
+        AnimalListGet:
+          Type: Api
+          Properties:
+            Path: /animal/animalList/{lang}
+            Method: GET
+
+        AnimalListOptions:
+          Type: Api
+          Properties:
+            Path: /animal/animalList/{lang}
+            Method: OPTIONS
+
+        ProductListGet:
+          Type: Api
+          Properties:
+            Path: /product/productList
+            Method: GET
+
+        ProductListOptions:
+          Type: Api
+          Properties:
+            Path: /product/productList
+            Method: OPTIONS
+
+        ProductLogPost:
+          Type: Api
+          Properties:
+            Path: /product/productLog
+            Method: POST
+
+        ProductLogOptions:
+          Type: Api
+          Properties:
+            Path: /product/productLog
+            Method: OPTIONS
+
+        DewormGet:
+          Type: Api
+          Properties:
+            Path: /deworm
+            Method: GET
+
+        DewormOptions:
+          Type: Api
+          Properties:
+            Path: /deworm
+            Method: OPTIONS
+
+        EyeDiseaseGet:
+          Type: Api
+          Properties:
+            Path: /analysis/{eyeDiseaseName}
+            Method: GET
+
+        EyeDiseaseOptions:
+          Type: Api
+          Properties:
+            Path: /analysis/{eyeDiseaseName}
+            Method: OPTIONS
+      Environment:
+        Variables:
+          MONGODB_URI: ""
+          ALLOWED_ORIGINS: ""
+          JWT_SECRET: ""
+          JWT_BYPASS: ""
+          NODE_ENV: "development"
+
   GetAllPetsFunction:
     Type: AWS::Serverless::Function
     Properties:

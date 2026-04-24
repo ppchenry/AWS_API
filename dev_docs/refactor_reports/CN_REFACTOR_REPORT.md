@@ -2,7 +2,7 @@
 
 ## 概述 (Overview)
 
-在目前這一階段的 Monorepo 現代化工程中，已完成 17 個 Lambda 函式的原位 (in-place) 重構：
+在目前這一階段的 Monorepo 現代化工程中，已完成 18 個 Lambda 函式的原位 (in-place) 重構：
 
 * `functions/UserRoutes`
 * `functions/PetBasicInfo`
@@ -21,6 +21,7 @@
 * `functions/CreatePetBasicInfo`
 * `functions/GetAdoption`
 * `functions/PetInfoByPetNumber`
+* `functions/GetBreed`
 
 此項工作隸屬於 [README.md](README.md) 中定義的 Monorepo 清理計劃，遵循 [dev_docs/REFACTOR_CHECKLIST.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/REFACTOR_CHECKLIST.md) 的現代化基準，並依據 [dev_docs/LAMBDA_REFACTOR_INVENTORY.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/LAMBDA_REFACTOR_INVENTORY.md) 的優先順序執行。
 
@@ -43,7 +44,7 @@
 * `CreatePetBasicInfo`：`__tests__/test-createpetbasicinfo-unit.test.js` 內 **18 項直接呼叫 handler 測試案例**（4 項 DB 條件式）
 * `GetAdoption`：`__tests__/test-getadoption-unit.test.js` 內 **21 項純 unit 測試案例**（無 SAM，無實際 DB）
 * `PetInfoByPetNumber`：`__tests__/test-petinfobypetnumber.test.js` 內 **13 項直接呼叫 handler 測試案例**（3 項 DB 條件式）
-* 綜合總計：**17 個已重構 Lambda 共 797 項 integration-style 與 direct-handler 測試案例 + 15 項 SFExpressRoutes 單元測試案例 + 6 項 SMS service 單元測試案例 + 28 項 auth-workflow 單元測試案例 + 3 項 PetMedicalRecord aggregate 單元測試**
+* 綜合總計：**前 17 個具測試支撐的已重構 Lambda 共 797 項 integration-style 與 direct-handler 測試案例 + 15 項 SFExpressRoutes 單元測試案例 + 6 項 SMS service 單元測試案例 + 28 項 auth-workflow 單元測試案例 + 3 項 PetMedicalRecord aggregate 單元測試**，另加新完成模組化的 `GetBreed` 相容性 Lambda
 
 以上數字為測試檔中「宣告的案例數」，本身不等同於同日完整執行紀錄。已完成的個別測試結果請參考 `dev_docs/test_reports/` 內各 Lambda 的測試報告。
 
@@ -58,7 +59,7 @@
 * `EmailVerification` 負責公開的 Email 身分證明流程，使用 **3-branch verify**：(1) 已認證使用者 → 綁定 email 到帳號，(2) 新使用者 → `{ verified: true, isNewUser: true }`，(3) 已註冊使用者 → 自動登入並發行 token
 * `AuthRoute` 負責 refresh token 輪替與短效 access token 更新
 
-核心進展是安全性加固。這一階段的工作並非單純的程式碼整潔化，而是在 17 個已重構的高價值 Lambda 介面上，實質降低已知受攻擊風險。這些風險包含未經授權的資料存取、帳戶或寵物刪除、帳號奪取、敏感資料外洩、暴力破解、水平越權與授權繞過。
+核心進展是安全性加固。這一階段的工作並非單純的程式碼整潔化，而是在前 17 個高價值 Lambda 介面上，實質降低已知受攻擊風險，並且現在已將 `GetBreed` 補齊到相同的 handler-based 模組化基準。這些風險包含未經授權的資料存取、帳戶或寵物刪除、帳號奪取、敏感資料外洩、暴力破解、水平越權與授權繞過。
 
 ---
 
@@ -68,9 +69,9 @@
 
 目前策略不是立即進行全面 DDD 重寫，而是受控的原位現代化 (in-situ modernization)：逐一穩定每個 Lambda，保留現有 API 合約，同時提升安全性、可測試性與可維護性。
 
-目前進度：
+截至 2026-04-24，目前進度：
 
-* 17 個模組化參考基準 Lambda
+* 18 個模組化參考基準 Lambda
 * 一套書面現代化標準
 * 一份以行數與風險為基礎的 Lambda 盤點清單
 * 已完成目標具備整合測試支撐
@@ -78,7 +79,7 @@
 
 依據 `dev_docs/LAMBDA_REFACTOR_INVENTORY.md`，目前正式納入重構統計範圍的是 **22 個** Lambda。`adoption_website`、`AuthorizerRoute`、`TestIPLambda`、`WhatsappRoute` 目前列為 out-of-plan。
 
-在此統計口徑下，已有 **17 / 22** 完成加固。剩餘 5 個（`AIChatBot`、`GetBreed`、`LambdaProxyRoute`、`PublicRoutes`、`CreateFeedback`）已由管理層標註為「不需要」，列為 out-of-scope。第一階段原位現代化計畫因此**正式完成**。
+在此統計口徑下，已有 **18 / 22** 完成模組化基準。剩餘 4 個（`AIChatBot`、`LambdaProxyRoute`、`PublicRoutes`、`CreateFeedback`）仍未進入目前 baseline。`GetBreed` 已補做 Tier 2 現代化，定位為 legacy/support Lambda，供後續完整 DDD API 重建期間繼續承接 reference-data 職責。
 
 若以工作區全部 function folder 計算，目前共有 26 個 function folders；其中 4 個刻意排除於主要重構計劃之外，因此不應與主進度混算。
 
@@ -201,12 +202,12 @@ refresh 流程會：
 
 在整個 monorepo 層級，第一階段原位現代化已完成：
 
-* inventory in-plan **17 / 22** 已完成
-* **77%** 的 in-plan Lambda 已達新標準
-* 剩餘 **23%**（5 個 Lambda）已由管理層標註為「不需要」，列為 out-of-scope
+* inventory in-plan **18 / 22** 已完成
+* 約 **82%** 的 in-plan Lambda 已達新標準
+* 剩餘 **18%**（4 個 Lambda）仍未進入目前 baseline
 * 另有 **4 個** workspace Lambdas 列為 out-of-plan
 
-正確解讀是：已完成的 17 個 Lambda 內，大部分已知 code-owned attack classes 已被處理。剩餘 5 個 in-plan Lambda 已由管理層標註為「不需要」，不列入本計畫範圍。第一階段原位現代化計畫正式完成。
+正確解讀是：前 17 個具測試支撐的 Lambda 內，大部分已知 code-owned attack classes 已被處理，而 `GetBreed` 現在也已補齊到相同的 handler-based 模組化基準。剩餘 4 個 in-plan Lambda 仍未進入目前 baseline。
 
 ---
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The first refactor stage of the monorepo modernization effort has now completed 17 Lambdas in place:
+The first refactor stage of the monorepo modernization effort has now completed 18 Lambdas in place:
 
 * `functions/UserRoutes`
 * `functions/PetBasicInfo`
@@ -21,6 +21,7 @@ The first refactor stage of the monorepo modernization effort has now completed 
 * `functions/CreatePetBasicInfo`
 * `functions/GetAdoption`
 * `functions/PetInfoByPetNumber`
+* `functions/GetBreed`
 
 This work sits inside the broader monorepo cleanup described in [README.md](README.md), follows the modernization baseline in [dev_docs/REFACTOR_CHECKLIST.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/REFACTOR_CHECKLIST.md), and is prioritized using [dev_docs/LAMBDA_REFACTOR_INVENTORY.md](https://github.com/ppchenry/AWS_API/blob/master/dev_docs/LAMBDA_REFACTOR_INVENTORY.md).
 
@@ -43,7 +44,7 @@ The current test-file-based case inventory is:
 * `CreatePetBasicInfo`: **18 declared direct-handler test cases** in `__tests__/test-createpetbasicinfo-unit.test.js` (4 DB-gated)
 * `GetAdoption`: **21 declared pure-unit test cases** in `__tests__/test-getadoption-unit.test.js` (no SAM, no live DB)
 * `PetInfoByPetNumber`: **13 declared direct-handler test cases** in `__tests__/test-petinfobypetnumber.test.js` (3 DB-gated)
-* Combined: **797 declared integration-style and direct-handler test cases across the 17 refactored Lambdas + 15 declared SFExpressRoutes unit test cases + 6 declared SMS unit test cases + 28 declared auth-workflow unit test cases + 3 declared PetMedicalRecord aggregate unit test cases**
+* Combined: **797 declared integration-style and direct-handler test cases across the first 17 test-backed refactored Lambdas + 15 declared SFExpressRoutes unit test cases + 6 declared SMS unit test cases + 28 declared auth-workflow unit test cases + 3 declared PetMedicalRecord aggregate unit test cases**, plus the newly modularized `GetBreed` compatibility Lambda
 
 These counts describe declared cases in test files. They are not, by themselves, a same-day execution transcript.
 
@@ -70,23 +71,23 @@ For non-technical stakeholders, the important point is this: this work was not o
 
 The monorepo started from a legacy state where many Lambdas duplicated helpers, mixed routing and business logic in the same file, and were difficult to evolve safely. The current direction is not a full re-architecture yet. It is a controlled in-situ modernization pass designed to stabilize each Lambda one by one.
 
-As of 2026-04-22, the program now has:
+As of 2026-04-24, the program now has:
 
-* 17 modularized reference Lambdas
+* 18 modularized reference Lambdas
 * a written modernization standard
 * a line-count and risk-based Lambda inventory
 * integration-test-backed verification for all completed targets
 * a repeatable refactor pattern for the remaining Lambdas
 
-The completed 17 Lambdas are the full delivery scope for this stage. The remaining 5 in-plan Lambdas were marked not required by management and are out of scope.
+The completed 18 Lambdas represent the current delivery state for this stage. Four in-plan Lambdas remain outside the modularization baseline.
 
 Based on `dev_docs/LAMBDA_REFACTOR_INVENTORY.md`, the official refactor scope is **22** Lambdas (with `adoption_website`, `AuthorizerRoute`, `TestIPLambda`, and `WhatsappRoute` explicitly listed as out-of-plan).
 
-By inventory scope, **17 of 22** Lambdas are now at the new hardened baseline. The remaining 5 (`AIChatBot`, `GetBreed`, `LambdaProxyRoute`, `PublicRoutes`, `CreateFeedback`) have been marked **not required** by the manager and are out of scope. The stage-1 in-situ modernization program is therefore **complete**.
+By inventory scope, **18 of 22** Lambdas are now at the new modularized baseline. The remaining 4 (`AIChatBot`, `LambdaProxyRoute`, `PublicRoutes`, `CreateFeedback`) are still outside the current baseline. `GetBreed` has now been modernized as a Tier 2 legacy/support Lambda so it can continue serving reference-data responsibilities while the new DDD API set is designed.
 
 For workspace context, there are currently 26 function folders total; using that denominator alone would understate progress because 4 are intentionally excluded from the refactor plan.
 
-That also means the completed work should be seen as high-leverage groundwork, not as isolated refactoring. These first 17 Lambdas establish the secure pattern, the test strategy, and the operational standard that the remaining Lambdas can now follow.
+That also means the completed work should be seen as high-leverage groundwork, not as isolated refactoring. The first 17 test-backed Lambdas established the secure pattern, and `GetBreed` now extends that handler-based baseline into the remaining legacy reference-data surface.
 
 ---
 
@@ -238,17 +239,17 @@ This is intentionally conservative and not stated as a hard 100%, because some r
 
 At the monorepo level, the stage-1 in-situ modernization is complete.
 
-* **17 of 22** inventory-scoped Lambdas have been modernized to the new baseline
-* that means **77%** of the in-plan Lambda fleet has received this full hardening treatment
-* the remaining **23%** (5 Lambdas) were marked not required by management and are out of scope
+* **18 of 22** inventory-scoped Lambdas have been modernized to the new baseline
+* that means about **82%** of the in-plan Lambda fleet has received this hardening/modularization treatment
+* the remaining **18%** (4 Lambdas) are still outside the current baseline
 * plus **4 workspace Lambdas** are tracked as intentionally out-of-plan in the inventory
 
 So the correct interpretation is:
 
-* inside the 17 completed Lambdas, most of the known code-owned attack classes on those surfaces have been handled
-* the remaining 5 in-plan Lambdas (`AIChatBot`, `GetBreed`, `LambdaProxyRoute`, `PublicRoutes`, `CreateFeedback`) have been marked not required by the manager and are out of scope for this program
+* inside the first 17 test-backed completed Lambdas, most of the known code-owned attack classes on those surfaces have been handled, and `GetBreed` now follows the same handler-based modularization baseline
+* the remaining 4 in-plan Lambdas (`AIChatBot`, `LambdaProxyRoute`, `PublicRoutes`, `CreateFeedback`) are still outside the current program baseline
 
-For management, the stage-1 in-situ modernization program is now complete. The 17 hardened Lambdas represent the full delivery scope.
+For management, the stage-1 in-situ modernization program is now materially closer to closure, with `GetBreed` no longer in the unmodernized set.
 
 ---
 

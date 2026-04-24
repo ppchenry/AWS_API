@@ -1,0 +1,17 @@
+{
+  "common": {
+    "invalidJSON": "Invalid JSON body",
+    "missingParams": "Missing required parameters",
+    "internalError": "Internal Server Error",
+    "methodNotAllowed": "Method not allowed",
+    "originNotAllowed": "Origin not allowed"
+  },
+  "getBreed": {
+    "errors": {
+      "missingLanguage": "Language parameter is required",
+      "animalListNotFound": "Animal list not found for the specified language",
+      "missingEyeDiseaseName": "eyeDiseaseName parameter is required",
+      "eyeDiseaseNotFound": "Eye disease not found"
+    }
+  }
+}
