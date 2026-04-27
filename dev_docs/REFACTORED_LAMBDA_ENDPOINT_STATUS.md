@@ -22,165 +22,160 @@ Classification rules:
 
 Note: legacy duplicate or alias routes may still exist in SAM/API Gateway due to infrastructure history. The active API contract is the exact router/handler route set documented in `dev_docs/api_docs`.
 
-## Summary
-
-Total non-`OPTIONS` endpoints reviewed: 125
-
-Dead endpoints still declared in SAM: 17
-
-Dead ghost router entries not declared in SAM: 10
-
-Duplicate-looking dead rows can represent different Lambda/SAM/router entries for the same path.
-
 ## Active Endpoints
 
 ### Auth And Account Lifecycle
 
 | Endpoint | Lambda | Purpose / actual behavior |
 | --- | --- | --- |
-| `POST /account/generate-email-code` | `EmailVerification` | Sends a 6-digit email verification code. Used by registration, login, and email-linking flows. |
-| `POST /account/verify-email-code` | `EmailVerification` | Verifies an email code. Returns new-user proof, logs in an existing user, or links email to an authenticated user. |
-| `POST /account/generate-sms-code` | `UserRoutes` | Sends an SMS verification code via Twilio Verify. Used by registration, login, and phone-linking flows. |
-| `POST /account/verify-sms-code` | `UserRoutes` | Verifies an SMS code. Returns new-user proof, logs in an existing user, or links phone to an authenticated user. |
-| `POST /account/register` | `UserRoutes` | Creates a verified user account after recent email/SMS proof, then issues access and refresh tokens. |
-| `POST /auth/refresh` | `AuthRoute` | Rotates the refresh-token cookie and returns a new access token. |
-| `PUT /account` | `UserRoutes` | Updates account profile fields such as name, email, phone, birthday, district, and image after self-access and duplicate checks. |
-| `GET /account/{userId}` | `UserRoutes` | Returns a sanitized active user profile by user ID. |
-| `DELETE /account/{userId}` | `UserRoutes` | Soft-deletes a user and revokes their refresh tokens. |
-| `POST /account/delete-user-with-email` | `UserRoutes` | Soft-deletes a user found by email and revokes their refresh tokens. |
-| `POST /account/update-image` | `UserRoutes` | Updates the authenticated user's profile image URL. |
+| `POST /account/generate-email-code` | `EmailVerification` | Starts an email-based verification challenge by issuing a short-lived 6-digit code for registration, login, or account-linking flows. |
+| `POST /account/verify-email-code` | `EmailVerification` | Consumes an email verification code and either returns proof for a new account flow, logs in an existing account, or links the email to the authenticated user. |
+| `POST /account/generate-sms-code` | `UserRoutes` | Starts an SMS-based verification challenge through Twilio Verify for registration, login, or phone-linking flows. |
+| `POST /account/verify-sms-code` | `UserRoutes` | Consumes an SMS verification code and either returns proof for a new account flow, logs in an existing account, or links the phone number to the authenticated user. |
+| `POST /account/register` | `UserRoutes` | Creates a normal user account only after recent email and/or phone verification proof exists, then issues access and refresh tokens. |
+| `POST /auth/refresh` | `AuthRoute` | Exchanges a valid refresh-token cookie for a new access token and rotated refresh cookie. |
+| `PUT /account` | `UserRoutes` | Updates self-service account profile fields after validation and duplicate checks for email and phone conflicts. |
+| `GET /account/{userId}` | `UserRoutes` | Returns a sanitized active user profile for an existing, non-deleted account. |
+| `DELETE /account/{userId}` | `UserRoutes` | Soft-deletes a user account by ID and revokes all stored refresh tokens for that account. |
+| `POST /account/delete-user-with-email` | `UserRoutes` | Soft-deletes a user account found by email address and revokes all stored refresh tokens for that account. |
+| `POST /account/update-image` | `UserRoutes` | Updates only the authenticated user's profile image field without running the broader account update flow. |
 
 ### NGO Administration
 
 | Endpoint | Lambda | Purpose / actual behavior |
 | --- | --- | --- |
-| `POST /v2/account/register-ngo` | `UserRoutes` | Creates an NGO admin user, NGO profile, NGO access record, and NGO counter in one transaction, then issues tokens. |
-| `GET /v2/account/user-list` | `UserRoutes` | Lists NGO users with search and pagination through an aggregation pipeline. |
-| `GET /v2/account/edit-ngo/{ngoId}` | `UserRoutes` | Returns NGO profile, linked user profile, access settings, and NGO counter data for editing. |
-| `PUT /v2/account/edit-ngo/{ngoId}` | `UserRoutes` | Updates NGO profile, NGO admin user fields, counters, and access settings in a transaction. |
-| `GET /v2/account/edit-ngo/{ngoId}/pet-placement-options` | `UserRoutes` | Returns configured pet placement options for an NGO. |
+| `POST /v2/account/register-ngo` | `UserRoutes` | Onboards a new NGO by creating the NGO admin account, NGO profile, NGO access mapping, and NGO pet counter in one transaction, then signs in the new admin. |
+| `GET /v2/account/user-list` | `UserRoutes` | Returns a paginated NGO staff/admin list with joined user, NGO, and counter data for admin management screens. |
+| `GET /v2/account/edit-ngo/{ngoId}` | `UserRoutes` | Returns the full NGO edit payload, including NGO profile, linked admin user profile, NGO access settings, and NGO counter values. |
+| `PUT /v2/account/edit-ngo/{ngoId}` | `UserRoutes` | Applies an NGO admin edit transaction that can update NGO profile fields, admin user fields, NGO counter settings, and NGO access permissions together. |
+| `GET /v2/account/edit-ngo/{ngoId}/pet-placement-options` | `UserRoutes` | Returns the NGO's configured pet placement option set used by downstream pet/adoption workflows. |
 
 ### Pet Profile And Ownership
 
 | Endpoint | Lambda | Purpose / actual behavior |
 | --- | --- | --- |
-| `POST /pets/create-pet-basic-info` | `CreatePetBasicInfo` | Creates a pet owned by the authenticated user from JSON body data. Validates duplicate tag IDs. |
-| `POST /pets/create-pet-basic-info-with-image` | `EyeUpload` | Creates a pet from multipart form data and uploaded images. Uses JWT identity for ownership and supports NGO pet ID generation. |
-| `GET /pets/getPetInfobyTagId/{tagId}` | `PetInfoByPetNumber` | Public tag lookup that returns a limited pet profile projection by tag ID. |
-| `GET /pets/pet-list/{userId}` | `GetAllPets` | Lists pets for a user. |
-| `GET /pets/pet-list-ngo/{ngoId}` | `GetAllPets` | Lists pets associated with an NGO. |
-| `GET /pets/{petID}/basic-info` | `PetBasicInfo` | Returns basic pet profile fields for an authorized pet. |
-| `PUT /pets/{petID}/basic-info` | `PetBasicInfo` | Updates editable basic pet profile fields for an authorized pet. |
-| `DELETE /pets/{petID}` | `PetBasicInfo` | Soft-deletes an authorized pet and clears its tag ID. |
-| `POST /pets/deletePet` | `GetAllPets` | Legacy-style soft delete by body `petId`, guarded by ownership and deletion state checks. |
-| `POST /pets/updatePetImage` | `EyeUpload` | Updates pet images and scalar pet profile fields from multipart form data after owner/NGO access checks. |
-| `GET /pets/{petID}/detail-info` | `PetDetailInfo` | Returns detailed pet information for an authorized pet. |
-| `POST /pets/{petID}/detail-info` | `PetDetailInfo` | Updates detailed pet fields such as owner, status, dates, source-like metadata, and notes. |
-| `POST /pets/{petID}/detail-info/transfer` | `PetDetailInfo` | Adds an owner-transfer record to a pet. |
-| `PUT /pets/{petID}/detail-info/transfer/{transferId}` | `PetDetailInfo` | Updates a specific owner-transfer record. |
-| `DELETE /pets/{petID}/detail-info/transfer/{transferId}` | `PetDetailInfo` | Removes a specific owner-transfer record. |
-| `PUT /pets/{petID}/detail-info/NGOtransfer` | `PetDetailInfo` | Transfers or assigns NGO-related ownership/contact data on a pet after target-user validation. |
-| `GET /v2/pets/{petID}/detail-info/source` | `PetDetailInfo` | Returns source/origin records attached to a pet. |
-| `POST /v2/pets/{petID}/detail-info/source` | `PetDetailInfo` | Creates a pet source/origin record, rejecting duplicates. |
-| `PUT /v2/pets/{petID}/detail-info/source/{sourceId}` | `PetDetailInfo` | Updates a specific pet source/origin record. |
+| `GET /animal/animalList/{lang}` | `GetBreed` | Returns localized species/animal option data used by legacy pet creation and edit forms. |
+| `POST /pets/create-pet-basic-info` | `CreatePetBasicInfo` | Creates a pet record from JSON input under the authenticated owner's identity and blocks duplicate tag assignment. |
+| `POST /pets/create-pet-basic-info-with-image` | `EyeUpload` | Creates a pet from multipart form data, uploads initial pet images, and for NGO callers may generate an NGO-specific pet sequence ID. |
+| *?* `GET /pets/getPetInfobyTagId/{tagId}` | `PetInfoByPetNumber` | Performs a public-safe lookup of a pet by tag ID and returns only a limited profile projection. |
+| `GET /pets/pet-list/{userId}` | `GetAllPets` | Returns the pet list owned by a specific user for account-side pet management screens. |
+| `GET /pets/pet-list-ngo/{ngoId}` | `GetAllPets` | Returns the pet list associated with a specific NGO for NGO pet management screens. |
+| `GET /pets/{petID}/basic-info` | `PetBasicInfo` | Returns the core editable pet profile fields for an authorized pet record. |
+| `PUT /pets/{petID}/basic-info` | `PetBasicInfo` | Updates the core editable pet profile fields for an authorized pet record. |
+| `DELETE /pets/{petID}` | `PetBasicInfo` | Soft-deletes an authorized pet record and clears its tag assignment so the tag can no longer resolve to that pet. |
+| `POST /pets/deletePet` | `GetAllPets` | Legacy body-based soft-delete flow for a pet, retained for compatibility with older callers. |
+| `POST /pets/updatePetImage` | `EyeUpload` | Updates a pet through multipart input by adding/removing images and changing selected profile fields in the same request after ownership checks. |
+| `GET /pets/{petID}/detail-info` | `PetDetailInfo` | Returns extended pet detail fields such as chip, birthplace, parent lineage, and transfer-related detail data. |
+| `POST /pets/{petID}/detail-info` | `PetDetailInfo` | Updates extended pet detail fields such as chip, birthplace, parent lineage, and related structured detail data. |
+| `POST /pets/{petID}/detail-info/transfer` | `PetDetailInfo` | Appends a new owner-transfer history record to the pet. |
+| `PUT /pets/{petID}/detail-info/transfer/{transferId}` | `PetDetailInfo` | Updates one existing owner-transfer history record on the pet. |
+| `DELETE /pets/{petID}/detail-info/transfer/{transferId}` | `PetDetailInfo` | Removes one existing owner-transfer history record from the pet. |
+| `PUT /pets/{petID}/detail-info/NGOtransfer` | `PetDetailInfo` | Reassigns an NGO-managed pet to a validated target user and rewrites the transfer-related ownership/contact fields. |
+| `GET /v2/pets/{petID}/detail-info/source` | `PetDetailInfo` | Returns the pet's source/origin record, such as origin channel, rescue category, and injury cause. |
+| `POST /v2/pets/{petID}/detail-info/source` | `PetDetailInfo` | Creates the pet's source/origin record when one does not already exist. |
+| `PUT /v2/pets/{petID}/detail-info/source/{sourceId}` | `PetDetailInfo` | Updates the existing source/origin record linked to the pet. |
 
 ### Pet Adoption
 
 | Endpoint | Lambda | Purpose / actual behavior |
 | --- | --- | --- |
-| `GET /v2/pets/{petID}/pet-adoption` | `PetDetailInfo` | Returns adoption placement records linked to an owned pet. |
-| `POST /v2/pets/{petID}/pet-adoption` | `PetDetailInfo` | Creates an adoption placement record for an owned pet. |
-| `PUT /v2/pets/{petID}/pet-adoption/{adoptionId}` | `PetDetailInfo` | Updates an adoption placement record. |
-| `DELETE /v2/pets/{petID}/pet-adoption/{adoptionId}` | `PetDetailInfo` | Deletes an adoption placement record. |
-| `GET /adoption` | `GetAdoption` | Public adoption browsing list with filters, search, pagination, and excluded-source filtering. |
-| `GET /adoption/{id}` | `GetAdoption` | Public adoption detail lookup by adoption pet ID. |
+| `GET /v2/pets/{petID}/pet-adoption` | `PetDetailInfo` | Returns the managed adoption/placement record linked to a pet, including follow-up and medical-adoption fields. |
+| `POST /v2/pets/{petID}/pet-adoption` | `PetDetailInfo` | Creates the managed adoption/placement record for a pet when one does not already exist. |
+| `PUT /v2/pets/{petID}/pet-adoption/{adoptionId}` | `PetDetailInfo` | Updates the managed adoption/placement record for a pet, including follow-up schedule flags. |
+| `DELETE /v2/pets/{petID}/pet-adoption/{adoptionId}` | `PetDetailInfo` | Deletes the managed adoption/placement record linked to a pet. |
+| `GET /adoption` | `GetAdoption` | Returns the public adoption browse feed with filters, keyword search, pagination, and exclusion of blocked source sites. |
+| `GET /adoption/{id}` | `GetAdoption` | Returns the public detail page data for one adoption-listing pet. |
 
 ### Pet Health And Clinical Records
 
 | Endpoint | Lambda | Purpose / actual behavior |
 | --- | --- | --- |
-| `GET /pets/{petID}/eyeLog` | `PetBasicInfo` | Returns saved eye analysis logs for a pet. |
-| `PUT /pets/updatePetEye` | `GetAllPets` | Appends left/right eye image URLs and date to a pet after ownership checks. |
-| `GET /pets/{petID}/medical-record` | `PetMedicalRecord` | Lists medical records for a pet. |
-| `POST /pets/{petID}/medical-record` | `PetMedicalRecord` | Creates a medical record for a pet. |
-| `PUT /pets/{petID}/medical-record/{medicalID}` | `PetMedicalRecord` | Updates a medical record. |
-| `DELETE /pets/{petID}/medical-record/{medicalID}` | `PetMedicalRecord` | Deletes a medical record. |
-| `GET /pets/{petID}/medication-record` | `PetMedicalRecord` | Lists medication records for a pet. |
-| `POST /pets/{petID}/medication-record` | `PetMedicalRecord` | Creates a medication record for a pet. |
-| `PUT /pets/{petID}/medication-record/{medicationID}` | `PetMedicalRecord` | Updates a medication record. |
-| `DELETE /pets/{petID}/medication-record/{medicationID}` | `PetMedicalRecord` | Deletes a medication record. |
-| `GET /pets/{petID}/deworm-record` | `PetMedicalRecord` | Lists deworming records for a pet. |
-| `POST /pets/{petID}/deworm-record` | `PetMedicalRecord` | Creates a deworming record for a pet. |
-| `PUT /pets/{petID}/deworm-record/{dewormID}` | `PetMedicalRecord` | Updates a deworming record. |
-| `DELETE /pets/{petID}/deworm-record/{dewormID}` | `PetMedicalRecord` | Deletes a deworming record. |
-| `GET /v2/pets/{petID}/blood-test-record` | `PetMedicalRecord` | Lists blood test records for a pet. |
-| `POST /v2/pets/{petID}/blood-test-record` | `PetMedicalRecord` | Creates a blood test record and syncs pet summary fields where applicable. |
-| `PUT /v2/pets/{petID}/blood-test-record/{bloodTestID}` | `PetMedicalRecord` | Updates a blood test record and syncs pet summary fields where applicable. |
-| `DELETE /v2/pets/{petID}/blood-test-record/{bloodTestID}` | `PetMedicalRecord` | Deletes a blood test record. |
-| `GET /pets/{petID}/vaccine-record` | `PetVaccineRecords` | Lists vaccine records for a pet. |
-| `POST /pets/{petID}/vaccine-record` | `PetVaccineRecords` | Creates a vaccine record for a pet. |
-| `PUT /pets/{petID}/vaccine-record/{vaccineID}` | `PetVaccineRecords` | Updates a vaccine record. |
-| `DELETE /pets/{petID}/vaccine-record/{vaccineID}` | `PetVaccineRecords` | Deletes a vaccine record. |
+| `GET /deworm` | `GetBreed` | Returns deworming reference content used by legacy health guidance and product suggestion flows. |
+| `GET /pets/{petID}/eyeLog` | `PetBasicInfo` | Returns stored eye-analysis history entries for a pet. |
+| `PUT /pets/updatePetEye` | `GetAllPets` | Appends new eye image URLs and the related capture date to a pet's eye-analysis history fields. |
+| `GET /pets/{petID}/medical-record` | `PetMedicalRecord` | Returns the pet's general medical record entries. |
+| `POST /pets/{petID}/medical-record` | `PetMedicalRecord` | Creates a new general medical record entry for the pet. |
+| `PUT /pets/{petID}/medical-record/{medicalID}` | `PetMedicalRecord` | Updates one general medical record entry for the pet. |
+| `DELETE /pets/{petID}/medical-record/{medicalID}` | `PetMedicalRecord` | Deletes one general medical record entry for the pet. |
+| `GET /pets/{petID}/medication-record` | `PetMedicalRecord` | Returns the pet's medication administration or prescription records. |
+| `POST /pets/{petID}/medication-record` | `PetMedicalRecord` | Creates a medication administration or prescription record for the pet. |
+| `PUT /pets/{petID}/medication-record/{medicationID}` | `PetMedicalRecord` | Updates one medication administration or prescription record for the pet. |
+| `DELETE /pets/{petID}/medication-record/{medicationID}` | `PetMedicalRecord` | Deletes one medication administration or prescription record for the pet. |
+| `GET /pets/{petID}/deworm-record` | `PetMedicalRecord` | Returns the pet's deworming treatment records. |
+| `POST /pets/{petID}/deworm-record` | `PetMedicalRecord` | Creates a deworming treatment record for the pet. |
+| `PUT /pets/{petID}/deworm-record/{dewormID}` | `PetMedicalRecord` | Updates one deworming treatment record for the pet. |
+| `DELETE /pets/{petID}/deworm-record/{dewormID}` | `PetMedicalRecord` | Deletes one deworming treatment record for the pet. |
+| `GET /v2/pets/{petID}/blood-test-record` | `PetMedicalRecord` | Returns the pet's blood-test records. |
+| `POST /v2/pets/{petID}/blood-test-record` | `PetMedicalRecord` | Creates a blood-test record and also updates related pet summary fields when the record carries summary data. |
+| `PUT /v2/pets/{petID}/blood-test-record/{bloodTestID}` | `PetMedicalRecord` | Updates a blood-test record and also updates related pet summary fields when needed. |
+| `DELETE /v2/pets/{petID}/blood-test-record/{bloodTestID}` | `PetMedicalRecord` | Deletes one blood-test record for the pet. |
+| `GET /pets/{petID}/vaccine-record` | `PetVaccineRecords` | Returns the pet's vaccination records. |
+| `POST /pets/{petID}/vaccine-record` | `PetVaccineRecords` | Creates a vaccination record for the pet. |
+| `PUT /pets/{petID}/vaccine-record/{vaccineID}` | `PetVaccineRecords` | Updates one vaccination record for the pet. |
+| `DELETE /pets/{petID}/vaccine-record/{vaccineID}` | `PetVaccineRecords` | Deletes one vaccination record for the pet. |
 
 ### Pet Lost / Found And Notifications
 
 | Endpoint | Lambda | Purpose / actual behavior |
 | --- | --- | --- |
-| `GET /v2/pets/pet-lost` | `PetLostandFound` | Lists lost-pet posts. |
-| `POST /v2/pets/pet-lost` | `PetLostandFound` | Creates a lost-pet post, including optional pet ownership validation and image upload. |
-| `DELETE /v2/pets/pet-lost/{petLostID}` | `PetLostandFound` | Deletes a lost-pet post after ownership/self-access checks. |
-| `GET /v2/pets/pet-found` | `PetLostandFound` | Lists found-pet posts. |
-| `POST /v2/pets/pet-found` | `PetLostandFound` | Creates a found-pet post, including uploaded image handling. |
-| `DELETE /v2/pets/pet-found/{petFoundID}` | `PetLostandFound` | Deletes a found-pet post after ownership/self-access checks. |
-| `GET /v2/account/{userId}/notifications` | `PetLostandFound` | Lists notifications for a user. |
-| `POST /v2/account/{userId}/notifications` | `PetLostandFound` | Creates a notification for a user. |
-| `PUT /v2/account/{userId}/notifications/{notificationId}` | `PetLostandFound` | Archives or marks a notification as handled. |
+| `GET /v2/pets/pet-lost` | `PetLostandFound` | Returns the public/legacy lost-pet post feed. |
+| `POST /v2/pets/pet-lost` | `PetLostandFound` | Creates a lost-pet report, optionally links it to an owned pet, updates that pet's status, uploads images, and assigns a serial number. |
+| `DELETE /v2/pets/pet-lost/{petLostID}` | `PetLostandFound` | Deletes one lost-pet report after confirming the caller owns the report. |
+| `GET /v2/pets/pet-found` | `PetLostandFound` | Returns the public/legacy found-pet post feed. |
+| `POST /v2/pets/pet-found` | `PetLostandFound` | Creates a found-pet report with uploaded images and structured found-location details. |
+| `DELETE /v2/pets/pet-found/{petFoundID}` | `PetLostandFound` | Deletes one found-pet report after confirming the caller owns the report. |
+| `GET /v2/account/{userId}/notifications` | `PetLostandFound` | Returns the notification inbox for a user, newest first. |
+| `POST /v2/account/{userId}/notifications` | `PetLostandFound` | Creates a notification entry for a user, optionally linked to a pet or nearby lost-pet event. |
+| `PUT /v2/account/{userId}/notifications/{notificationId}` | `PetLostandFound` | Archives a notification entry for a user. |
 
 ### Media Upload And AI Analysis
 
 | Endpoint | Lambda | Purpose / actual behavior |
 | --- | --- | --- |
-| `POST /util/uploadImage` | `EyeUpload` | Uploads one or more general images to S3 and returns public URLs. |
-| `POST /util/uploadPetBreedImage` | `EyeUpload` | Uploads a pet breed image to a validated storage folder and returns its URL. |
-| `POST /analysis/eye-upload/{petId}` | `EyeUpload` | Uploads or accepts an eye image URL, calls external eye-analysis and heatmap services, and stores analysis logs. |
-| `POST /analysis/breed` | `EyeUpload` | Sends species/image data to the external breed-analysis service and returns the model result. |
+| `POST /util/uploadImage` | `EyeUpload` | Uploads a generic image file to S3 and returns the stored public URL for later use by the client. |
+| `POST /util/uploadPetBreedImage` | `EyeUpload` | Uploads one image file to an allowlisted S3 folder chosen by the caller and returns the stored public URL. |
+| `GET /analysis/{eyeDiseaseName}` | `GetBreed` | Returns static eye-disease explanatory/reference content used to interpret eye-analysis results. |
+| `POST /analysis/eye-upload/{petId}` | `EyeUpload` | Accepts an uploaded eye image or image URL, calls the external eye-analysis and heatmap services, stores the audit/result logs, and returns the model output. |
+| `POST /analysis/breed` | `EyeUpload` | Sends species plus image URL to the external breed-analysis service and returns the classification result. |
 
 ### Pet Biometrics
 
 | Endpoint | Lambda | Purpose / actual behavior |
 | --- | --- | --- |
-| `GET /petBiometrics/{petId}` | `PetBiometricRoutes` | Returns stored face and nose biometric image URLs for an authorized pet. |
-| `POST /petBiometrics/register` | `PetBiometricRoutes` | Creates or updates the stored face/nose biometric reference image sets for a pet and marks it registered. |
-| `POST /petBiometrics/verifyPet` | `PetBiometricRoutes` | Verifies a candidate pet image against stored biometric references through the FaceID provider. |
+| `GET /petBiometrics/{petId}` | `PetBiometricRoutes` | Returns the stored biometric reference assets for a pet, such as face and nose images. |
+| `POST /petBiometrics/register` | `PetBiometricRoutes` | Creates or refreshes the pet's biometric reference set and marks the pet as biometric-registered. |
+| `POST /petBiometrics/verifyPet` | `PetBiometricRoutes` | Verifies a candidate pet image against the registered biometric reference set through the FaceID provider. |
 
 ### Purchase, PTag Orders, And Order Verification
 
 | Endpoint | Lambda | Purpose / actual behavior |
 | --- | --- | --- |
-| `POST /purchase/confirmation` | `purchaseConfirmation` | Public purchase checkout. Creates an order, generates a unique tag ID, creates an order-verification record, uploads assets, and sends non-fatal email/WhatsApp notifications. |
-| `GET /purchase/shop-info` | `purchaseConfirmation` | Public shop metadata lookup with bank details stripped from the response. |
-| `GET /purchase/orders` | `purchaseConfirmation` | Admin list of purchase orders with pagination. |
-| `GET /purchase/order-verification` | `purchaseConfirmation` | Admin list of order-verification records with pagination. |
-| `DELETE /purchase/order-verification/{orderVerificationId}` | `purchaseConfirmation` | Admin soft-cancel of an order-verification record by setting `cancelled=true`. |
-| `POST /purchase/send-ptag-detection-email` | `purchaseConfirmation` | Admin-triggered email alert for a PTag detection/location update. |
-| `GET /v2/orderVerification/supplier/{orderId}` | `OrderVerification` | Supplier-facing lookup of order-verification details by order ID/contact/tag fallback with authorization checks. |
-| `PUT /v2/orderVerification/supplier/{orderId}` | `OrderVerification` | Supplier-facing multipart update of editable verification fields and linked order contact data. |
-| `GET /v2/orderVerification/whatsapp-order-link/{_id}` | `OrderVerification` | Returns order-verification details for WhatsApp deep-link flows, with owner/admin access checks. |
-| `GET /v2/orderVerification/ordersInfo/{tempId}` | `OrderVerification` | Returns a linked order's pet contact summary for a temporary order ID. |
-| `GET /v2/orderVerification/getAllOrders` | `OrderVerification` | Admin/developer list of latest PTag order-verification records. |
-| `GET /v2/orderVerification/{tagId}` | `OrderVerification` | Returns tag-bound order-verification details plus linked SF waybill number where available. |
-| `PUT /v2/orderVerification/{tagId}` | `OrderVerification` | Updates tag-bound verification fields and attempts WhatsApp tracking notification dispatch. |
+| `GET /product/productList` | `GetBreed` | Returns the legacy product catalog/reference list used by recommendation or purchase-adjacent screens. |
+| `POST /product/productLog` | `GetBreed` | Records a user's product-view/access event for legacy analytics or recommendation tracking. |
+| `POST /purchase/confirmation` | `purchaseConfirmation` | Runs the public checkout flow: validates multipart input, stores uploaded assets, creates the order, generates a tag ID, creates the linked order-verification record, and triggers non-fatal email/WhatsApp notifications. |
+| `GET /purchase/shop-info` | `purchaseConfirmation` | Returns public shop metadata needed by the checkout flow, with sensitive bank details removed from the payload. |
+| `GET /purchase/orders` | `purchaseConfirmation` | Returns the admin order-management list of purchase orders. |
+| `GET /purchase/order-verification` | `purchaseConfirmation` | Returns the admin order-verification management list. |
+| `DELETE /purchase/order-verification/{orderVerificationId}` | `purchaseConfirmation` | Soft-cancels an order-verification record by marking it cancelled rather than hard-deleting it. |
+| `POST /purchase/send-ptag-detection-email` | `purchaseConfirmation` | Sends an admin-triggered alert email related to a PTag detection or location event. |
+| `GET /v2/orderVerification/supplier/{orderId}` | `OrderVerification` | Returns the supplier-facing verification/edit view for one order, resolving by order ID with controlled fallback matching and authorization. |
+| `PUT /v2/orderVerification/supplier/{orderId}` | `OrderVerification` | Lets a supplier update the allowed verification fields for one order and, when provided, sync the linked order contact field. |
+| `GET /v2/orderVerification/whatsapp-order-link/{_id}` | `OrderVerification` | Returns the verification/order payload used by the WhatsApp deep-link flow after owner or admin authorization checks. |
+| `GET /v2/orderVerification/ordersInfo/{tempId}` | `OrderVerification` | Returns the pet contact summary for one linked order identified by temporary order ID. |
+| `GET /v2/orderVerification/getAllOrders` | `OrderVerification` | Returns the admin/developer operations list of order-verification records. |
+| `GET /v2/orderVerification/{tagId}` | `OrderVerification` | Returns the tag-bound verification record plus the linked SF waybill number when one exists. |
+| `PUT /v2/orderVerification/{tagId}` | `OrderVerification` | Updates allowed fields on the tag-bound verification record and may trigger downstream WhatsApp tracking notification logic. |
 
 ### SF Express Logistics
 
 | Endpoint | Lambda | Purpose / actual behavior |
 | --- | --- | --- |
-| `POST /sf-express-routes/create-order` | `SFExpressRoutes` | Creates an SF Express shipment/order and returns waybill data. |
-| `POST /sf-express-routes/get-pickup-locations` | `SFExpressRoutes` | Fetches SF pickup address options for a selected network code. |
-| `POST /sf-express-routes/get-token` | `SFExpressRoutes` | Fetches an SF address API token. |
-| `POST /sf-express-routes/get-area` | `SFExpressRoutes` | Fetches SF area metadata. |
-| `POST /sf-express-routes/get-netCode` | `SFExpressRoutes` | Fetches SF network code metadata for a type/area selection. |
-| `POST /v2/sf-express-routes/print-cloud-waybill` | `SFExpressRoutes` | Requests SF cloud waybill printing/download and emails the generated waybill. |
+| `POST /sf-express-routes/create-order` | `SFExpressRoutes` | Creates an SF Express shipment for authorized orders and writes the returned waybill number back onto the linked order records. |
+| `POST /sf-express-routes/get-pickup-locations` | `SFExpressRoutes` | Returns SF pickup-location options for a validated network-code/location search. |
+| `POST /sf-express-routes/get-token` | `SFExpressRoutes` | Returns the SF address-service bearer token used by the client's legacy address lookup flow. |
+| `POST /sf-express-routes/get-area` | `SFExpressRoutes` | Returns SF area metadata for the legacy address lookup flow. |
+| `POST /sf-express-routes/get-netCode` | `SFExpressRoutes` | Returns SF network-code metadata for the legacy address lookup flow. |
+| `POST /v2/sf-express-routes/print-cloud-waybill` | `SFExpressRoutes` | Requests SF cloud-waybill PDF generation/download and emails the generated waybill document. |
 
 ## Dead Endpoints
 
